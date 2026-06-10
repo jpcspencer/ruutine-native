@@ -19,3 +19,30 @@ extension Color {
     static let ruuAccent = Color(hex: "#f5c518")
     static let ruuAccentForeground = Color(hex: "#0a0a0a")
 }
+
+extension Font {
+    static func ruuBebas(_ size: CGFloat) -> Font {
+        .custom("BebasNeue-Regular", size: size)
+    }
+}
+
+struct RuuCardModifier: ViewModifier {
+    var padding: CGFloat = 16
+
+    func body(content: Content) -> some View {
+        content
+            .padding(padding)
+            .background(Color.ruuSurface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.ruuBorder, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+extension View {
+    func ruuCard(padding: CGFloat = 16) -> some View {
+        modifier(RuuCardModifier(padding: padding))
+    }
+}

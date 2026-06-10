@@ -23,10 +23,7 @@ struct RuutineApp: App {
                             .tracking(4)
                     }
                 } else if authVM.session != nil {
-                    Text("Home — coming soon")
-                        .foregroundColor(.ruuForeground)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.ruuBackground)
+                    MainTabView()
                 } else {
                     NavigationStack {
                         WelcomeView()
