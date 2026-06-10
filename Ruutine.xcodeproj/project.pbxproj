@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		556942E32FD7088B00A6B496 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 556942612FD4176300A6B496 /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		5569424E2FD4176200A6B496 /* Ruutine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ruutine.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				556942E32FD7088B00A6B496 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -95,13 +100,13 @@
 			);
 			mainGroup = 556942452FD4176200A6B496;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				556942602FD4176300A6B496 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5569424F2FD4176200A6B496 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-			packageReferences = (
-				556942602FD4176300A6B496 /* XCRemoteSwiftPackageReference "supabase-swift" */,
-			);
 			targets = (
 				5569424D2FD4176200A6B496 /* Ruutine */,
 			);
