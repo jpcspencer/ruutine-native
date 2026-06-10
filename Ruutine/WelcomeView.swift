@@ -22,8 +22,8 @@ struct WelcomeView: View {
                 Spacer()
 
                 VStack(spacing: 12) {
-                    Button {
-                        print("Sign In tapped")
+                    NavigationLink {
+                        LoginView()
                     } label: {
                         Text("Sign In")
                             .font(.system(size: 17, weight: .bold))
@@ -33,6 +33,7 @@ struct WelcomeView: View {
                             .background(Color.ruuAccent)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
+                    .buttonStyle(.plain)
 
                     Button {
                         print("Create Account tapped")
