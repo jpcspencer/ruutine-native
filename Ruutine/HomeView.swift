@@ -8,21 +8,21 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            Color.ruuBackground.ignoresSafeArea()
+            RuutineColor.background.ignoresSafeArea()
 
             if viewModel.isLoading {
                 ProgressView()
-                    .tint(.ruuAccent)
+                    .tint(RuutineColor.accent)
             } else if let errorMessage = viewModel.errorMessage {
                 VStack(spacing: 12) {
                     Text(errorMessage)
                         .font(.system(size: 14))
-                        .foregroundColor(.ruuMuted)
+                        .foregroundColor(RuutineColor.muted)
                         .multilineTextAlignment(.center)
                     Button("Retry") {
                         reload()
                     }
-                    .foregroundColor(.ruuAccent)
+                    .foregroundColor(RuutineColor.accent)
                 }
                 .padding(24)
             } else {
@@ -50,11 +50,11 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(atlasGreeting)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.ruuForeground)
+                .foregroundColor(RuutineColor.foreground)
 
             Text("Tap to chat with Atlas →")
                 .font(.system(size: 12))
-                .foregroundColor(.ruuMuted)
+                .foregroundColor(RuutineColor.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .ruuCard()
@@ -79,14 +79,14 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(session.name.uppercased())
-                        .font(.ruuBebas(20))
-                        .foregroundColor(.ruuForeground)
+                        .font(.bebas(24))
+                        .foregroundColor(RuutineColor.foreground)
                         .tracking(1)
                         .lineLimit(2)
 
                     Text("\(session.exerciseCount) exercises")
                         .font(.system(size: 12))
-                        .foregroundColor(.ruuMuted)
+                        .foregroundColor(RuutineColor.muted)
                 }
                 .padding(16)
 
@@ -96,27 +96,27 @@ struct HomeView: View {
                     } label: {
                         Text("Start Session")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.ruuAccentForeground)
+                            .foregroundColor(RuutineColor.accentForeground)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
-                            .background(Color.ruuAccent)
+                            .background(RuutineColor.accent)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
                 }
             }
-            .background(Color.ruuSurface)
+            .background(RuutineColor.surface)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.ruuBorder, lineWidth: 1)
+                    .stroke(RuutineColor.border, lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
         } else {
             VStack(spacing: 8) {
                 Text("Your workout will appear here after you complete your chat with Atlas.")
                     .font(.system(size: 12))
-                    .foregroundColor(.ruuMuted)
+                    .foregroundColor(RuutineColor.muted)
                     .multilineTextAlignment(.center)
             }
             .ruuCard()
@@ -135,13 +135,13 @@ struct HomeView: View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.ruuForeground)
+                .foregroundColor(RuutineColor.foreground)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
             Text(label)
                 .font(.system(size: 10))
-                .foregroundColor(.ruuMuted)
+                .foregroundColor(RuutineColor.muted)
         }
         .frame(maxWidth: .infinity)
         .ruuCard(padding: 12)
@@ -150,13 +150,13 @@ struct HomeView: View {
     private var progressCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Progress")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.ruuMuted)
+                .font(.bebas(24))
+                .foregroundColor(RuutineColor.foreground)
 
             if viewModel.progressWeeks.isEmpty {
                 Text("Complete your first week to see progress")
                     .font(.system(size: 12))
-                    .foregroundColor(.ruuMuted)
+                    .foregroundColor(RuutineColor.muted)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 24)
             } else {
@@ -165,14 +165,14 @@ struct HomeView: View {
                         x: .value("Week", week.week),
                         y: .value("Sessions", week.sessions)
                     )
-                    .foregroundStyle(Color.ruuAccent)
+                    .foregroundStyle(RuutineColor.accent)
                     .interpolationMethod(.catmullRom)
 
                     PointMark(
                         x: .value("Week", week.week),
                         y: .value("Sessions", week.sessions)
                     )
-                    .foregroundStyle(Color.ruuAccent)
+                    .foregroundStyle(RuutineColor.accent)
                 }
                 .chartXAxis {
                     AxisMarks(values: .automatic) { value in
@@ -183,7 +183,7 @@ struct HomeView: View {
                                     format: .dateTime.month(.abbreviated)
                                 )
                                 .font(.system(size: 9))
-                                .foregroundStyle(Color.ruuMuted)
+                                .foregroundStyle(RuutineColor.muted)
                             }
                         }
                     }
@@ -191,9 +191,9 @@ struct HomeView: View {
                 .chartYAxis {
                     AxisMarks(position: .leading) { _ in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                            .foregroundStyle(Color.ruuBorder)
+                            .foregroundStyle(RuutineColor.border)
                         AxisValueLabel()
-                            .foregroundStyle(Color.ruuMuted)
+                            .foregroundStyle(RuutineColor.muted)
                     }
                 }
                 .frame(height: 120)
@@ -205,8 +205,8 @@ struct HomeView: View {
     private var musclesCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Muscles trained this week")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.ruuMuted)
+                .font(.bebas(24))
+                .foregroundColor(RuutineColor.foreground)
 
             BodyHeatmapView(trainedMuscles: viewModel.trainedMuscles)
         }
@@ -220,10 +220,10 @@ struct HomeView: View {
             HStack(spacing: 8) {
                 Image(systemName: "clock")
                     .font(.system(size: 14))
-                    .foregroundColor(.ruuMuted)
+                    .foregroundColor(RuutineColor.muted)
                 Text("View History")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.ruuForeground)
+                    .foregroundColor(RuutineColor.foreground)
             }
             .frame(maxWidth: .infinity)
         }

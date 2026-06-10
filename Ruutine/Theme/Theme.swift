@@ -1,5 +1,16 @@
 import SwiftUI
 
+enum RuutineColor {
+    static let background = Color(hex: "#0a0a0a")
+    static let surface = Color(hex: "#111111")
+    static let border = Color(hex: "#1a1a1a")
+    static let foreground = Color(hex: "#f0ece0")
+    static let muted = Color(hex: "#888892")
+    static let accent = Color(hex: "#f5c518")
+    static let accentForeground = Color(hex: "#0a0a0a")
+    static let destructive = Color.red
+}
+
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
@@ -10,20 +21,6 @@ extension Color {
         let b = Double(int & 0xFF) / 255
         self.init(red: r, green: g, blue: b)
     }
-
-    static let ruuBackground = Color(hex: "#0a0a0a")
-    static let ruuSurface = Color(hex: "#111111")
-    static let ruuBorder = Color(hex: "#1a1a1a")
-    static let ruuForeground = Color(hex: "#f0ece0")
-    static let ruuMuted = Color(hex: "#888892")
-    static let ruuAccent = Color(hex: "#f5c518")
-    static let ruuAccentForeground = Color(hex: "#0a0a0a")
-}
-
-extension Font {
-    static func ruuBebas(_ size: CGFloat) -> Font {
-        .custom("BebasNeue-Regular", size: size)
-    }
 }
 
 struct RuuCardModifier: ViewModifier {
@@ -32,10 +29,10 @@ struct RuuCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(padding)
-            .background(Color.ruuSurface)
+            .background(RuutineColor.surface)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.ruuBorder, lineWidth: 1)
+                    .stroke(RuutineColor.border, lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
     }

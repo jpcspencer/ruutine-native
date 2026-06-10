@@ -51,7 +51,7 @@ struct BodyHeatmapView: View {
         if trained.contains(muscle) {
             GeometryReader { geo in
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.ruuAccent.opacity(0.85))
+                    .fill(RuutineColor.accent.opacity(0.85))
                     .frame(
                         width: geo.size.width * width,
                         height: geo.size.height * height

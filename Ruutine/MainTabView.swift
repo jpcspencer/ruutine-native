@@ -32,7 +32,7 @@ struct MainTabView: View {
 
             tabBar
         }
-        .background(Color.ruuBackground)
+        .background(RuutineColor.background)
         .sheet(isPresented: $showNewWorkout) {
             NewWorkoutView { exercises in
                 pendingExercises = exercises
@@ -55,7 +55,7 @@ struct MainTabView: View {
         Text(title)
             .foregroundColor(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.ruuBackground)
+            .background(RuutineColor.background)
     }
 
     private var tabBar: some View {
@@ -72,10 +72,10 @@ struct MainTabView: View {
         .padding(.top, 8)
         .padding(.bottom, 4)
         .background(
-            Color.ruuBackground
+            RuutineColor.background
                 .overlay(alignment: .top) {
                     Rectangle()
-                        .fill(Color.ruuBorder)
+                        .fill(RuutineColor.border)
                         .frame(height: 1)
                 }
         )
@@ -92,7 +92,7 @@ struct MainTabView: View {
                 Text(label)
                     .font(.system(size: 10))
             }
-            .foregroundColor(selectedTab == tab ? .ruuAccent : .ruuMuted)
+            .foregroundColor(selectedTab == tab ? RuutineColor.accent : RuutineColor.muted)
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
@@ -105,9 +105,9 @@ struct MainTabView: View {
         } label: {
             Image(systemName: "plus")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundColor(.ruuAccentForeground)
+                .foregroundColor(RuutineColor.accentForeground)
                 .frame(width: 56, height: 56)
-                .background(Color.ruuAccent)
+                .background(RuutineColor.accent)
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
         }

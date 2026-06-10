@@ -22,7 +22,7 @@ struct SignupView: View {
 
     var body: some View {
         ZStack {
-            Color.ruuBackground.ignoresSafeArea()
+            RuutineColor.background.ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -31,19 +31,19 @@ struct SignupView: View {
                     } label: {
                         Image(systemName: "arrow.left")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.ruuForeground)
+                            .foregroundColor(RuutineColor.foreground)
                             .frame(width: 44, height: 44, alignment: .leading)
                     }
                     .padding(.leading, -12)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Create Account")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(.ruuForeground)
+                            .font(.bebas(40))
+                            .foregroundColor(RuutineColor.foreground)
 
                         Text("Start your journey")
                             .font(.system(size: 16))
-                            .foregroundColor(.ruuMuted)
+                            .foregroundColor(RuutineColor.muted)
                     }
                     .padding(.bottom, 8)
 
@@ -63,16 +63,16 @@ struct SignupView: View {
                         Group {
                             if isSigningUp {
                                 ProgressView()
-                                    .tint(.ruuAccentForeground)
+                                    .tint(RuutineColor.accentForeground)
                             } else {
                                 Text("Create Account")
                                     .font(.system(size: 17, weight: .bold))
                             }
                         }
-                        .foregroundColor(.ruuAccentForeground)
+                        .foregroundColor(RuutineColor.accentForeground)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(Color.ruuAccent)
+                        .background(RuutineColor.accent)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
                     .disabled(isSigningUp)
@@ -89,7 +89,7 @@ struct SignupView: View {
                     } label: {
                         Text("Already have an account? Sign in")
                             .font(.system(size: 14))
-                            .foregroundColor(.ruuMuted)
+                            .foregroundColor(RuutineColor.muted)
                             .frame(maxWidth: .infinity)
                     }
                     .padding(.top, 4)
@@ -111,12 +111,12 @@ struct SignupView: View {
         ZStack(alignment: .leading) {
             if email.isEmpty {
                 Text("Email")
-                    .foregroundColor(.ruuMuted)
+                    .foregroundColor(RuutineColor.muted)
                     .padding(.horizontal, 16)
             }
 
             TextField("", text: $email)
-                .foregroundColor(.ruuForeground)
+                .foregroundColor(RuutineColor.foreground)
                 .padding(.horizontal, 16)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.emailAddress)
@@ -128,11 +128,11 @@ struct SignupView: View {
                 }
         }
         .frame(height: 56)
-        .background(Color.ruuSurface)
+        .background(RuutineColor.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(
-                    focusedField == .email ? Color.ruuAccent : Color.ruuBorder,
+                    focusedField == .email ? RuutineColor.accent : RuutineColor.border,
                     lineWidth: focusedField == .email ? 2 : 1.5
                 )
         )
@@ -144,7 +144,7 @@ struct SignupView: View {
             ZStack(alignment: .leading) {
                 if password.isEmpty {
                     Text("Password")
-                        .foregroundColor(.ruuMuted)
+                        .foregroundColor(RuutineColor.muted)
                         .padding(.horizontal, 16)
                 }
 
@@ -155,7 +155,7 @@ struct SignupView: View {
                         SecureField("", text: $password)
                     }
                 }
-                .foregroundColor(.ruuForeground)
+                .foregroundColor(RuutineColor.foreground)
                 .padding(.horizontal, 16)
                 .focused($focusedField, equals: .password)
                 .submitLabel(.next)
@@ -169,16 +169,16 @@ struct SignupView: View {
             } label: {
                 Image(systemName: showPassword ? "eye.slash" : "eye")
                     .font(.system(size: 16))
-                    .foregroundColor(.ruuMuted)
+                    .foregroundColor(RuutineColor.muted)
                     .frame(width: 44, height: 56)
             }
         }
         .frame(height: 56)
-        .background(Color.ruuSurface)
+        .background(RuutineColor.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(
-                    focusedField == .password ? Color.ruuAccent : Color.ruuBorder,
+                    focusedField == .password ? RuutineColor.accent : RuutineColor.border,
                     lineWidth: focusedField == .password ? 2 : 1.5
                 )
         )
@@ -190,7 +190,7 @@ struct SignupView: View {
             ZStack(alignment: .leading) {
                 if confirmPassword.isEmpty {
                     Text("Confirm Password")
-                        .foregroundColor(.ruuMuted)
+                        .foregroundColor(RuutineColor.muted)
                         .padding(.horizontal, 16)
                 }
 
@@ -201,7 +201,7 @@ struct SignupView: View {
                         SecureField("", text: $confirmPassword)
                     }
                 }
-                .foregroundColor(.ruuForeground)
+                .foregroundColor(RuutineColor.foreground)
                 .padding(.horizontal, 16)
                 .focused($focusedField, equals: .confirmPassword)
                 .submitLabel(.go)
@@ -215,16 +215,16 @@ struct SignupView: View {
             } label: {
                 Image(systemName: showConfirmPassword ? "eye.slash" : "eye")
                     .font(.system(size: 16))
-                    .foregroundColor(.ruuMuted)
+                    .foregroundColor(RuutineColor.muted)
                     .frame(width: 44, height: 56)
             }
         }
         .frame(height: 56)
-        .background(Color.ruuSurface)
+        .background(RuutineColor.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(
-                    focusedField == .confirmPassword ? Color.ruuAccent : Color.ruuBorder,
+                    focusedField == .confirmPassword ? RuutineColor.accent : RuutineColor.border,
                     lineWidth: focusedField == .confirmPassword ? 2 : 1.5
                 )
         )
@@ -258,10 +258,10 @@ struct SignupView: View {
 struct EmailConfirmationView: View {
     var body: some View {
         ZStack {
-            Color.ruuBackground.ignoresSafeArea()
+            RuutineColor.background.ignoresSafeArea()
             Text("Check your email to confirm your account")
                 .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.ruuForeground)
+                .foregroundColor(RuutineColor.foreground)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
         }

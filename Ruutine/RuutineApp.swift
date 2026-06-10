@@ -16,10 +16,10 @@ struct RuutineApp: App {
             Group {
                 if authVM.isLoading {
                     ZStack {
-                        Color.black.ignoresSafeArea()
+                        RuutineColor.background.ignoresSafeArea()
                         Text("RUUTINE")
-                            .font(.system(size: 48, weight: .black))
-                            .foregroundColor(.white)
+                            .font(.bebas(56))
+                            .foregroundColor(RuutineColor.foreground)
                             .tracking(4)
                     }
                 } else if authVM.session != nil {

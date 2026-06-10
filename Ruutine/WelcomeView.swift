@@ -3,20 +3,20 @@ import SwiftUI
 struct WelcomeView: View {
     var body: some View {
         ZStack {
-            Color.ruuBackground.ignoresSafeArea()
+            RuutineColor.background.ignoresSafeArea()
 
             VStack {
                 Spacer()
 
                 VStack(spacing: 12) {
                     Text("RUUTINE")
-                        .font(.system(size: 52, weight: .black))
-                        .foregroundColor(.ruuForeground)
-                        .tracking(6)
+                        .font(.bebas(56))
+                        .foregroundColor(RuutineColor.foreground)
+                        .tracking(4)
 
                     Text("Your AI workout coach")
                         .font(.system(size: 15))
-                        .foregroundColor(.ruuMuted)
+                        .foregroundColor(RuutineColor.muted)
                 }
 
                 Spacer()
@@ -27,10 +27,10 @@ struct WelcomeView: View {
                     } label: {
                         Text("Sign In")
                             .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(.ruuAccentForeground)
+                            .foregroundColor(RuutineColor.accentForeground)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(Color.ruuAccent)
+                            .background(RuutineColor.accent)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
                     .buttonStyle(.plain)
@@ -40,10 +40,10 @@ struct WelcomeView: View {
                     } label: {
                         Text("Create Account")
                             .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(.ruuForeground)
+                            .foregroundColor(RuutineColor.foreground)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(Color.ruuSurface)
+                            .background(RuutineColor.surface)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
                     .buttonStyle(.plain)

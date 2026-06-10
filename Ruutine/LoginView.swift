@@ -17,7 +17,7 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            Color.ruuBackground.ignoresSafeArea()
+            RuutineColor.background.ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -26,19 +26,19 @@ struct LoginView: View {
                     } label: {
                         Image(systemName: "arrow.left")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.ruuForeground)
+                            .foregroundColor(RuutineColor.foreground)
                             .frame(width: 44, height: 44, alignment: .leading)
                     }
                     .padding(.leading, -12)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Welcome back")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(.ruuForeground)
+                            .font(.bebas(40))
+                            .foregroundColor(RuutineColor.foreground)
 
                         Text("Sign in to continue")
                             .font(.system(size: 16))
-                            .foregroundColor(.ruuMuted)
+                            .foregroundColor(RuutineColor.muted)
                     }
                     .padding(.bottom, 8)
 
@@ -51,7 +51,7 @@ struct LoginView: View {
                             print("Forgot Password tapped")
                         }
                         .font(.system(size: 14))
-                        .foregroundColor(.ruuMuted)
+                        .foregroundColor(RuutineColor.muted)
                     }
 
                     Button {
@@ -60,16 +60,16 @@ struct LoginView: View {
                         Group {
                             if isSigningIn {
                                 ProgressView()
-                                    .tint(.ruuAccentForeground)
+                                    .tint(RuutineColor.accentForeground)
                             } else {
                                 Text("Sign In")
                                     .font(.system(size: 17, weight: .bold))
                             }
                         }
-                        .foregroundColor(.ruuAccentForeground)
+                        .foregroundColor(RuutineColor.accentForeground)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(Color.ruuAccent)
+                        .background(RuutineColor.accent)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
                     .disabled(isSigningIn)
@@ -95,12 +95,12 @@ struct LoginView: View {
         ZStack(alignment: .leading) {
             if email.isEmpty {
                 Text("Email")
-                    .foregroundColor(.ruuMuted)
+                    .foregroundColor(RuutineColor.muted)
                     .padding(.horizontal, 16)
             }
 
             TextField("", text: $email)
-                .foregroundColor(.ruuForeground)
+                .foregroundColor(RuutineColor.foreground)
                 .padding(.horizontal, 16)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.emailAddress)
@@ -112,11 +112,11 @@ struct LoginView: View {
                 }
         }
         .frame(height: 56)
-        .background(Color.ruuSurface)
+        .background(RuutineColor.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(
-                    focusedField == .email ? Color.ruuAccent : Color.ruuBorder,
+                    focusedField == .email ? RuutineColor.accent : RuutineColor.border,
                     lineWidth: focusedField == .email ? 2 : 1.5
                 )
         )
@@ -128,7 +128,7 @@ struct LoginView: View {
             ZStack(alignment: .leading) {
                 if password.isEmpty {
                     Text("Password")
-                        .foregroundColor(.ruuMuted)
+                        .foregroundColor(RuutineColor.muted)
                         .padding(.horizontal, 16)
                 }
 
@@ -139,7 +139,7 @@ struct LoginView: View {
                         SecureField("", text: $password)
                     }
                 }
-                .foregroundColor(.ruuForeground)
+                .foregroundColor(RuutineColor.foreground)
                 .padding(.horizontal, 16)
                 .focused($focusedField, equals: .password)
                 .submitLabel(.go)
@@ -153,16 +153,16 @@ struct LoginView: View {
             } label: {
                 Image(systemName: showPassword ? "eye.slash" : "eye")
                     .font(.system(size: 16))
-                    .foregroundColor(.ruuMuted)
+                    .foregroundColor(RuutineColor.muted)
                     .frame(width: 44, height: 56)
             }
         }
         .frame(height: 56)
-        .background(Color.ruuSurface)
+        .background(RuutineColor.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(
-                    focusedField == .password ? Color.ruuAccent : Color.ruuBorder,
+                    focusedField == .password ? RuutineColor.accent : RuutineColor.border,
                     lineWidth: focusedField == .password ? 2 : 1.5
                 )
         )

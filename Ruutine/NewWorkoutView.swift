@@ -56,7 +56,7 @@ struct NewWorkoutView: View {
 
     var body: some View {
         ZStack {
-            Color.ruuBackground.ignoresSafeArea()
+            RuutineColor.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 header
@@ -95,8 +95,8 @@ struct NewWorkoutView: View {
     private var header: some View {
         HStack {
             Text("NEW WORKOUT")
-                .font(.ruuBebas(28))
-                .foregroundColor(.ruuForeground)
+                .font(.bebas(36))
+                .foregroundColor(RuutineColor.foreground)
                 .tracking(1)
 
             Spacer()
@@ -106,7 +106,7 @@ struct NewWorkoutView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.ruuMuted)
+                    .foregroundColor(RuutineColor.muted)
                     .frame(width: 44, height: 44)
             }
         }
@@ -117,22 +117,22 @@ struct NewWorkoutView: View {
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(.ruuMuted)
+                .foregroundColor(RuutineColor.muted)
 
             TextField("Search exercises...", text: $searchText)
-                .foregroundColor(.ruuForeground)
+                .foregroundColor(RuutineColor.foreground)
                 .autocorrectionDisabled()
         }
         .padding(.horizontal, 14)
         .frame(height: 48)
-        .background(Color.ruuSurface)
+        .background(RuutineColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
             .font(.system(size: 11, weight: .semibold))
-            .foregroundColor(.ruuMuted)
+            .foregroundColor(RuutineColor.muted)
             .tracking(1.2)
     }
 
@@ -143,20 +143,20 @@ struct NewWorkoutView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(template.name)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.ruuForeground)
+                    .foregroundColor(RuutineColor.foreground)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text("\(template.exerciseCount) exercises")
                     .font(.system(size: 12))
-                    .foregroundColor(.ruuMuted)
+                    .foregroundColor(RuutineColor.muted)
             }
             .padding(12)
             .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
-            .background(Color.ruuSurface)
+            .background(RuutineColor.surface)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.ruuBorder, lineWidth: 1)
+                    .stroke(RuutineColor.border, lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
@@ -166,7 +166,7 @@ struct NewWorkoutView: View {
     private var emptyState: some View {
         Text("Add exercises now, or start empty and add as you go.")
             .font(.system(size: 14))
-            .foregroundColor(.ruuMuted)
+            .foregroundColor(RuutineColor.muted)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 32)
@@ -174,7 +174,7 @@ struct NewWorkoutView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
-                    .foregroundColor(.ruuBorder)
+                    .foregroundColor(RuutineColor.border)
             )
     }
 
@@ -184,15 +184,15 @@ struct NewWorkoutView: View {
         } label: {
             Text("Start Workout")
                 .font(.system(size: 17, weight: .bold))
-                .foregroundColor(.ruuAccentForeground)
+                .foregroundColor(RuutineColor.accentForeground)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
-                .background(Color.ruuAccent)
+                .background(RuutineColor.accent)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
-        .background(Color.ruuBackground)
+        .background(RuutineColor.background)
     }
 
     private func startWorkout(exercises names: [String]) {

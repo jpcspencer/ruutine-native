@@ -15,20 +15,20 @@ struct ActiveWorkoutView: View {
             exerciseList
             bottomBar
         }
-        .background(Color.ruuBackground.ignoresSafeArea())
+        .background(RuutineColor.background.ignoresSafeArea())
     }
 
     private var header: some View {
         VStack(spacing: 12) {
             Capsule()
-                .fill(Color.ruuMuted.opacity(0.5))
+                .fill(RuutineColor.muted.opacity(0.5))
                 .frame(width: 36, height: 4)
                 .padding(.top, 8)
 
             ZStack {
                 Text(viewModel.workoutName.uppercased())
-                    .font(.ruuBebas(22))
-                    .foregroundColor(.ruuForeground)
+                    .font(.bebas(28))
+                    .foregroundColor(RuutineColor.foreground)
                     .tracking(1)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -41,7 +41,7 @@ struct ActiveWorkoutView: View {
                     } label: {
                         Image(systemName: "gearshape")
                             .font(.system(size: 18))
-                            .foregroundColor(.ruuMuted)
+                            .foregroundColor(RuutineColor.muted)
                             .frame(width: 44, height: 44)
                     }
                 }
@@ -56,12 +56,12 @@ struct ActiveWorkoutView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("ELAPSED")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.ruuMuted)
+                    .foregroundColor(RuutineColor.muted)
                     .tracking(1)
 
                 Text(viewModel.elapsedFormatted)
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.ruuForeground)
+                    .foregroundColor(RuutineColor.foreground)
                     .monospacedDigit()
             }
 
@@ -83,13 +83,13 @@ struct ActiveWorkoutView: View {
                             .font(.system(size: 14, weight: .medium))
                     }
                 }
-                .foregroundColor(viewModel.restSecondsRemaining != nil ? .ruuAccent : .ruuMuted)
+                .foregroundColor(viewModel.restSecondsRemaining != nil ? RuutineColor.accent : RuutineColor.muted)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color.ruuSurface)
+                .background(RuutineColor.surface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.ruuBorder, lineWidth: 1)
+                        .stroke(RuutineColor.border, lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
@@ -99,7 +99,7 @@ struct ActiveWorkoutView: View {
         .padding(.vertical, 12)
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(Color.ruuBorder)
+                .fill(RuutineColor.border)
                 .frame(height: 1)
         }
     }
@@ -122,7 +122,7 @@ struct ActiveWorkoutView: View {
             HStack {
                 Text(exercise.name)
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.ruuForeground)
+                    .foregroundColor(RuutineColor.foreground)
 
                 Spacer()
 
@@ -131,7 +131,7 @@ struct ActiveWorkoutView: View {
                 } label: {
                     Text("✕")
                         .font(.system(size: 16))
-                        .foregroundColor(.ruuMuted)
+                        .foregroundColor(RuutineColor.muted)
                         .frame(width: 28, height: 28)
                 }
             }
@@ -145,15 +145,15 @@ struct ActiveWorkoutView: View {
             } label: {
                 Text("+ Add Set")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.ruuAccent)
+                    .foregroundColor(RuutineColor.accent)
             }
             .buttonStyle(.plain)
         }
         .padding(12)
-        .background(Color.ruuSurface)
+        .background(RuutineColor.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.ruuBorder, lineWidth: 1)
+                .stroke(RuutineColor.border, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
@@ -175,7 +175,7 @@ struct ActiveWorkoutView: View {
         return HStack(spacing: 8) {
             Text("Set \(setNumber)")
                 .font(.system(size: 13))
-                .foregroundColor(.ruuMuted)
+                .foregroundColor(RuutineColor.muted)
                 .frame(width: 44, alignment: .leading)
 
             workoutField(
@@ -187,7 +187,7 @@ struct ActiveWorkoutView: View {
 
             Text("kg")
                 .font(.system(size: 12))
-                .foregroundColor(.ruuMuted)
+                .foregroundColor(RuutineColor.muted)
 
             workoutField(
                 text: repsBinding(exerciseID: exercise.id, setID: set.id),
@@ -209,25 +209,25 @@ struct ActiveWorkoutView: View {
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .stroke(
-                    isConfirmed ? Color.ruuAccent.opacity(0.5) : Color.clear,
+                    isConfirmed ? RuutineColor.accent.opacity(0.5) : Color.clear,
                     lineWidth: 1
                 )
         )
-        .foregroundColor(isConfirmed ? .ruuMuted : .ruuForeground)
+        .foregroundColor(isConfirmed ? RuutineColor.muted : RuutineColor.foreground)
     }
 
     private func confirmButton(isConfirmed: Bool) -> some View {
         ZStack {
             if isConfirmed {
                 Circle()
-                    .fill(Color.ruuAccent)
+                    .fill(RuutineColor.accent)
                     .frame(width: 28, height: 28)
                 Image(systemName: "checkmark")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.ruuAccentForeground)
+                    .foregroundColor(RuutineColor.accentForeground)
             } else {
                 Circle()
-                    .stroke(Color.ruuMuted, lineWidth: 1.5)
+                    .stroke(RuutineColor.muted, lineWidth: 1.5)
                     .frame(width: 28, height: 28)
             }
         }
@@ -243,21 +243,21 @@ struct ActiveWorkoutView: View {
             if text.wrappedValue.isEmpty, !placeholder.isEmpty {
                 Text(placeholder)
                     .font(.system(size: 14))
-                    .foregroundColor(.ruuMuted.opacity(0.6))
+                    .foregroundColor(RuutineColor.muted.opacity(0.6))
             }
 
             TextField("", text: text)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(isConfirmed ? .ruuMuted : .ruuForeground)
+                .foregroundColor(isConfirmed ? RuutineColor.muted : RuutineColor.foreground)
                 .multilineTextAlignment(.center)
                 .keyboardType(width == 60 ? .numberPad : .decimalPad)
                 .disabled(isConfirmed)
         }
         .frame(width: width, height: 36)
-        .background(Color.ruuSurface)
+        .background(RuutineColor.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.ruuBorder, lineWidth: 1)
+                .stroke(RuutineColor.border, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
@@ -292,10 +292,10 @@ struct ActiveWorkoutView: View {
                 } label: {
                     Text("Add Exercise")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.ruuAccentForeground)
+                        .foregroundColor(RuutineColor.accentForeground)
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
-                        .background(Color.ruuAccent)
+                        .background(RuutineColor.accent)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .frame(maxWidth: .infinity)
@@ -308,13 +308,13 @@ struct ActiveWorkoutView: View {
                     } label: {
                         Text("Finish Session")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.ruuForeground)
+                            .foregroundColor(RuutineColor.foreground)
                             .frame(maxWidth: .infinity)
                             .frame(height: 48)
-                            .background(Color.ruuSurface)
+                            .background(RuutineColor.surface)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.ruuBorder, lineWidth: 1)
+                                    .stroke(RuutineColor.border, lineWidth: 1)
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
@@ -337,10 +337,10 @@ struct ActiveWorkoutView: View {
         .padding(.top, 12)
         .padding(.bottom, 8)
         .background(
-            Color.ruuBackground
+            RuutineColor.background
                 .overlay(alignment: .top) {
                     Rectangle()
-                        .fill(Color.ruuBorder)
+                        .fill(RuutineColor.border)
                         .frame(height: 1)
                 }
         )
