@@ -65,6 +65,7 @@
 			);
 			name = Ruutine;
 			packageProductDependencies = (
+				556942612FD4176300A6B496 /* Supabase */,
 			);
 			productName = Ruutine;
 			productReference = 5569424E2FD4176200A6B496 /* Ruutine.app */;
@@ -98,6 +99,9 @@
 			productRefGroup = 5569424F2FD4176200A6B496 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
+			packageReferences = (
+				556942602FD4176300A6B496 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			targets = (
 				5569424D2FD4176200A6B496 /* Ruutine */,
 			);
@@ -332,6 +336,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		556942602FD4176300A6B496 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		556942612FD4176300A6B496 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 556942602FD4176300A6B496 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 556942462FD4176200A6B496 /* Project object */;
 }
