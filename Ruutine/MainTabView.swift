@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab: Tab = .home
+    @State private var showActiveWorkout = false
 
     private enum Tab {
         case home
@@ -30,6 +31,9 @@ struct MainTabView: View {
             tabBar
         }
         .background(Color.ruuBackground)
+        .fullScreenCover(isPresented: $showActiveWorkout) {
+            ActiveWorkoutView()
+        }
     }
 
     private func placeholderScreen(_ title: String) -> some View {
@@ -81,7 +85,7 @@ struct MainTabView: View {
 
     private var centerButton: some View {
         Button {
-            print("Add tapped")
+            showActiveWorkout = true
         } label: {
             Image(systemName: "plus")
                 .font(.system(size: 22, weight: .bold))
