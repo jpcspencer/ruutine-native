@@ -58,5 +58,6 @@ struct WelcomeView: View {
 #Preview {
     NavigationStack {
         WelcomeView()
+            .environmentObject(AuthViewModel())
     }
 }

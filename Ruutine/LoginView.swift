@@ -2,9 +2,12 @@ import SwiftUI
 
 struct LoginView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authVM: AuthViewModel
     @State private var email = ""
     @State private var password = ""
     @State private var showPassword = false
+    @State private var isSigningIn = false
+    @State private var errorMessage: String?
     @FocusState private var focusedField: Field?
 
     private enum Field {
@@ -52,17 +55,31 @@ struct LoginView: View {
                     }
 
                     Button {
-                        print("Sign in tapped")
+                        signIn()
                     } label: {
-                        Text("Sign In")
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(.ruuAccentForeground)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(Color.ruuAccent)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        Group {
+                            if isSigningIn {
+                                ProgressView()
+                                    .tint(.ruuAccentForeground)
+                            } else {
+                                Text("Sign In")
+                                    .font(.system(size: 17, weight: .bold))
+                            }
+                        }
+                        .foregroundColor(.ruuAccentForeground)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color.ruuAccent)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
+                    .disabled(isSigningIn)
                     .padding(.top, 8)
+
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.system(size: 14))
+                            .foregroundColor(.red)
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 8)
@@ -127,7 +144,7 @@ struct LoginView: View {
                 .focused($focusedField, equals: .password)
                 .submitLabel(.go)
                 .onSubmit {
-                    print("Sign in tapped")
+                    signIn()
                 }
             }
 
@@ -151,10 +168,26 @@ struct LoginView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
+
+    private func signIn() {
+        guard !isSigningIn else { return }
+        errorMessage = nil
+        isSigningIn = true
+
+        Task {
+            do {
+                try await authVM.signIn(email: email, password: password)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isSigningIn = false
+        }
+    }
 }
 
 #Preview {
     NavigationStack {
         LoginView()
+            .environmentObject(AuthViewModel())
     }
 }
