@@ -2,7 +2,11 @@ import SwiftUI
 
 struct ActiveWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel = ActiveWorkoutViewModel()
+    @StateObject private var viewModel: ActiveWorkoutViewModel
+
+    init(initialExercises: [WorkoutExercise]? = nil) {
+        _viewModel = StateObject(wrappedValue: ActiveWorkoutViewModel(initialExercises: initialExercises))
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -160,17 +164,25 @@ struct ActiveWorkoutView: View {
         setNumber: Int,
         setIndex: Int
     ) -> some View {
-        HStack(spacing: 8) {
+        let isConfirmed = viewModel.isSetConfirmed(exerciseID: exercise.id, setID: set.id)
+        let weight = viewModel.setWeight(exerciseID: exercise.id, setID: set.id)
+        let reps = viewModel.setReps(exerciseID: exercise.id, setID: set.id)
+        let weightPlaceholder = viewModel.placeholderWeight(for: exercise, setIndex: setIndex)
+        let repsPlaceholder = viewModel.placeholderReps(for: exercise, setIndex: setIndex)
+        let canConfirm = (!weight.isEmpty || !weightPlaceholder.isEmpty)
+            && (!reps.isEmpty || !repsPlaceholder.isEmpty)
+
+        return HStack(spacing: 8) {
             Text("Set \(setNumber)")
                 .font(.system(size: 13))
-                .foregroundColor(set.isConfirmed ? .ruuMuted : .ruuMuted)
+                .foregroundColor(.ruuMuted)
                 .frame(width: 44, alignment: .leading)
 
             workoutField(
                 text: weightBinding(exerciseID: exercise.id, setID: set.id),
-                placeholder: viewModel.placeholderWeight(for: exercise, setIndex: setIndex),
+                placeholder: weightPlaceholder,
                 width: 70,
-                isConfirmed: set.isConfirmed
+                isConfirmed: isConfirmed
             )
 
             Text("kg")
@@ -179,44 +191,46 @@ struct ActiveWorkoutView: View {
 
             workoutField(
                 text: repsBinding(exerciseID: exercise.id, setID: set.id),
-                placeholder: viewModel.placeholderReps(for: exercise, setIndex: setIndex),
+                placeholder: repsPlaceholder,
                 width: 60,
-                isConfirmed: set.isConfirmed
+                isConfirmed: isConfirmed
             )
 
             Button {
                 viewModel.toggleSetConfirmed(exerciseID: exercise.id, setID: set.id)
             } label: {
-                ZStack {
-                    Circle()
-                        .stroke(set.isConfirmed ? Color.clear : Color.ruuMuted, lineWidth: 1.5)
-                        .background(
-                            Circle()
-                                .fill(set.isConfirmed ? Color.ruuAccent : Color.clear)
-                        )
-                        .frame(width: 28, height: 28)
-
-                    if set.isConfirmed {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.ruuAccentForeground)
-                    }
-                }
+                confirmButton(isConfirmed: isConfirmed)
             }
             .buttonStyle(.plain)
-            .disabled(set.weight.isEmpty || set.reps.isEmpty)
-            .opacity(set.weight.isEmpty || set.reps.isEmpty ? 0.4 : 1)
+            .opacity(canConfirm ? 1 : 0.4)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .stroke(
-                    set.isConfirmed ? Color.ruuAccent.opacity(0.5) : Color.clear,
+                    isConfirmed ? Color.ruuAccent.opacity(0.5) : Color.clear,
                     lineWidth: 1
                 )
         )
-        .foregroundColor(set.isConfirmed ? .ruuMuted : .ruuForeground)
+        .foregroundColor(isConfirmed ? .ruuMuted : .ruuForeground)
+    }
+
+    private func confirmButton(isConfirmed: Bool) -> some View {
+        ZStack {
+            if isConfirmed {
+                Circle()
+                    .fill(Color.ruuAccent)
+                    .frame(width: 28, height: 28)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.ruuAccentForeground)
+            } else {
+                Circle()
+                    .stroke(Color.ruuMuted, lineWidth: 1.5)
+                    .frame(width: 28, height: 28)
+            }
+        }
     }
 
     private func workoutField(
@@ -285,6 +299,7 @@ struct ActiveWorkoutView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .frame(maxWidth: .infinity)
+                .layoutPriority(viewModel.hasConfirmedSet ? 6 : 1)
 
                 if viewModel.hasConfirmedSet {
                     Button {
@@ -303,6 +318,8 @@ struct ActiveWorkoutView: View {
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
+                    .frame(maxWidth: .infinity)
+                    .layoutPriority(4)
                 }
             }
 

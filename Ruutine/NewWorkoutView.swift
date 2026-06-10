@@ -1,0 +1,205 @@
+import SwiftUI
+
+struct WorkoutTemplate: Identifiable {
+    let id = UUID()
+    let name: String
+    let exerciseCount: Int
+    let exercises: [String]
+}
+
+struct NewWorkoutView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+
+    let onStart: ([WorkoutExercise]) -> Void
+
+    private let templates: [WorkoutTemplate] = [
+        WorkoutTemplate(
+            name: "Upper Body Push",
+            exerciseCount: 5,
+            exercises: ["Bench Press", "Overhead Press", "Incline Dumbbell Press", "Lateral Raise", "Tricep Pushdown"]
+        ),
+        WorkoutTemplate(
+            name: "Upper Body Pull",
+            exerciseCount: 5,
+            exercises: ["Barbell Row", "Pull-Up", "Lat Pulldown", "Face Pull", "Bicep Curl"]
+        ),
+        WorkoutTemplate(
+            name: "Legs",
+            exerciseCount: 6,
+            exercises: ["Barbell Squat", "Romanian Deadlift", "Leg Press", "Leg Curl", "Calf Raise", "Hip Thrust"]
+        ),
+        WorkoutTemplate(
+            name: "Full Body",
+            exerciseCount: 5,
+            exercises: ["Barbell Squat", "Bench Press", "Barbell Row", "Overhead Press", "Deadlift"]
+        ),
+        WorkoutTemplate(
+            name: "Push/Pull/Legs",
+            exerciseCount: 5,
+            exercises: ["Bench Press", "Barbell Row", "Barbell Squat", "Overhead Press", "Romanian Deadlift"]
+        ),
+        WorkoutTemplate(
+            name: "Strong 5x5",
+            exerciseCount: 3,
+            exercises: ["Barbell Squat", "Bench Press", "Deadlift"]
+        ),
+    ]
+
+    private var filteredTemplates: [WorkoutTemplate] {
+        guard !searchText.isEmpty else { return templates }
+        return templates.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText)
+                || $0.exercises.contains { $0.localizedCaseInsensitiveContains(searchText) }
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            Color.ruuBackground.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                header
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        searchBar
+
+                        sectionHeader("QUICK START")
+
+                        LazyVGrid(
+                            columns: [
+                                GridItem(.flexible(), spacing: 12),
+                                GridItem(.flexible(), spacing: 12),
+                            ],
+                            spacing: 12
+                        ) {
+                            ForEach(filteredTemplates) { template in
+                                templateCard(template)
+                            }
+                        }
+
+                        sectionHeader("YOUR EXERCISES")
+
+                        emptyState
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 100)
+                }
+
+                startButton
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack {
+            Text("NEW WORKOUT")
+                .font(.ruuBebas(28))
+                .foregroundColor(.ruuForeground)
+                .tracking(1)
+
+            Spacer()
+
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.ruuMuted)
+                    .frame(width: 44, height: 44)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.ruuMuted)
+
+            TextField("Search exercises...", text: $searchText)
+                .foregroundColor(.ruuForeground)
+                .autocorrectionDisabled()
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 48)
+        .background(Color.ruuSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(.ruuMuted)
+            .tracking(1.2)
+    }
+
+    private func templateCard(_ template: WorkoutTemplate) -> some View {
+        Button {
+            startWorkout(exercises: template.exercises)
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(template.name)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.ruuForeground)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("\(template.exerciseCount) exercises")
+                    .font(.system(size: 12))
+                    .foregroundColor(.ruuMuted)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
+            .background(Color.ruuSurface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.ruuBorder, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var emptyState: some View {
+        Text("Add exercises now, or start empty and add as you go.")
+            .font(.system(size: 14))
+            .foregroundColor(.ruuMuted)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 32)
+            .padding(.horizontal, 16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                    .foregroundColor(.ruuBorder)
+            )
+    }
+
+    private var startButton: some View {
+        Button {
+            startWorkout(exercises: [])
+        } label: {
+            Text("Start Workout")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(.ruuAccentForeground)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.ruuAccent)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+        .background(Color.ruuBackground)
+    }
+
+    private func startWorkout(exercises names: [String]) {
+        onStart(names.map { WorkoutExercise(name: $0) })
+    }
+}
+
+#Preview {
+    NewWorkoutView { _ in }
+}

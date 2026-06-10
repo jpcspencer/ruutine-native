@@ -53,15 +53,21 @@ final class ActiveWorkoutViewModel: ObservableObject {
         }
     }
 
-    init() {
-        if let saved = Self.loadState() {
+    init(initialExercises: [WorkoutExercise]? = nil) {
+        if let initialExercises {
+            workoutName = Self.defaultWorkoutName()
+            exercises = initialExercises
+            startedAt = Date()
+            restSecondsRemaining = nil
+            persist()
+        } else if let saved = Self.loadState() {
             workoutName = saved.workoutName
             exercises = saved.exercises
             startedAt = saved.startedAt
             restSecondsRemaining = saved.restSecondsRemaining
         } else {
             workoutName = Self.defaultWorkoutName()
-            exercises = Self.placeholderExercises()
+            exercises = []
             startedAt = Date()
             restSecondsRemaining = nil
         }
@@ -129,8 +135,53 @@ final class ActiveWorkoutViewModel: ObservableObject {
               let setIndex = exercises[exerciseIndex].sets.firstIndex(where: { $0.id == setID })
         else { return }
 
-        exercises[exerciseIndex].sets[setIndex].isConfirmed.toggle()
+        let exercise = exercises[exerciseIndex]
+
+        if exercises[exerciseIndex].sets[setIndex].isConfirmed {
+            exercises[exerciseIndex].sets[setIndex].isConfirmed = false
+        } else {
+            if exercises[exerciseIndex].sets[setIndex].weight.isEmpty {
+                let placeholder = placeholderWeight(for: exercise, setIndex: setIndex)
+                if !placeholder.isEmpty {
+                    exercises[exerciseIndex].sets[setIndex].weight = placeholder
+                }
+            }
+            if exercises[exerciseIndex].sets[setIndex].reps.isEmpty {
+                let placeholder = placeholderReps(for: exercise, setIndex: setIndex)
+                if !placeholder.isEmpty {
+                    exercises[exerciseIndex].sets[setIndex].reps = placeholder
+                }
+            }
+
+            guard !exercises[exerciseIndex].sets[setIndex].weight.isEmpty,
+                  !exercises[exerciseIndex].sets[setIndex].reps.isEmpty
+            else { return }
+
+            exercises[exerciseIndex].sets[setIndex].isConfirmed = true
+        }
+
         persist()
+    }
+
+    func isSetConfirmed(exerciseID: UUID, setID: UUID) -> Bool {
+        exercises
+            .first(where: { $0.id == exerciseID })?
+            .sets.first(where: { $0.id == setID })?
+            .isConfirmed ?? false
+    }
+
+    func setWeight(exerciseID: UUID, setID: UUID) -> String {
+        exercises
+            .first(where: { $0.id == exerciseID })?
+            .sets.first(where: { $0.id == setID })?
+            .weight ?? ""
+    }
+
+    func setReps(exerciseID: UUID, setID: UUID) -> String {
+        exercises
+            .first(where: { $0.id == exerciseID })?
+            .sets.first(where: { $0.id == setID })?
+            .reps ?? ""
     }
 
     func addExercise() {
@@ -240,11 +291,4 @@ final class ActiveWorkoutViewModel: ObservableObject {
         return "\(formatter.string(from: Date()).uppercased()) WORKOUT"
     }
 
-    private static func placeholderExercises() -> [WorkoutExercise] {
-        [
-            WorkoutExercise(name: "Barbell Squat"),
-            WorkoutExercise(name: "Bench Press"),
-            WorkoutExercise(name: "Deadlift"),
-        ]
-    }
 }

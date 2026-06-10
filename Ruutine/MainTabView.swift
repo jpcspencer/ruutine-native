@@ -2,7 +2,9 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab: Tab = .home
+    @State private var showNewWorkout = false
     @State private var showActiveWorkout = false
+    @State private var pendingExercises: [WorkoutExercise]?
 
     private enum Tab {
         case home
@@ -31,8 +33,21 @@ struct MainTabView: View {
             tabBar
         }
         .background(Color.ruuBackground)
-        .fullScreenCover(isPresented: $showActiveWorkout) {
-            ActiveWorkoutView()
+        .sheet(isPresented: $showNewWorkout) {
+            NewWorkoutView { exercises in
+                pendingExercises = exercises
+                showNewWorkout = false
+            }
+        }
+        .onChange(of: showNewWorkout) { _, isPresented in
+            if !isPresented, pendingExercises != nil {
+                showActiveWorkout = true
+            }
+        }
+        .fullScreenCover(isPresented: $showActiveWorkout, onDismiss: {
+            pendingExercises = nil
+        }) {
+            ActiveWorkoutView(initialExercises: pendingExercises)
         }
     }
 
@@ -85,7 +100,8 @@ struct MainTabView: View {
 
     private var centerButton: some View {
         Button {
-            showActiveWorkout = true
+            pendingExercises = nil
+            showNewWorkout = true
         } label: {
             Image(systemName: "plus")
                 .font(.system(size: 22, weight: .bold))
