@@ -98,7 +98,10 @@ struct LoginView: View {
         .background(Color.ruuSurface)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.ruuBorder, lineWidth: 1)
+                .stroke(
+                    focusedField == .email ? Color.ruuAccent : Color.ruuBorder,
+                    lineWidth: focusedField == .email ? 2 : 1.5
+                )
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
@@ -141,7 +144,10 @@ struct LoginView: View {
         .background(Color.ruuSurface)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.ruuBorder, lineWidth: 1)
+                .stroke(
+                    focusedField == .password ? Color.ruuAccent : Color.ruuBorder,
+                    lineWidth: focusedField == .password ? 2 : 1.5
+                )
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
