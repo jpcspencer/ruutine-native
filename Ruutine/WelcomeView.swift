@@ -3,49 +3,47 @@ import SwiftUI
 struct WelcomeView: View {
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color.ruuBackground.ignoresSafeArea()
 
             VStack {
                 Spacer()
 
                 VStack(spacing: 12) {
                     Text("RUUTINE")
-                        .font(.system(size: 48, weight: .black))
-                        .foregroundColor(.white)
-                        .tracking(4)
+                        .font(.system(size: 52, weight: .black))
+                        .foregroundColor(.ruuForeground)
+                        .tracking(6)
 
-                    Text("Your AI-powered workout coach")
-                        .font(.system(size: 16))
-                        .foregroundColor(.gray)
+                    Text("Your AI workout coach")
+                        .font(.system(size: 15))
+                        .foregroundColor(.ruuMuted)
                 }
 
                 Spacer()
 
-                VStack(spacing: 16) {
-                    Button {
-                        print("Create Account tapped")
-                    } label: {
-                        Text("Create Account")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-
+                VStack(spacing: 12) {
                     Button {
                         print("Sign In tapped")
                     } label: {
                         Text("Sign In")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(.ruuAccentForeground)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white, lineWidth: 1)
-                            )
+                            .frame(height: 56)
+                            .background(Color.ruuAccent)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+
+                    Button {
+                        print("Create Account tapped")
+                    } label: {
+                        Text("Create Account")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(.ruuForeground)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.ruuSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
                 }
                 .padding(.horizontal, 24)
