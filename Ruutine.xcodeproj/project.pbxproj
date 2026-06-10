@@ -14,9 +14,22 @@
 		5569424E2FD4176200A6B496 /* Ruutine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ruutine.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		556942F12FD9000000A6B496 /* Exceptions for "Ruutine" folder in "Ruutine" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5569424D2FD4176200A6B496 /* Ruutine */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		556942502FD4176200A6B496 /* Ruutine */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				556942F12FD9000000A6B496 /* Exceptions for "Ruutine" folder in "Ruutine" target */,
+			);
 			path = Ruutine;
 			sourceTree = "<group>";
 		};
@@ -265,7 +278,7 @@
 				DEVELOPMENT_TEAM = H9SLM96FW7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_FILE = Ruutine/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -298,7 +311,7 @@
 				DEVELOPMENT_TEAM = H9SLM96FW7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_FILE = Ruutine/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
