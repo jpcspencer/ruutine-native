@@ -35,8 +35,8 @@ struct WelcomeView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Button {
-                        print("Create Account tapped")
+                    NavigationLink {
+                        SignupView()
                     } label: {
                         Text("Create Account")
                             .font(.system(size: 17, weight: .bold))
@@ -46,6 +46,7 @@ struct WelcomeView: View {
                             .background(Color.ruuSurface)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
+                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom)

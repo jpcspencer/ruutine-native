@@ -33,6 +33,10 @@ final class AuthViewModel: ObservableObject {
         try await SupabaseClient.shared.auth.signIn(email: email, password: password)
     }
 
+    func signUp(email: String, password: String) async throws {
+        try await SupabaseClient.shared.auth.signUp(email: email, password: password)
+    }
+
     func signOut() async throws {
         try await SupabaseClient.shared.auth.signOut()
     }
