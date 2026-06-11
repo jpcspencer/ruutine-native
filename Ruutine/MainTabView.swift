@@ -24,11 +24,7 @@ struct MainTabView: View {
                         HomeView()
                     }
                 case .program:
-                    ProgramView { exercises, workoutName in
-                        pendingExercises = exercises
-                        pendingWorkoutName = workoutName
-                        showActiveWorkout = true
-                    }
+                    ProgramView()
                 case .glossary:
                     GlossaryView()
                 case .profile:

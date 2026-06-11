@@ -32,13 +32,4 @@ final class ProgramViewModel: ObservableObject {
 
         isLoading = false
     }
-
-    func workoutExercises(for day: ProgramDay) -> [WorkoutExercise] {
-        (day.exercises ?? []).map { exercise in
-            WorkoutExercise(
-                name: exercise.name,
-                primaryMuscle: Exercise.lookup(name: exercise.name)?.primaryMuscle
-            )
-        }
-    }
 }

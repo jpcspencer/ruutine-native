@@ -9,8 +9,6 @@ struct ProgramView: View {
     @State private var showNewProgramAlert = false
     @State private var showAtlasAlert = false
 
-    let onStartWorkout: ([WorkoutExercise], String) -> Void
-
     var body: some View {
         ZStack {
             RuutineColor.background.ignoresSafeArea()
@@ -94,12 +92,12 @@ struct ProgramView: View {
         let exerciseCount = day.exercises?.count ?? 0
 
         return VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .center, spacing: 12) {
-                Button {
-                    withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
-                        toggleExpanded(day.day)
-                    }
-                } label: {
+            Button {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                    toggleExpanded(day.day)
+                }
+            } label: {
+                HStack(alignment: .center, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(day.name)
                             .font(.system(size: 16, weight: .bold))
@@ -110,25 +108,20 @@ struct ProgramView: View {
                             .font(.system(size: 13))
                             .foregroundColor(RuutineColor.muted)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .buttonStyle(.plain)
 
-                Button {
-                    startWorkout(for: day)
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(RuutineColor.accent)
+                    Spacer(minLength: 0)
+
+                    Text(isExpanded ? "−" : "+")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundColor(RuutineColor.muted)
                         .frame(width: 36, height: 36)
-                        .background(RuutineColor.accent.opacity(0.15))
-                        .clipShape(Circle())
                 }
-                .buttonStyle(.plain)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
 
             if isExpanded {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
                     Divider()
                         .background(RuutineColor.border)
                         .padding(.top, 12)
@@ -139,9 +132,7 @@ struct ProgramView: View {
                             .foregroundColor(RuutineColor.muted)
                     } else {
                         ForEach(Array((day.exercises ?? []).enumerated()), id: \.offset) { _, exercise in
-                            Text(exercise.name)
-                                .font(.system(size: 14))
-                                .foregroundColor(RuutineColor.muted)
+                            exerciseSubCard(exercise)
                         }
                     }
                 }
@@ -157,6 +148,33 @@ struct ProgramView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .animation(.spring(response: 0.32, dampingFraction: 0.86), value: isExpanded)
+    }
+
+    private func exerciseSubCard(_ exercise: ProgramExercise) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(exercise.name)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(RuutineColor.foreground)
+
+            Text(exercise.prescriptionLine)
+                .font(.system(size: 13))
+                .foregroundColor(RuutineColor.muted)
+
+            if let notes = exercise.notes, !notes.isEmpty {
+                Text(notes)
+                    .font(.system(size: 13))
+                    .foregroundColor(RuutineColor.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(RuutineColor.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(RuutineColor.border, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var bottomActions: some View {
@@ -242,15 +260,9 @@ struct ProgramView: View {
             expandedDays.insert(day)
         }
     }
-
-    private func startWorkout(for day: ProgramDay) {
-        let exercises = viewModel.workoutExercises(for: day)
-        guard !exercises.isEmpty else { return }
-        onStartWorkout(exercises, day.name)
-    }
 }
 
 #Preview {
-    ProgramView { _, _ in }
+    ProgramView()
         .environmentObject(AuthViewModel())
 }
