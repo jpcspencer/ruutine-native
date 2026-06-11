@@ -50,18 +50,13 @@ final class ActiveWorkoutViewModel: ObservableObject {
     @Published var elapsedSeconds = 0
     @Published var restSecondsRemaining: Int?
     @Published var previousSetsByExercise: [String: [PreviousSetRecord]] = [:]
+    @Published private(set) var hasConfirmedSet = false
 
     private var startedAt: Date
     private var elapsedTimer: Timer?
     private var restTimer: Timer?
 
     private static let storageKey = "activeWorkoutState"
-
-    var hasConfirmedSet: Bool {
-        exercises.contains { exercise in
-            exercise.sets.contains { $0.isConfirmed }
-        }
-    }
 
     init(initialExercises: [WorkoutExercise]? = nil, workoutName initialWorkoutName: String? = nil) {
         if let initialExercises {
@@ -83,6 +78,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
         }
 
         updateElapsed()
+        refreshHasConfirmedSet()
         startElapsedTimer()
         if restSecondsRemaining != nil {
             startRestTimer()
@@ -108,6 +104,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
 
     func removeExercise(_ exercise: WorkoutExercise) {
         exercises.removeAll { $0.id == exercise.id }
+        refreshHasConfirmedSet()
         persist()
     }
 
@@ -150,6 +147,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
         }
         if let isConfirmed {
             exercises[exerciseIndex].sets[setIndex].isConfirmed = isConfirmed
+            refreshHasConfirmedSet()
         }
         persist()
     }
@@ -184,6 +182,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
             exercises[exerciseIndex].sets[setIndex].isConfirmed = true
         }
 
+        refreshHasConfirmedSet()
         persist()
     }
 
@@ -366,6 +365,12 @@ final class ActiveWorkoutViewModel: ObservableObject {
                 }
                 self.persist()
             }
+        }
+    }
+
+    private func refreshHasConfirmedSet() {
+        hasConfirmedSet = exercises.contains { exercise in
+            exercise.sets.contains { $0.isConfirmed }
         }
     }
 

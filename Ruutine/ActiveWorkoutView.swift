@@ -443,49 +443,59 @@ struct ActiveWorkoutView: View {
 
     private var bottomBar: some View {
         VStack(spacing: 10) {
-            HStack(spacing: 12) {
-                Button {
-                    showExercisePicker = true
-                } label: {
-                    Text("Add Exercise")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(RuutineColor.accentForeground)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(RuutineColor.accent)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .frame(maxWidth: .infinity)
-                .layoutPriority(viewModel.hasConfirmedSet ? 6 : 1)
+            GeometryReader { geometry in
+                let spacing: CGFloat = 12
+                let availableWidth = geometry.size.width
+                let splitWidth = max(availableWidth - spacing, 0)
 
-                if viewModel.hasConfirmedSet {
+                HStack(spacing: spacing) {
                     Button {
-                        finishSession()
+                        showExercisePicker = true
                     } label: {
-                        Group {
-                            if isSaving {
-                                ProgressView()
-                                    .tint(RuutineColor.foreground)
-                            } else {
-                                Text("Finish Session")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(RuutineColor.foreground)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(RuutineColor.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(RuutineColor.border, lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        Text("Add Exercise")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(RuutineColor.accentForeground)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(RuutineColor.accent)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-                    .disabled(isSaving)
-                    .frame(maxWidth: .infinity)
-                    .layoutPriority(4)
+                    .frame(
+                        width: viewModel.hasConfirmedSet ? splitWidth * 0.6 : availableWidth,
+                        height: 48
+                    )
+
+                    if viewModel.hasConfirmedSet {
+                        Button {
+                            finishSession()
+                        } label: {
+                            Group {
+                                if isSaving {
+                                    ProgressView()
+                                        .tint(RuutineColor.foreground)
+                                } else {
+                                    Text("Finish Session")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(RuutineColor.foreground)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(RuutineColor.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(RuutineColor.border, lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .disabled(isSaving)
+                        .frame(width: splitWidth * 0.4, height: 48)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
                 }
             }
+            .frame(height: 48)
+            .animation(.easeInOut(duration: 0.2), value: viewModel.hasConfirmedSet)
 
             Button {
                 viewModel.cancelWorkout()
