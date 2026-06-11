@@ -3,8 +3,13 @@ import Charts
 import SwiftUI
 
 struct HomeView: View {
+    @Binding var showAtlasChat: Bool
     @EnvironmentObject private var authVM: AuthViewModel
     @StateObject private var viewModel = HomeViewModel()
+
+    init(showAtlasChat: Binding<Bool> = .constant(false)) {
+        _showAtlasChat = showAtlasChat
+    }
 
     var body: some View {
         ZStack {
@@ -38,6 +43,7 @@ struct HomeView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
                     .padding(.bottom, 24)
+                    .atlasScrollBottomInset()
                 }
             }
         }
@@ -50,17 +56,22 @@ struct HomeView: View {
     }
 
     private var atlasCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(atlasGreeting)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(RuutineColor.foreground)
+        Button {
+            showAtlasChat = true
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(atlasGreeting)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(RuutineColor.foreground)
 
-            Text("Tap to chat with Atlas →")
-                .font(.system(size: 12))
-                .foregroundColor(RuutineColor.muted)
+                Text("Tap to chat with Atlas →")
+                    .font(.system(size: 12))
+                    .foregroundColor(RuutineColor.muted)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .ruuCard()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .ruuCard()
+        .buttonStyle(.plain)
     }
 
     private var atlasGreeting: String {

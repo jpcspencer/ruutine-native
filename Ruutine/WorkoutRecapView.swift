@@ -4,6 +4,9 @@ struct WorkoutRecapView: View {
     let data: WorkoutRecapData
     let onDone: () -> Void
 
+    @EnvironmentObject private var authVM: AuthViewModel
+    @StateObject private var atlasService = AtlasService()
+    @State private var showAtlasChat = false
     @State private var atlasMessage = "..."
 
     var body: some View {
@@ -27,6 +30,13 @@ struct WorkoutRecapView: View {
         .background(RuutineColor.background.ignoresSafeArea())
         .task {
             await fetchAtlasMessage()
+        }
+        .sheet(isPresented: $showAtlasChat) {
+            AtlasChatView(atlasService: atlasService)
+                .environmentObject(authVM)
+        }
+        .onAppear {
+            atlasService.configure(profileId: data.profileId)
         }
     }
 
@@ -135,26 +145,35 @@ struct WorkoutRecapView: View {
     }
 
     private var atlasCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("ATLAS")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(RuutineColor.muted)
-                .tracking(1)
+        Button {
+            showAtlasChat = true
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("ATLAS")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(RuutineColor.muted)
+                    .tracking(1)
 
-            Text(atlasMessage)
-                .font(.system(size: 14))
-                .italic()
-                .foregroundColor(RuutineColor.foreground)
-                .fixedSize(horizontal: false, vertical: true)
+                Text(atlasMessage)
+                    .font(.system(size: 14))
+                    .italic()
+                    .foregroundColor(RuutineColor.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("Tap to chat with Atlas →")
+                    .font(.system(size: 12))
+                    .foregroundColor(RuutineColor.muted)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(RuutineColor.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(RuutineColor.border, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(RuutineColor.surface)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(RuutineColor.border, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .buttonStyle(.plain)
     }
 
     private var musclesCard: some View {
@@ -271,4 +290,5 @@ struct WorkoutRecapView: View {
         ),
         onDone: {}
     )
+    .environmentObject(AuthViewModel())
 }

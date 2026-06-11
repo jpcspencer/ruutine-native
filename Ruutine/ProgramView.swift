@@ -2,12 +2,16 @@ import Auth
 import SwiftUI
 
 struct ProgramView: View {
+    @Binding var showAtlasChat: Bool
     @EnvironmentObject private var authVM: AuthViewModel
     @StateObject private var viewModel = ProgramViewModel()
     @State private var expandedDays: Set<Int> = []
     @State private var showEditAlert = false
     @State private var showNewProgramAlert = false
-    @State private var showAtlasAlert = false
+
+    init(showAtlasChat: Binding<Bool> = .constant(false)) {
+        _showAtlasChat = showAtlasChat
+    }
 
     var body: some View {
         ZStack {
@@ -36,11 +40,6 @@ struct ProgramView: View {
         } message: {
             Text("Atlas program generation is coming soon.")
         }
-        .alert("Chat with Atlas", isPresented: $showAtlasAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Atlas chat is coming soon to the native app.")
-        }
     }
 
     private var programContent: some View {
@@ -62,6 +61,7 @@ struct ProgramView: View {
                         .padding(.horizontal, 16)
                         .padding(.top, 8)
                         .padding(.bottom, 24)
+                        .atlasScrollBottomInset()
                 }
             }
         }
@@ -237,7 +237,7 @@ struct ProgramView: View {
                 .padding(.horizontal, 32)
 
             Button {
-                showAtlasAlert = true
+                showAtlasChat = true
             } label: {
                 Text("Talk to Atlas")
                     .font(.system(size: 15, weight: .semibold))

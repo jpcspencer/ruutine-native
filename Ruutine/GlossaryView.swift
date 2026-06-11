@@ -45,6 +45,7 @@ struct GlossaryView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 24)
+                .atlasScrollBottomInset()
             }
 
             if exerciseService.isLoading && exerciseService.exercises.isEmpty {

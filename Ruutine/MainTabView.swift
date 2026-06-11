@@ -1,10 +1,14 @@
+import Auth
 import SwiftUI
 
 struct MainTabView: View {
+    @EnvironmentObject private var authVM: AuthViewModel
+    @StateObject private var atlasService = AtlasService()
     @State private var selectedTab: Tab = .home
     @State private var homePath = NavigationPath()
     @State private var showNewWorkout = false
     @State private var showActiveWorkout = false
+    @State private var showAtlasChat = false
     @State private var pendingExercises: [WorkoutExercise]?
     @State private var pendingWorkoutName: String?
 
@@ -15,16 +19,20 @@ struct MainTabView: View {
         case profile
     }
 
+    private var showsAtlasFloatingButton: Bool {
+        selectedTab == .home || selectedTab == .program || selectedTab == .glossary
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
             Group {
                 switch selectedTab {
                 case .home:
                     NavigationStack(path: $homePath) {
-                        HomeView()
+                        HomeView(showAtlasChat: $showAtlasChat)
                     }
                 case .program:
-                    ProgramView()
+                    ProgramView(showAtlasChat: $showAtlasChat)
                 case .glossary:
                     GlossaryView()
                 case .profile:
@@ -32,11 +40,34 @@ struct MainTabView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.bottom, 72)
+            .padding(.bottom, AtlasFloatingButtonLayout.tabBarHeight)
+
+            if showsAtlasFloatingButton {
+                AtlasFloatingButton {
+                    showAtlasChat = true
+                }
+                .padding(.trailing, AtlasFloatingButtonLayout.trailingInset)
+                .padding(.bottom, AtlasFloatingButtonLayout.bottomInset)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            }
 
             tabBar
         }
         .background(RuutineColor.background)
+        .onChange(of: authVM.session?.user.id) { _, userId in
+            if let userId {
+                atlasService.configure(profileId: userId)
+            }
+        }
+        .onAppear {
+            if let userId = authVM.session?.user.id {
+                atlasService.configure(profileId: userId)
+            }
+        }
+        .sheet(isPresented: $showAtlasChat) {
+            AtlasChatView(atlasService: atlasService)
+                .environmentObject(authVM)
+        }
         .sheet(isPresented: $showNewWorkout) {
             NewWorkoutView { exercises in
                 pendingExercises = exercises
