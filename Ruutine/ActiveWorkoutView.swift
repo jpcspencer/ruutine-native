@@ -537,7 +537,8 @@ struct ActiveWorkoutView: View {
                 viewModel.finishWorkout()
                 recapData = recap
             } catch {
-                saveError = error.localizedDescription
+                print("[ActiveWorkoutView] Finish Session save failed: \(error)")
+                saveError = WorkoutSessionService.userFacingMessage(for: error)
             }
             isSaving = false
         }
