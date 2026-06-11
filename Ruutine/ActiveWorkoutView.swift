@@ -1,5 +1,6 @@
 import Auth
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ActiveWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
@@ -9,6 +10,7 @@ struct ActiveWorkoutView: View {
     @State private var isSaving = false
     @State private var saveError: String?
     @State private var showExercisePicker = false
+    @State private var draggedExerciseID: UUID?
 
     var onWorkoutComplete: (() -> Void)?
 
@@ -140,6 +142,14 @@ struct ActiveWorkoutView: View {
             VStack(spacing: 12) {
                 ForEach(viewModel.exercises) { exercise in
                     exerciseCard(exercise)
+                        .onDrop(
+                            of: [UTType.plainText],
+                            delegate: ExerciseDropDelegate(
+                                targetExercise: exercise,
+                                viewModel: viewModel,
+                                draggedExerciseID: $draggedExerciseID
+                            )
+                        )
                 }
             }
             .padding(.horizontal, 16)
@@ -149,13 +159,25 @@ struct ActiveWorkoutView: View {
     }
 
     private func exerciseCard(_ exercise: WorkoutExercise) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(exercise.name)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(RuutineColor.foreground)
+        let isDragging = draggedExerciseID == exercise.id
 
-                Spacer()
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    dragHandleIcon
+
+                    Text(exercise.name)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(RuutineColor.foreground)
+                        .lineLimit(2)
+                }
+                .contentShape(Rectangle())
+                .onDrag {
+                    draggedExerciseID = exercise.id
+                    return NSItemProvider(object: exercise.id.uuidString as NSString)
+                }
+
+                Spacer(minLength: 0)
 
                 Button {
                     viewModel.removeExercise(exercise)
@@ -187,6 +209,21 @@ struct ActiveWorkoutView: View {
                 .stroke(RuutineColor.border, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .opacity(isDragging ? 0.88 : 1)
+        .scaleEffect(isDragging ? 1.02 : 1)
+        .shadow(
+            color: isDragging ? Color.black.opacity(0.35) : Color.clear,
+            radius: isDragging ? 10 : 0,
+            y: isDragging ? 4 : 0
+        )
+        .animation(.easeInOut(duration: 0.15), value: isDragging)
+    }
+
+    private var dragHandleIcon: some View {
+        Image(systemName: "line.3.horizontal")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(RuutineColor.muted)
+            .frame(width: 28, height: 28)
     }
 
     private func setRow(
@@ -406,6 +443,37 @@ struct ActiveWorkoutView: View {
             isSaving = false
         }
     }
+}
+
+private struct ExerciseDropDelegate: DropDelegate {
+    let targetExercise: WorkoutExercise
+    let viewModel: ActiveWorkoutViewModel
+    @Binding var draggedExerciseID: UUID?
+
+    func validateDrop(info: DropInfo) -> Bool {
+        draggedExerciseID != nil
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let draggedID = draggedExerciseID,
+              draggedID != targetExercise.id
+        else { return }
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            viewModel.moveExercise(draggedID: draggedID, before: targetExercise.id)
+        }
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggedExerciseID = nil
+        return true
+    }
+
+    func dropExited(info: DropInfo) {}
 }
 
 #Preview {

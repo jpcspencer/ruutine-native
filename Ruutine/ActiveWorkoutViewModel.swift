@@ -1,5 +1,7 @@
 import Combine
 import Foundation
+import SwiftUI
+import UIKit
 
 struct WorkoutSet: Codable, Identifiable, Equatable {
     let id: UUID
@@ -105,6 +107,20 @@ final class ActiveWorkoutViewModel: ObservableObject {
 
     func removeExercise(_ exercise: WorkoutExercise) {
         exercises.removeAll { $0.id == exercise.id }
+        persist()
+    }
+
+    func moveExercise(draggedID: UUID, before targetID: UUID) {
+        guard let from = exercises.firstIndex(where: { $0.id == draggedID }),
+              let to = exercises.firstIndex(where: { $0.id == targetID }),
+              from != to
+        else { return }
+
+        exercises.move(
+            fromOffsets: IndexSet(integer: from),
+            toOffset: to > from ? to + 1 : to
+        )
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         persist()
     }
 
