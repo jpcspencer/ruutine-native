@@ -214,8 +214,8 @@ struct HomeView: View {
     }
 
     private var historyButton: some View {
-        Button {
-            print("View History tapped")
+        NavigationLink {
+            HistoryView()
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "clock")
@@ -227,6 +227,7 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity)
         }
+        .buttonStyle(.plain)
         .ruuCard(padding: 14)
     }
 

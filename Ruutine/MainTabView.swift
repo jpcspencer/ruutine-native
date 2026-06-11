@@ -18,7 +18,9 @@ struct MainTabView: View {
             Group {
                 switch selectedTab {
                 case .home:
-                    HomeView()
+                    NavigationStack {
+                        HomeView()
+                    }
                 case .program:
                     placeholderScreen("Program")
                 case .glossary:
