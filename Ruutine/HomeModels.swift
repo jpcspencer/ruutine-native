@@ -34,6 +34,8 @@ struct TrainingProgram: Codable {
 }
 
 struct ProgramContent: Codable {
+    let name: String?
+    let week: Int?
     let days: [ProgramDay]?
 }
 

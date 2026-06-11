@@ -15,8 +15,17 @@ struct ActiveWorkoutView: View {
 
     var onWorkoutComplete: (() -> Void)?
 
-    init(initialExercises: [WorkoutExercise]? = nil, onWorkoutComplete: (() -> Void)? = nil) {
-        _viewModel = StateObject(wrappedValue: ActiveWorkoutViewModel(initialExercises: initialExercises))
+    init(
+        initialExercises: [WorkoutExercise]? = nil,
+        workoutName: String? = nil,
+        onWorkoutComplete: (() -> Void)? = nil
+    ) {
+        _viewModel = StateObject(
+            wrappedValue: ActiveWorkoutViewModel(
+                initialExercises: initialExercises,
+                workoutName: workoutName
+            )
+        )
         self.onWorkoutComplete = onWorkoutComplete
     }
 

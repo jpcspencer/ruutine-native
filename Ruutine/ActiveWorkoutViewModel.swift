@@ -63,9 +63,9 @@ final class ActiveWorkoutViewModel: ObservableObject {
         }
     }
 
-    init(initialExercises: [WorkoutExercise]? = nil) {
+    init(initialExercises: [WorkoutExercise]? = nil, workoutName initialWorkoutName: String? = nil) {
         if let initialExercises {
-            workoutName = Self.defaultWorkoutName()
+            workoutName = initialWorkoutName ?? Self.defaultWorkoutName()
             exercises = initialExercises
             startedAt = Date()
             restSecondsRemaining = nil

@@ -6,6 +6,7 @@ struct MainTabView: View {
     @State private var showNewWorkout = false
     @State private var showActiveWorkout = false
     @State private var pendingExercises: [WorkoutExercise]?
+    @State private var pendingWorkoutName: String?
 
     private enum Tab {
         case home
@@ -23,7 +24,11 @@ struct MainTabView: View {
                         HomeView()
                     }
                 case .program:
-                    placeholderScreen("Program")
+                    ProgramView { exercises, workoutName in
+                        pendingExercises = exercises
+                        pendingWorkoutName = workoutName
+                        showActiveWorkout = true
+                    }
                 case .glossary:
                     GlossaryView()
                 case .profile:
@@ -49,10 +54,15 @@ struct MainTabView: View {
         }
         .fullScreenCover(isPresented: $showActiveWorkout, onDismiss: {
             pendingExercises = nil
+            pendingWorkoutName = nil
         }) {
-            ActiveWorkoutView(initialExercises: pendingExercises) {
+            ActiveWorkoutView(
+                initialExercises: pendingExercises,
+                workoutName: pendingWorkoutName
+            ) {
                 showActiveWorkout = false
                 pendingExercises = nil
+                pendingWorkoutName = nil
                 selectedTab = .home
                 homePath = NavigationPath()
                 NotificationCenter.default.post(name: .workoutCompleted, object: nil)
