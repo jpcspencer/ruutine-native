@@ -26,7 +26,7 @@ struct MainTabView: View {
                 case .glossary:
                     placeholderScreen("Glossary")
                 case .profile:
-                    placeholderScreen("Profile")
+                    ProfileView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

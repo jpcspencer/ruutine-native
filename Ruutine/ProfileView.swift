@@ -1,0 +1,406 @@
+import Auth
+import Charts
+import PhotosUI
+import SwiftUI
+
+struct ProfileView: View {
+    @EnvironmentObject private var authVM: AuthViewModel
+    @StateObject private var viewModel = ProfileViewModel()
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var avatarImage: Image?
+    @State private var showDeleteConfirm = false
+    @State private var isSigningOut = false
+
+    var body: some View {
+        ZStack {
+            RuutineColor.background.ignoresSafeArea()
+
+            if viewModel.isLoading {
+                ProgressView()
+                    .tint(RuutineColor.accent)
+            } else if let errorMessage = viewModel.errorMessage {
+                VStack(spacing: 12) {
+                    Text(errorMessage)
+                        .font(.system(size: 14))
+                        .foregroundColor(RuutineColor.muted)
+                        .multilineTextAlignment(.center)
+                    Button("Retry") {
+                        reload()
+                    }
+                    .foregroundColor(RuutineColor.accent)
+                }
+                .padding(24)
+            } else if let profile = viewModel.profile {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        header
+                        profileCard(profile)
+                        weightHistorySection
+                        themeSection
+                        dangerZone
+                        signOutButton
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
+                }
+            }
+        }
+        .task(id: authVM.session?.user.id) {
+            reload()
+        }
+        .onChange(of: selectedPhoto) { _, item in
+            Task {
+                await loadAvatar(from: item)
+            }
+        }
+        .alert("Delete Account?", isPresented: $showDeleteConfirm) {
+            Button("Delete", role: .destructive) {
+                Task {
+                    try? await viewModel.deleteAccountPlaceholder()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete your account and all data. This action cannot be undone.")
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("PROFILE")
+                .font(.bebas(40))
+                .foregroundColor(RuutineColor.foreground)
+                .tracking(1)
+
+            Text("Your training profile and preferences")
+                .font(.system(size: 14))
+                .foregroundColor(RuutineColor.muted)
+        }
+    }
+
+    private func profileCard(_ profile: ProfileDetail) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(alignment: .top, spacing: 12) {
+                PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                    ZStack {
+                        Circle()
+                            .fill(RuutineColor.border)
+                            .frame(width: 56, height: 56)
+
+                        if let avatarImage {
+                            avatarImage
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 56, height: 56)
+                                .clipShape(Circle())
+                        } else {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(RuutineColor.muted)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(profile.name.uppercased())
+                        .font(.bebas(24))
+                        .foregroundColor(RuutineColor.foreground)
+                        .tracking(1)
+
+                    Text("Your training profile")
+                        .font(.system(size: 13))
+                        .foregroundColor(RuutineColor.muted)
+                }
+
+                Spacer()
+
+                Button("Edit") {
+                    print("Edit profile tapped")
+                }
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(RuutineColor.foreground)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(RuutineColor.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+
+            infoSection(title: "GOAL", value: ProfileLabels.goal(profile.goal))
+            infoSection(title: "EXPERIENCE", value: ProfileLabels.experience(profile.experienceLevel))
+            infoSection(title: "DAYS PER WEEK", value: "\(profile.daysPerWeek)")
+            infoSection(title: "TRAINING DAYS", value: ProfileLabels.trainingDays(profile.trainingDays))
+            infoSection(title: "EQUIPMENT", value: ProfileLabels.equipmentList(profile.equipmentAccess))
+            infoSection(
+                title: "INJURIES / LIMITATIONS",
+                value: profile.injuriesLimitations?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+                    ? (profile.injuriesLimitations ?? "None")
+                    : "None"
+            )
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("HEIGHT & WEIGHT")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(RuutineColor.muted)
+                    .tracking(1.2)
+
+                HStack(spacing: 8) {
+                    unitPill(title: "Metric", isActive: !viewModel.isImperial) {
+                        viewModel.isImperial = false
+                    }
+                    unitPill(title: "Imperial", isActive: viewModel.isImperial) {
+                        viewModel.isImperial = true
+                    }
+                }
+
+                Text(ProfileLabels.heightWeight(
+                    heightCm: profile.heightCm,
+                    weightKg: profile.weightKg,
+                    isImperial: viewModel.isImperial
+                ))
+                .font(.system(size: 15))
+                .foregroundColor(RuutineColor.foreground)
+            }
+        }
+        .padding(16)
+        .background(RuutineColor.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(RuutineColor.border, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func infoSection(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(RuutineColor.muted)
+                .tracking(1.2)
+
+            Text(value)
+                .font(.system(size: 15))
+                .foregroundColor(RuutineColor.foreground)
+        }
+    }
+
+    private func unitPill(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(isActive ? RuutineColor.accentForeground : RuutineColor.foreground)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(isActive ? RuutineColor.accent : RuutineColor.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isActive ? Color.clear : RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var weightHistorySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("WEIGHT HISTORY")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(RuutineColor.muted)
+                    .tracking(1.2)
+
+                Spacer()
+
+                Button("View all") {
+                    print("View all weight logs tapped")
+                }
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(RuutineColor.accent)
+            }
+
+            if viewModel.weightLogs.count >= 2 {
+                VStack(spacing: 8) {
+                    if !viewModel.chartWeightRange.isEmpty {
+                        Text(viewModel.chartWeightRange)
+                            .font(.system(size: 11))
+                            .foregroundColor(RuutineColor.muted)
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    Chart(viewModel.weightLogs) { log in
+                        LineMark(
+                            x: .value("Date", log.loggedAt),
+                            y: .value("Weight", viewModel.displayWeight(log.weightKg))
+                        )
+                        .foregroundStyle(RuutineColor.accent)
+                        .interpolationMethod(.catmullRom)
+
+                        PointMark(
+                            x: .value("Date", log.loggedAt),
+                            y: .value("Weight", viewModel.displayWeight(log.weightKg))
+                        )
+                        .foregroundStyle(RuutineColor.accent)
+                    }
+                    .chartXAxis(.hidden)
+                    .chartYAxis(.hidden)
+                    .frame(height: 100)
+
+                    HStack {
+                        if let first = viewModel.weightLogs.first {
+                            Text(ProfileLabels.chartStartDate(first.loggedAt))
+                                .font(.system(size: 10))
+                                .foregroundColor(RuutineColor.muted)
+                        }
+                        Spacer()
+                        Text("Today")
+                            .font(.system(size: 10))
+                            .foregroundColor(RuutineColor.muted)
+                    }
+                }
+                .padding(12)
+                .background(RuutineColor.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                Text("Log your weight to see progress over time.")
+                    .font(.system(size: 13))
+                    .foregroundColor(RuutineColor.muted)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RuutineColor.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(RuutineColor.border, lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+
+            VStack(spacing: 10) {
+                ForEach(viewModel.recentWeightLogs) { log in
+                    HStack {
+                        Text(ProfileLabels.logDate(log.loggedAt))
+                            .font(.system(size: 13))
+                            .foregroundColor(RuutineColor.muted)
+
+                        Spacer()
+
+                        Text(ProfileLabels.weightValue(log.weightKg, isImperial: viewModel.isImperial))
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(RuutineColor.foreground)
+                    }
+                }
+            }
+        }
+    }
+
+    private var themeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("THEME")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(RuutineColor.muted)
+                .tracking(1.2)
+
+            HStack(spacing: 8) {
+                ForEach(Array(zip(ProfileLabels.themes, ProfileLabels.themeNames)), id: \.0) { theme, name in
+                    let isActive = viewModel.selectedTheme == theme
+                    Button {
+                        if theme == "onyx" {
+                            viewModel.selectedTheme = theme
+                        }
+                    } label: {
+                        Text(name)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(isActive ? RuutineColor.accent : RuutineColor.foreground)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(RuutineColor.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(isActive ? RuutineColor.accent : RuutineColor.border, lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private var dangerZone: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("DANGER ZONE")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(RuutineColor.muted)
+                .tracking(1.2)
+
+            Button {
+                showDeleteConfirm = true
+            } label: {
+                Text("Delete Account")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(RuutineColor.destructive)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(RuutineColor.destructive, lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var signOutButton: some View {
+        Button {
+            guard !isSigningOut else { return }
+            isSigningOut = true
+            Task {
+                try? await authVM.signOut()
+                isSigningOut = false
+            }
+        } label: {
+            Text(isSigningOut ? "Signing out..." : "Sign out")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(RuutineColor.foreground)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(RuutineColor.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+        .disabled(isSigningOut)
+    }
+
+    private func reload() {
+        guard let userId = authVM.session?.user.id else { return }
+        Task {
+            await viewModel.load(userId: userId)
+        }
+    }
+
+    private func loadAvatar(from item: PhotosPickerItem?) async {
+        guard let item,
+              let data = try? await item.loadTransferable(type: Data.self),
+              let uiImage = UIImage(data: data)
+        else { return }
+
+        avatarImage = Image(uiImage: uiImage)
+    }
+}
+
+#Preview {
+    ProfileView()
+        .environmentObject(AuthViewModel())
+}
