@@ -52,7 +52,7 @@ struct GlossaryView: View {
                     .tint(RuutineColor.accent)
             }
         }
-        .task(id: authVM.session?.user.id) {
+        .task {
             await reload()
         }
         .alert("Add Custom Exercise", isPresented: $showAddCustom) {
@@ -203,7 +203,7 @@ struct GlossaryView: View {
     }
 
     private func reload() async {
-        guard let profileId = authVM.session?.user.id.uuidString else { return }
+        let profileId = authVM.session?.user.id.uuidString ?? ""
         await exerciseService.loadExercises(profileId: profileId)
     }
 }
