@@ -3,6 +3,9 @@ import SwiftUI
 struct SignupView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authVM: AuthViewModel
+
+    let onConfirmationRequired: (String) -> Void
+
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
@@ -10,14 +13,17 @@ struct SignupView: View {
     @State private var showConfirmPassword = false
     @State private var isSigningUp = false
     @State private var errorMessage: String?
-    @State private var passwordMismatchError = false
-    @State private var showEmailConfirmation = false
+    @State private var didAttemptSubmit = false
     @FocusState private var focusedField: Field?
 
     private enum Field {
         case email
         case password
         case confirmPassword
+    }
+
+    init(onConfirmationRequired: @escaping (String) -> Void = { _ in }) {
+        self.onConfirmationRequired = onConfirmationRequired
     }
 
     var body: some View {
@@ -48,11 +54,18 @@ struct SignupView: View {
                     .padding(.bottom, 8)
 
                     emailField
+
+                    if let emailError {
+                        Text(emailError)
+                            .font(.system(size: 14))
+                            .foregroundColor(.red)
+                    }
+
                     passwordField
                     confirmPasswordField
 
-                    if passwordMismatchError {
-                        Text("Passwords do not match")
+                    if let passwordMatchError {
+                        Text(passwordMatchError)
                             .font(.system(size: 14))
                             .foregroundColor(.red)
                     }
@@ -102,9 +115,21 @@ struct SignupView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
-        .navigationDestination(isPresented: $showEmailConfirmation) {
-            EmailConfirmationView()
-        }
+    }
+
+    private var emailError: String? {
+        guard didAttemptSubmit else { return nil }
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return "Email is required." }
+        if !AuthViewModel.isValidEmail(trimmed) { return "Enter a valid email address." }
+        return nil
+    }
+
+    private var passwordMatchError: String? {
+        guard didAttemptSubmit else { return nil }
+        if password.count < 6 { return "Password must be at least 6 characters." }
+        if password != confirmPassword { return "Passwords do not match." }
+        return nil
     }
 
     private var emailField: some View {
@@ -132,8 +157,8 @@ struct SignupView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(
-                    focusedField == .email ? RuutineColor.accent : RuutineColor.border,
-                    lineWidth: focusedField == .email ? 2 : 1.5
+                    fieldBorderColor(isInvalid: emailError != nil, isFocused: focusedField == .email),
+                    lineWidth: focusedField == .email || emailError != nil ? 2 : 1.5
                 )
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
@@ -178,8 +203,8 @@ struct SignupView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(
-                    focusedField == .password ? RuutineColor.accent : RuutineColor.border,
-                    lineWidth: focusedField == .password ? 2 : 1.5
+                    fieldBorderColor(isInvalid: passwordMatchError != nil, isFocused: focusedField == .password),
+                    lineWidth: focusedField == .password || passwordMatchError != nil ? 2 : 1.5
                 )
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
@@ -224,29 +249,40 @@ struct SignupView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(
-                    focusedField == .confirmPassword ? RuutineColor.accent : RuutineColor.border,
-                    lineWidth: focusedField == .confirmPassword ? 2 : 1.5
+                    fieldBorderColor(isInvalid: passwordMatchError != nil, isFocused: focusedField == .confirmPassword),
+                    lineWidth: focusedField == .confirmPassword || passwordMatchError != nil ? 2 : 1.5
                 )
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
+    private func fieldBorderColor(isInvalid: Bool, isFocused: Bool) -> Color {
+        if isInvalid { return .red }
+        if isFocused { return RuutineColor.accent }
+        return RuutineColor.border
+    }
+
     private func signUp() {
         guard !isSigningUp else { return }
+        didAttemptSubmit = true
         errorMessage = nil
-        passwordMismatchError = false
 
-        guard password == confirmPassword else {
-            passwordMismatchError = true
-            return
-        }
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard AuthViewModel.isValidEmail(trimmedEmail) else { return }
+        guard password.count >= 6 else { return }
+        guard password == confirmPassword else { return }
 
         isSigningUp = true
 
         Task {
             do {
-                try await authVM.signUp(email: email, password: password)
-                showEmailConfirmation = true
+                let outcome = try await authVM.signUp(email: trimmedEmail, password: password)
+                switch outcome {
+                case .sessionActive:
+                    break
+                case .confirmationRequired(let confirmedEmail):
+                    onConfirmationRequired(confirmedEmail)
+                }
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -256,23 +292,62 @@ struct SignupView: View {
 }
 
 struct EmailConfirmationView: View {
+    let email: String
+    let onBackToSignIn: () -> Void
+
     var body: some View {
         ZStack {
             RuutineColor.background.ignoresSafeArea()
-            Text("Check your email to confirm your account")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(RuutineColor.foreground)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+
+            VStack(spacing: 24) {
+                Spacer()
+
+                Image(systemName: "envelope.fill")
+                    .font(.system(size: 48))
+                    .foregroundColor(RuutineColor.accent)
+
+                Text("CHECK YOUR EMAIL")
+                    .font(.bebas(36))
+                    .foregroundColor(RuutineColor.foreground)
+                    .tracking(1)
+                    .multilineTextAlignment(.center)
+
+                Text("We sent a confirmation link to \(email). Tap it to confirm your account, then come back and sign in.")
+                    .font(.system(size: 15))
+                    .foregroundColor(RuutineColor.muted)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+
+                Spacer()
+
+                Button(action: onBackToSignIn) {
+                    Text("Back to Sign In")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(RuutineColor.accentForeground)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(RuutineColor.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 24)
+                .padding(.bottom)
+            }
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
     }
 }
 
-#Preview {
+#Preview("Signup") {
     NavigationStack {
         SignupView()
             .environmentObject(AuthViewModel())
+    }
+}
+
+#Preview("Email Confirmation") {
+    NavigationStack {
+        EmailConfirmationView(email: "you@example.com") {}
     }
 }

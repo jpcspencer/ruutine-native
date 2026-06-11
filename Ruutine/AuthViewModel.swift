@@ -3,6 +3,31 @@ import Combine
 import Foundation
 import Supabase
 
+enum SignUpOutcome: Equatable {
+    case sessionActive
+    case confirmationRequired(email: String)
+}
+
+enum AuthError: LocalizedError {
+    case emailAlreadyRegistered
+    case invalidEmail
+    case weakPassword
+    case passwordsDoNotMatch
+
+    var errorDescription: String? {
+        switch self {
+        case .emailAlreadyRegistered:
+            return "An account with this email already exists. Try signing in instead."
+        case .invalidEmail:
+            return "Enter a valid email address."
+        case .weakPassword:
+            return "Password must be at least 6 characters."
+        case .passwordsDoNotMatch:
+            return "Passwords do not match."
+        }
+    }
+}
+
 @MainActor
 final class AuthViewModel: ObservableObject {
     @Published var session: Session?
@@ -10,6 +35,8 @@ final class AuthViewModel: ObservableObject {
     @Published var isCheckingOnboarding = false
     /// `nil` = unknown / not signed in; `true` = profile exists; `false` = needs onboarding.
     @Published var hasCompletedOnboarding: Bool?
+
+    private static let emailConfirmationRedirect = URL(string: "https://ruutine.app/auth/callback")!
 
     private var authStateTask: Task<Void, Never>?
 
@@ -38,8 +65,40 @@ final class AuthViewModel: ObservableObject {
         try await SupabaseClient.shared.auth.signIn(email: email, password: password)
     }
 
-    func signUp(email: String, password: String) async throws {
-        try await SupabaseClient.shared.auth.signUp(email: email, password: password)
+    func signUp(email: String, password: String) async throws -> SignUpOutcome {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard Self.isValidEmail(trimmedEmail) else {
+            throw AuthError.invalidEmail
+        }
+
+        guard password.count >= 6 else {
+            throw AuthError.weakPassword
+        }
+
+        let response: AuthResponse
+        do {
+            response = try await SupabaseClient.shared.auth.signUp(
+                email: trimmedEmail,
+                password: password,
+                redirectTo: Self.emailConfirmationRedirect
+            )
+        } catch {
+            throw Self.mapSignUpError(error)
+        }
+
+        if let session = response.session {
+            self.session = session
+            await refreshOnboardingStatus()
+            return .sessionActive
+        }
+
+        let identities = response.user.identities ?? []
+        if identities.isEmpty {
+            throw AuthError.emailAlreadyRegistered
+        }
+
+        return .confirmationRequired(email: trimmedEmail)
     }
 
     func signOut() async throws {
@@ -76,5 +135,35 @@ final class AuthViewModel: ObservableObject {
         } catch {
             hasCompletedOnboarding = false
         }
+    }
+
+    static func isValidEmail(_ email: String) -> Bool {
+        let pattern = #"^[A-Z0-9a-z._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$"#
+        return email.range(of: pattern, options: .regularExpression) != nil
+    }
+
+    private static func mapSignUpError(_ error: Error) -> Error {
+        if let authError = error as? AuthError {
+            return authError
+        }
+
+        let message = error.localizedDescription.lowercased()
+
+        if message.contains("already registered")
+            || message.contains("already exists")
+            || message.contains("user already registered") {
+            return AuthError.emailAlreadyRegistered
+        }
+        if message.contains("invalid email")
+            || message.contains("unable to validate email")
+            || message.contains("email address") && message.contains("invalid") {
+            return AuthError.invalidEmail
+        }
+        if message.contains("password")
+            && (message.contains("weak") || message.contains("short") || message.contains("least")) {
+            return AuthError.weakPassword
+        }
+
+        return error
     }
 }
