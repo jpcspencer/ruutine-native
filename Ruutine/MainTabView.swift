@@ -25,7 +25,7 @@ struct MainTabView: View {
                 case .program:
                     placeholderScreen("Program")
                 case .glossary:
-                    placeholderScreen("Glossary")
+                    GlossaryView()
                 case .profile:
                     ProfileView()
                 }
@@ -116,14 +116,14 @@ struct MainTabView: View {
             showNewWorkout = true
         } label: {
             Image(systemName: "plus")
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(size: 20, weight: .bold))
                 .foregroundColor(RuutineColor.accentForeground)
-                .frame(width: 56, height: 56)
+                .frame(width: 52, height: 52)
                 .background(RuutineColor.accent)
                 .clipShape(Circle())
-                .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
+                .shadow(color: .black.opacity(0.3), radius: 6, y: 2)
         }
-        .offset(y: -20)
+        .offset(y: -6)
         .frame(maxWidth: .infinity)
         .buttonStyle(.plain)
     }
