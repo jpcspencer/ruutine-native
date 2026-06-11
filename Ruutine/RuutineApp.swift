@@ -23,7 +23,19 @@ struct RuutineApp: App {
                             .tracking(4)
                     }
                 } else if authVM.session != nil {
-                    MainTabView()
+                    if authVM.isCheckingOnboarding || authVM.hasCompletedOnboarding == nil {
+                        ZStack {
+                            RuutineColor.background.ignoresSafeArea()
+                            ProgressView()
+                                .tint(RuutineColor.accent)
+                        }
+                    } else if authVM.hasCompletedOnboarding == false {
+                        OnboardingView {
+                            // Routing handled via authVM.hasCompletedOnboarding
+                        }
+                    } else {
+                        MainTabView()
+                    }
                 } else {
                     NavigationStack {
                         WelcomeView()
