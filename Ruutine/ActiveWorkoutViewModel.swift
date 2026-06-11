@@ -58,6 +58,10 @@ final class ActiveWorkoutViewModel: ObservableObject {
 
     private static let storageKey = "activeWorkoutState"
 
+    var workoutDateSubtitle: String {
+        Self.dateSubtitleFormatter.string(from: startedAt)
+    }
+
     init(initialExercises: [WorkoutExercise]? = nil, workoutName initialWorkoutName: String? = nil) {
         if let initialExercises {
             workoutName = initialWorkoutName ?? Self.defaultWorkoutName()
@@ -262,7 +266,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
         for exercise in exercises {
             var confirmedSets: [CompletedSetPayload] = []
 
-            for (index, set) in exercise.sets.enumerated() where set.isConfirmed {
+            for set in exercise.sets where set.isConfirmed {
                 guard let weight = Double(set.weight.trimmingCharacters(in: .whitespaces)),
                       let reps = Int(set.reps.trimmingCharacters(in: .whitespaces))
                 else { continue }
@@ -270,7 +274,11 @@ final class ActiveWorkoutViewModel: ObservableObject {
                 totalVolume += weight * Double(reps)
                 totalSets += 1
                 confirmedSets.append(
-                    CompletedSetPayload(setNumber: index + 1, weightKg: weight, reps: reps)
+                    CompletedSetPayload(
+                        setNumber: confirmedSets.count + 1,
+                        weightKg: weight,
+                        reps: reps
+                    )
                 )
             }
 
@@ -397,11 +405,25 @@ final class ActiveWorkoutViewModel: ObservableObject {
         return try? JSONDecoder().decode(ActiveWorkoutState.self, from: data)
     }
 
-    private static func defaultWorkoutName() -> String {
+    static func defaultWorkoutName(for date: Date = Date()) -> String {
+        let hour = Calendar.current.component(.hour, from: date)
+        switch hour {
+        case 5...11:
+            return "Morning Workout"
+        case 12...16:
+            return "Afternoon Workout"
+        case 17...20:
+            return "Evening Workout"
+        default:
+            return "Night Workout"
+        }
+    }
+
+    private static let dateSubtitleFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "MMMM d"
-        return "\(formatter.string(from: Date()).uppercased()) WORKOUT"
-    }
+        formatter.dateFormat = "EEEE, MMM d"
+        return formatter
+    }()
 
 }

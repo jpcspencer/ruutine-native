@@ -1,55 +1,50 @@
 import Foundation
 import Supabase
 
+// Capacitor reference: ~/ruutine/app/api/sessions/complete/route.ts
+// completed_sessions insert columns:
+//   user_id, user_profile_id, session_name, exercises_completed
+// exercise_logs insert columns:
+//   user_id, session_id, exercise_name, set_number, weight_kg, reps, completed
+
 enum WorkoutSessionService {
     struct SessionInsert: Encodable {
         let userId: UUID
-        let name: String
-        let createdAt: String
-        let durationSeconds: Int
-        let totalVolumeKg: Double
-        let exercisesCompleted: [ExerciseCompletedJSON]
+        let userProfileId: UUID
+        let sessionName: String
+        let exercisesCompleted: [SessionExerciseCompletedJSON]
 
         enum CodingKeys: String, CodingKey {
             case userId = "user_id"
-            case name
-            case createdAt = "created_at"
-            case durationSeconds = "duration_seconds"
-            case totalVolumeKg = "total_volume_kg"
+            case userProfileId = "user_profile_id"
+            case sessionName = "session_name"
             case exercisesCompleted = "exercises_completed"
         }
     }
 
-    struct ExerciseCompletedJSON: Encodable {
+    /// Matches Capacitor: `{ name, sets: <confirmed set count> }`
+    struct SessionExerciseCompletedJSON: Encodable {
         let name: String
-        let sets: [SetCompletedJSON]
-    }
-
-    struct SetCompletedJSON: Encodable {
-        let weightKg: Double
-        let reps: Int
-
-        enum CodingKeys: String, CodingKey {
-            case weightKg = "weight_kg"
-            case reps
-        }
+        let sets: Int
     }
 
     struct ExerciseLogInsert: Encodable {
+        let userId: UUID
         let sessionId: UUID
         let exerciseName: String
         let setNumber: Int
-        let weightKg: Double
-        let reps: Int
-        let createdAt: String
+        let weightKg: Double?
+        let reps: Int?
+        let completed: Bool
 
         enum CodingKeys: String, CodingKey {
+            case userId = "user_id"
             case sessionId = "session_id"
             case exerciseName = "exercise_name"
             case setNumber = "set_number"
             case weightKg = "weight_kg"
             case reps
-            case createdAt = "created_at"
+            case completed
         }
     }
 
@@ -59,27 +54,24 @@ enum WorkoutSessionService {
 
     static func saveCompletedWorkout(
         userId: UUID,
+        profileId: UUID,
         sessionName: String,
         durationSeconds: Int,
         exercises: [CompletedExercisePayload]
     ) async throws -> WorkoutRecapData {
-        let now = ISO8601DateFormatter().string(from: Date())
-        let exercisesJSON = exercises.map { exercise in
-            ExerciseCompletedJSON(
-                name: exercise.name,
-                sets: exercise.sets.map { SetCompletedJSON(weightKg: $0.weightKg, reps: $0.reps) }
-            )
+        let trimmedSessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let exercisesWithSets = exercises.filter { !$0.sets.isEmpty }
+        let exercisesJSON = exercisesWithSets.map { exercise in
+            SessionExerciseCompletedJSON(name: exercise.name, sets: exercise.sets.count)
         }
-        let totalVolumeKg = exercises.reduce(0.0) { volume, exercise in
-            volume + exercise.sets.reduce(0.0) { $0 + $1.weightKg * Double($1.reps) }
-        }
+
+        print("[WorkoutSessionService] completed_sessions columns: user_id, user_profile_id, session_name, exercises_completed")
+        print("[WorkoutSessionService] exercise_logs columns: user_id, session_id, exercise_name, set_number, weight_kg, reps, completed")
 
         let sessionInsert = SessionInsert(
             userId: userId,
-            name: sessionName,
-            createdAt: now,
-            durationSeconds: durationSeconds,
-            totalVolumeKg: totalVolumeKg,
+            userProfileId: profileId,
+            sessionName: trimmedSessionName,
             exercisesCompleted: exercisesJSON
         )
 
@@ -101,16 +93,17 @@ enum WorkoutSessionService {
         var totalSets = 0
         var recapExercises: [RecapExercise] = []
 
-        for exercise in exercises {
+        for exercise in exercisesWithSets {
             var recapSets: [RecapSet] = []
-            for set in exercise.sets {
+            for (setIndex, set) in exercise.sets.enumerated() {
                 let log = ExerciseLogInsert(
+                    userId: userId,
                     sessionId: session.id,
                     exerciseName: exercise.name,
-                    setNumber: set.setNumber,
+                    setNumber: setIndex + 1,
                     weightKg: set.weightKg,
                     reps: set.reps,
-                    createdAt: now
+                    completed: true
                 )
                 do {
                     try await SupabaseClient.shared
@@ -125,7 +118,7 @@ enum WorkoutSessionService {
                 totalVolume += set.weightKg * Double(set.reps)
                 totalSets += 1
                 recapSets.append(
-                    RecapSet(setNumber: set.setNumber, weightKg: set.weightKg, reps: set.reps)
+                    RecapSet(setNumber: setIndex + 1, weightKg: set.weightKg, reps: set.reps)
                 )
             }
             if !recapSets.isEmpty {
@@ -141,12 +134,12 @@ enum WorkoutSessionService {
 
         return WorkoutRecapData(
             id: session.id,
-            sessionName: sessionName,
+            sessionName: trimmedSessionName,
             durationSeconds: durationSeconds,
             totalSets: totalSets,
             totalVolumeKg: totalVolume,
             exercises: recapExercises,
-            profileId: userId
+            profileId: profileId
         )
     }
 

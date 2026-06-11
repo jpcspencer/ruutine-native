@@ -10,6 +10,7 @@ struct ActiveWorkoutView: View {
     @State private var isSaving = false
     @State private var saveError: String?
     @State private var showExercisePicker = false
+    @State private var showCancelConfirmation = false
     @State private var draggedExerciseID: UUID?
     @FocusState private var focusedField: WorkoutFieldFocus?
 
@@ -68,39 +69,82 @@ struct ActiveWorkoutView: View {
         } message: {
             Text(saveError ?? "")
         }
+        .confirmationDialog(
+            "Cancel this workout? Your progress won't be saved.",
+            isPresented: $showCancelConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Keep Going", role: .cancel) {}
+            Button("Cancel Workout", role: .destructive) {
+                viewModel.cancelWorkout()
+                dismiss()
+            }
+        }
     }
 
     private var header: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             Capsule()
                 .fill(RuutineColor.muted.opacity(0.5))
                 .frame(width: 36, height: 4)
-                .padding(.top, 8)
+                .padding(.top, 6)
 
             ZStack {
-                Text(viewModel.workoutName.uppercased())
-                    .font(.bebas(28))
-                    .foregroundColor(RuutineColor.foreground)
-                    .tracking(1)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .padding(.horizontal, 48)
+                VStack(spacing: 2) {
+                    Text(viewModel.workoutName.uppercased())
+                        .font(.bebas(26))
+                        .foregroundColor(RuutineColor.foreground)
+                        .tracking(1)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
 
-                HStack {
+                    Text(viewModel.workoutDateSubtitle)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(RuutineColor.muted)
+                }
+                .padding(.horizontal, viewModel.hasConfirmedSet ? 120 : 88)
+
+                HStack(spacing: 6) {
                     Spacer()
+
+                    if viewModel.hasConfirmedSet {
+                        Button {
+                            finishSession()
+                        } label: {
+                            Group {
+                                if isSaving {
+                                    ProgressView()
+                                        .tint(RuutineColor.accentForeground)
+                                        .scaleEffect(0.75)
+                                } else {
+                                    Text("Finish")
+                                        .font(.system(size: 13, weight: .semibold))
+                                }
+                            }
+                            .foregroundColor(RuutineColor.accentForeground)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(RuutineColor.accent)
+                            .clipShape(Capsule())
+                        }
+                        .disabled(isSaving)
+                        .transition(.scale.combined(with: .opacity))
+                    }
+
                     Button {
                         print("Workout settings tapped")
                     } label: {
                         Image(systemName: "gearshape")
-                            .font(.system(size: 18))
+                            .font(.system(size: 17))
                             .foregroundColor(RuutineColor.muted)
-                            .frame(width: 44, height: 44)
+                            .frame(width: 36, height: 36)
                     }
                 }
             }
             .padding(.horizontal, 16)
+            .animation(.easeInOut(duration: 0.2), value: viewModel.hasConfirmedSet)
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, 6)
     }
 
     private var timerBar: some View {
@@ -112,7 +156,7 @@ struct ActiveWorkoutView: View {
                     .tracking(1)
 
                 Text(viewModel.elapsedFormatted)
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 17, weight: .bold))
                     .foregroundColor(RuutineColor.foreground)
                     .monospacedDigit()
             }
@@ -148,7 +192,7 @@ struct ActiveWorkoutView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 10)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(RuutineColor.border)
@@ -158,7 +202,7 @@ struct ActiveWorkoutView: View {
 
     private var exerciseList: some View {
         ScrollView {
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 ForEach(viewModel.exercises) { exercise in
                     exerciseCard(exercise)
                         .onDrop(
@@ -172,21 +216,21 @@ struct ActiveWorkoutView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .padding(.bottom, 8)
+            .padding(.vertical, 10)
+            .padding(.bottom, 6)
         }
     }
 
     private func exerciseCard(_ exercise: WorkoutExercise) -> some View {
         let isDragging = draggedExerciseID == exercise.id
 
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                HStack(spacing: 8) {
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                HStack(spacing: 6) {
                     dragHandleIcon
 
                     Text(exercise.name)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(RuutineColor.foreground)
                         .lineLimit(2)
                 }
@@ -220,19 +264,19 @@ struct ActiveWorkoutView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(12)
+        .padding(10)
         .background(RuutineColor.surface)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 10)
                 .stroke(
                     isDragging ? RuutineColor.accent.opacity(0.4) : RuutineColor.border,
                     lineWidth: 1
                 )
         )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .opacity(isDragging ? 0.35 : 1)
         .animation(.easeInOut(duration: 0.15), value: isDragging)
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .contentShape(RoundedRectangle(cornerRadius: 10))
         .onDrag {
             draggedExerciseID = exercise.id
             return NSItemProvider(object: exercise.id.uuidString as NSString)
@@ -257,15 +301,15 @@ struct ActiveWorkoutView: View {
         .font(.system(size: 10, weight: .semibold))
         .foregroundColor(RuutineColor.muted)
         .textCase(.uppercase)
-        .padding(.top, 4)
+        .padding(.top, 2)
     }
 
     private func exerciseDragPreview(_ exercise: WorkoutExercise) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
                 dragHandleIcon
                 Text(exercise.name)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundColor(RuutineColor.foreground)
                     .lineLimit(2)
                 Spacer()
@@ -285,22 +329,22 @@ struct ActiveWorkoutView: View {
                     .foregroundColor(RuutineColor.muted)
             }
         }
-        .padding(12)
+        .padding(10)
         .background(RuutineColor.surface)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 10)
                 .stroke(RuutineColor.accent.opacity(0.5), lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.35), radius: 10, y: 4)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
         .frame(maxWidth: UIScreen.main.bounds.width - 32)
     }
 
     private var dragHandleIcon: some View {
         Image(systemName: "line.3.horizontal")
-            .font(.system(size: 16, weight: .medium))
+            .font(.system(size: 15, weight: .medium))
             .foregroundColor(RuutineColor.muted)
-            .frame(width: 28, height: 28)
+            .frame(width: 24, height: 24)
     }
 
     private func setRow(
@@ -322,11 +366,11 @@ struct ActiveWorkoutView: View {
 
         return HStack(spacing: SetColumn.spacing) {
             Text("\(setNumber)")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(isConfirmed ? RuutineColor.muted : RuutineColor.foreground)
-                .frame(width: SetColumn.set, height: 26)
+                .frame(width: SetColumn.set, height: 22)
                 .background(RuutineColor.background)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: 5))
 
             Text(previousText)
                 .font(.system(size: 11))
@@ -362,7 +406,7 @@ struct ActiveWorkoutView: View {
             .frame(width: SetColumn.check)
             .opacity(canConfirm ? 1 : 0.4)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
     }
 
     private func confirmButton(isConfirmed: Bool) -> some View {
@@ -370,14 +414,14 @@ struct ActiveWorkoutView: View {
             if isConfirmed {
                 Circle()
                     .fill(RuutineColor.accent)
-                    .frame(width: 28, height: 28)
+                    .frame(width: 24, height: 24)
                 Image(systemName: "checkmark")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundColor(RuutineColor.accentForeground)
             } else {
                 Circle()
                     .stroke(RuutineColor.muted, lineWidth: 1.5)
-                    .frame(width: 28, height: 28)
+                    .frame(width: 24, height: 24)
             }
         }
     }
@@ -400,23 +444,23 @@ struct ActiveWorkoutView: View {
             }
 
             TextField("", text: text)
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundColor(isConfirmed ? RuutineColor.muted : RuutineColor.foreground)
                 .multilineTextAlignment(.center)
                 .keyboardType(keyboardType)
                 .disabled(isConfirmed)
                 .focused($focusedField, equals: focus)
         }
-        .frame(width: width, height: 34)
+        .frame(width: width, height: 30)
         .background(RuutineColor.background)
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 7)
                 .stroke(
                     isFocused ? RuutineColor.accent : RuutineColor.border,
                     lineWidth: isFocused ? 2 : 1
                 )
         )
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 7))
     }
 
     private func weightBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {
@@ -442,64 +486,21 @@ struct ActiveWorkoutView: View {
     }
 
     private var bottomBar: some View {
-        VStack(spacing: 10) {
-            GeometryReader { geometry in
-                let spacing: CGFloat = 12
-                let availableWidth = geometry.size.width
-                let splitWidth = max(availableWidth - spacing, 0)
-
-                HStack(spacing: spacing) {
-                    Button {
-                        showExercisePicker = true
-                    } label: {
-                        Text("Add Exercise")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(RuutineColor.accentForeground)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(RuutineColor.accent)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .frame(
-                        width: viewModel.hasConfirmedSet ? splitWidth * 0.6 : availableWidth,
-                        height: 48
-                    )
-
-                    if viewModel.hasConfirmedSet {
-                        Button {
-                            finishSession()
-                        } label: {
-                            Group {
-                                if isSaving {
-                                    ProgressView()
-                                        .tint(RuutineColor.foreground)
-                                } else {
-                                    Text("Finish Session")
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(RuutineColor.foreground)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(RuutineColor.surface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(RuutineColor.border, lineWidth: 1)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .disabled(isSaving)
-                        .frame(width: splitWidth * 0.4, height: 48)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                    }
-                }
+        VStack(spacing: 8) {
+            Button {
+                showExercisePicker = true
+            } label: {
+                Text("Add Exercise")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(RuutineColor.accentForeground)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(RuutineColor.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .frame(height: 48)
-            .animation(.easeInOut(duration: 0.2), value: viewModel.hasConfirmedSet)
 
             Button {
-                viewModel.cancelWorkout()
-                dismiss()
+                showCancelConfirmation = true
             } label: {
                 Text("Cancel Workout")
                     .font(.system(size: 13))
@@ -508,7 +509,7 @@ struct ActiveWorkoutView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
-        .padding(.top, 12)
+        .padding(.top, 10)
         .padding(.bottom, 8)
         .background(
             RuutineColor.background
@@ -530,6 +531,7 @@ struct ActiveWorkoutView: View {
             do {
                 let recap = try await WorkoutSessionService.saveCompletedWorkout(
                     userId: userId,
+                    profileId: userId,
                     sessionName: viewModel.workoutName,
                     durationSeconds: payload.durationSeconds,
                     exercises: payload.exercises
@@ -546,11 +548,11 @@ struct ActiveWorkoutView: View {
 }
 
 private enum SetColumn {
-    static let set: CGFloat = 28
-    static let kg: CGFloat = 56
-    static let reps: CGFloat = 48
-    static let check: CGFloat = 32
-    static let spacing: CGFloat = 6
+    static let set: CGFloat = 26
+    static let kg: CGFloat = 52
+    static let reps: CGFloat = 44
+    static let check: CGFloat = 28
+    static let spacing: CGFloat = 5
 }
 
 private enum WorkoutFieldFocus: Hashable {
