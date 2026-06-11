@@ -1,11 +1,19 @@
+import Auth
 import SwiftUI
 
 struct ActiveWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authVM: AuthViewModel
     @StateObject private var viewModel: ActiveWorkoutViewModel
+    @State private var recapData: WorkoutRecapData?
+    @State private var isSaving = false
+    @State private var saveError: String?
 
-    init(initialExercises: [WorkoutExercise]? = nil) {
+    var onWorkoutComplete: (() -> Void)?
+
+    init(initialExercises: [WorkoutExercise]? = nil, onWorkoutComplete: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: ActiveWorkoutViewModel(initialExercises: initialExercises))
+        self.onWorkoutComplete = onWorkoutComplete
     }
 
     var body: some View {
@@ -16,6 +24,23 @@ struct ActiveWorkoutView: View {
             bottomBar
         }
         .background(RuutineColor.background.ignoresSafeArea())
+        .fullScreenCover(item: $recapData) { data in
+            WorkoutRecapView(data: data) {
+                recapData = nil
+                onWorkoutComplete?()
+                dismiss()
+            }
+        }
+        .alert("Couldn't Save Workout", isPresented: Binding(
+            get: { saveError != nil },
+            set: { if !$0 { saveError = nil } }
+        )) {
+            Button("OK", role: .cancel) {
+                saveError = nil
+            }
+        } message: {
+            Text(saveError ?? "")
+        }
     }
 
     private var header: some View {
@@ -303,21 +328,28 @@ struct ActiveWorkoutView: View {
 
                 if viewModel.hasConfirmedSet {
                     Button {
-                        viewModel.finishWorkout()
-                        dismiss()
+                        finishSession()
                     } label: {
-                        Text("Finish Session")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(RuutineColor.foreground)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(RuutineColor.surface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(RuutineColor.border, lineWidth: 1)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        Group {
+                            if isSaving {
+                                ProgressView()
+                                    .tint(RuutineColor.foreground)
+                            } else {
+                                Text("Finish Session")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(RuutineColor.foreground)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(RuutineColor.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(RuutineColor.border, lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
+                    .disabled(isSaving)
                     .frame(maxWidth: .infinity)
                     .layoutPriority(4)
                 }
@@ -345,8 +377,32 @@ struct ActiveWorkoutView: View {
                 }
         )
     }
+
+    private func finishSession() {
+        guard let userId = authVM.session?.user.id,
+              let payload = viewModel.buildCompletionPayload()
+        else { return }
+
+        isSaving = true
+        Task {
+            do {
+                let recap = try await WorkoutSessionService.saveCompletedWorkout(
+                    userId: userId,
+                    sessionName: viewModel.workoutName,
+                    durationSeconds: payload.durationSeconds,
+                    exercises: payload.exercises
+                )
+                viewModel.finishWorkout()
+                recapData = recap
+            } catch {
+                saveError = error.localizedDescription
+            }
+            isSaving = false
+        }
+    }
 }
 
 #Preview {
     ActiveWorkoutView()
+        .environmentObject(AuthViewModel())
 }

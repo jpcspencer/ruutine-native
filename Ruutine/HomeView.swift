@@ -44,6 +44,9 @@ struct HomeView: View {
         .task(id: authVM.session?.user.id) {
             reload()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .workoutCompleted)) { _ in
+            reload()
+        }
     }
 
     private var atlasCard: some View {

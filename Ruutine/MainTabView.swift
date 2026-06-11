@@ -50,7 +50,13 @@ struct MainTabView: View {
         .fullScreenCover(isPresented: $showActiveWorkout, onDismiss: {
             pendingExercises = nil
         }) {
-            ActiveWorkoutView(initialExercises: pendingExercises)
+            ActiveWorkoutView(initialExercises: pendingExercises) {
+                showActiveWorkout = false
+                pendingExercises = nil
+                selectedTab = .home
+                homePath = NavigationPath()
+                NotificationCenter.default.post(name: .workoutCompleted, object: nil)
+            }
         }
     }
 

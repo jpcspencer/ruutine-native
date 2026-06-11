@@ -193,7 +193,46 @@ final class ActiveWorkoutViewModel: ObservableObject {
         clearPersistence()
     }
 
+    func buildCompletionPayload() -> (
+        exercises: [CompletedExercisePayload],
+        totalVolume: Double,
+        totalSets: Int,
+        durationSeconds: Int
+    )? {
+        var totalVolume = 0.0
+        var totalSets = 0
+        var completedExercises: [CompletedExercisePayload] = []
+
+        for exercise in exercises {
+            var confirmedSets: [CompletedSetPayload] = []
+
+            for (index, set) in exercise.sets.enumerated() where set.isConfirmed {
+                guard let weight = Double(set.weight.trimmingCharacters(in: .whitespaces)),
+                      let reps = Int(set.reps.trimmingCharacters(in: .whitespaces))
+                else { continue }
+
+                totalVolume += weight * Double(reps)
+                totalSets += 1
+                confirmedSets.append(
+                    CompletedSetPayload(setNumber: index + 1, weightKg: weight, reps: reps)
+                )
+            }
+
+            if !confirmedSets.isEmpty {
+                completedExercises.append(
+                    CompletedExercisePayload(name: exercise.name, sets: confirmedSets)
+                )
+            }
+        }
+
+        guard totalSets > 0 else { return nil }
+
+        return (completedExercises, totalVolume, totalSets, elapsedSeconds)
+    }
+
     func finishWorkout() {
+        elapsedTimer?.invalidate()
+        restTimer?.invalidate()
         clearPersistence()
     }
 

@@ -91,6 +91,9 @@ struct HistoryView: View {
         .task(id: authVM.session?.user.id) {
             reload()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .workoutCompleted)) { _ in
+            reload()
+        }
         .sheet(isPresented: $showCalendar) {
             WorkoutCalendarView(workoutDays: viewModel.workoutDays)
         }

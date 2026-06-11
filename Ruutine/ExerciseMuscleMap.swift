@@ -34,4 +34,14 @@ enum ExerciseMuscleMap {
         }
         return map.first { key.contains($0.key) || $0.key.contains(key) }?.value
     }
+
+    static func muscles(for exerciseNames: [String]) -> [String] {
+        var trained = Set<String>()
+        for name in exerciseNames {
+            if let muscle = muscle(for: name) {
+                trained.insert(muscle)
+            }
+        }
+        return trained.sorted()
+    }
 }
