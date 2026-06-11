@@ -3,6 +3,7 @@ import SwiftUI
 struct ExercisePickerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
+    @FocusState private var isSearchFocused: Bool
 
     let onSelect: (Exercise) -> Void
 
@@ -91,13 +92,17 @@ struct ExercisePickerView: View {
                 .font(.system(size: 15))
                 .foregroundColor(RuutineColor.foreground)
                 .autocorrectionDisabled()
+                .focused($isSearchFocused)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .background(RuutineColor.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(RuutineColor.border, lineWidth: 1)
+                .stroke(
+                    isSearchFocused ? RuutineColor.accent : RuutineColor.border,
+                    lineWidth: isSearchFocused ? 2 : 1
+                )
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }

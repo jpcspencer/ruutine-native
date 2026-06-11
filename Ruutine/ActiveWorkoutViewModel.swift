@@ -49,6 +49,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
     @Published var exercises: [WorkoutExercise]
     @Published var elapsedSeconds = 0
     @Published var restSecondsRemaining: Int?
+    @Published var previousSetsByExercise: [String: [PreviousSetRecord]] = [:]
 
     private var startedAt: Date
     private var elapsedTimer: Timer?
@@ -214,6 +215,37 @@ final class ActiveWorkoutViewModel: ObservableObject {
         persist()
     }
 
+    func loadPreviousSets(userId: UUID) async {
+        var updated = previousSetsByExercise
+        for exercise in exercises {
+            guard updated[exercise.name] == nil else { continue }
+            let records = await PreviousSetsService.fetchPreviousSets(
+                for: exercise.name,
+                userId: userId
+            )
+            if !records.isEmpty {
+                updated[exercise.name] = records
+            }
+        }
+        previousSetsByExercise = updated
+    }
+
+    func loadPreviousSets(for exerciseName: String, userId: UUID) async {
+        let records = await PreviousSetsService.fetchPreviousSets(
+            for: exerciseName,
+            userId: userId
+        )
+        guard !records.isEmpty else { return }
+        previousSetsByExercise[exerciseName] = records
+    }
+
+    func previousSet(for exerciseName: String, setIndex: Int) -> PreviousSetRecord? {
+        guard let sets = previousSetsByExercise[exerciseName],
+              setIndex < sets.count
+        else { return nil }
+        return sets[setIndex]
+    }
+
     func cancelWorkout() {
         clearPersistence()
     }
@@ -266,6 +298,10 @@ final class ActiveWorkoutViewModel: ObservableObject {
     }
 
     func placeholderWeight(for exercise: WorkoutExercise, setIndex: Int) -> String {
+        if let previous = previousSet(for: exercise.name, setIndex: setIndex),
+           !previous.weightPlaceholder.isEmpty {
+            return previous.weightPlaceholder
+        }
         if setIndex > 0 {
             let previous = exercise.sets[setIndex - 1]
             if previous.isConfirmed, !previous.weight.isEmpty {
@@ -276,6 +312,10 @@ final class ActiveWorkoutViewModel: ObservableObject {
     }
 
     func placeholderReps(for exercise: WorkoutExercise, setIndex: Int) -> String {
+        if let previous = previousSet(for: exercise.name, setIndex: setIndex),
+           !previous.repsPlaceholder.isEmpty {
+            return previous.repsPlaceholder
+        }
         if setIndex > 0 {
             let previous = exercise.sets[setIndex - 1]
             if previous.isConfirmed, !previous.reps.isEmpty {
