@@ -31,13 +31,19 @@ struct ActiveWorkoutView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            timerBar
-            exerciseList
-            bottomBar
+        ZStack {
+            VStack(spacing: 0) {
+                header
+                timerBar
+                exerciseList
+                bottomBar
+            }
+            .background(RuutineColor.background.ignoresSafeArea())
+
+            if showCancelConfirmation {
+                cancelWorkoutDialog
+            }
         }
-        .background(RuutineColor.background.ignoresSafeArea())
         .task(id: authVM.session?.user.id) {
             guard let userId = authVM.session?.user.id else { return }
             await viewModel.loadPreviousSets(userId: userId)
@@ -69,17 +75,6 @@ struct ActiveWorkoutView: View {
         } message: {
             Text(saveError ?? "")
         }
-        .confirmationDialog(
-            "Cancel this workout? Your progress won't be saved.",
-            isPresented: $showCancelConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Keep Going", role: .cancel) {}
-            Button("Cancel Workout", role: .destructive) {
-                viewModel.cancelWorkout()
-                dismiss()
-            }
-        }
     }
 
     private var header: some View {
@@ -102,35 +97,10 @@ struct ActiveWorkoutView: View {
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(RuutineColor.muted)
                 }
-                .padding(.horizontal, viewModel.hasConfirmedSet ? 120 : 88)
+                .padding(.horizontal, 48)
 
-                HStack(spacing: 6) {
+                HStack {
                     Spacer()
-
-                    if viewModel.hasConfirmedSet {
-                        Button {
-                            finishSession()
-                        } label: {
-                            Group {
-                                if isSaving {
-                                    ProgressView()
-                                        .tint(RuutineColor.accentForeground)
-                                        .scaleEffect(0.75)
-                                } else {
-                                    Text("Finish")
-                                        .font(.system(size: 13, weight: .semibold))
-                                }
-                            }
-                            .foregroundColor(RuutineColor.accentForeground)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(RuutineColor.accent)
-                            .clipShape(Capsule())
-                        }
-                        .disabled(isSaving)
-                        .transition(.scale.combined(with: .opacity))
-                    }
-
                     Button {
                         print("Workout settings tapped")
                     } label: {
@@ -142,7 +112,6 @@ struct ActiveWorkoutView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .animation(.easeInOut(duration: 0.2), value: viewModel.hasConfirmedSet)
         }
         .padding(.bottom, 6)
     }
@@ -163,33 +132,15 @@ struct ActiveWorkoutView: View {
 
             Spacer()
 
-            Button {
-                viewModel.toggleRestTimer()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 14))
-
-                    if viewModel.restSecondsRemaining != nil {
-                        Text(viewModel.restFormatted)
-                            .font(.system(size: 14, weight: .semibold))
-                            .monospacedDigit()
-                    } else {
-                        Text("Rest")
-                            .font(.system(size: 14, weight: .medium))
-                    }
+            HStack(spacing: 8) {
+                if viewModel.hasConfirmedSet {
+                    finishPillButton
+                        .transition(.scale.combined(with: .opacity))
                 }
-                .foregroundColor(viewModel.restSecondsRemaining != nil ? RuutineColor.accent : RuutineColor.muted)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(RuutineColor.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(RuutineColor.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                restButton
             }
-            .buttonStyle(.plain)
+            .animation(.easeInOut(duration: 0.2), value: viewModel.hasConfirmedSet)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -503,8 +454,16 @@ struct ActiveWorkoutView: View {
                 showCancelConfirmation = true
             } label: {
                 Text("Cancel Workout")
-                    .font(.system(size: 13))
-                    .foregroundColor(.red.opacity(0.85))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(RuutineColor.destructive)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(RuutineColor.destructive.opacity(0.18))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(RuutineColor.destructive.opacity(0.85), lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
         }
@@ -519,6 +478,131 @@ struct ActiveWorkoutView: View {
                         .frame(height: 1)
                 }
         )
+    }
+
+    private var finishPillButton: some View {
+        Button {
+            finishSession()
+        } label: {
+            Group {
+                if isSaving {
+                    ProgressView()
+                        .tint(RuutineColor.accentForeground)
+                        .scaleEffect(0.75)
+                } else {
+                    Text("Finish")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+            }
+            .foregroundColor(RuutineColor.accentForeground)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(RuutineColor.accent)
+            .clipShape(Capsule())
+        }
+        .disabled(isSaving)
+        .buttonStyle(.plain)
+    }
+
+    private var restButton: some View {
+        Button {
+            viewModel.toggleRestTimer()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "clock")
+                    .font(.system(size: 14))
+
+                if viewModel.restSecondsRemaining != nil {
+                    Text(viewModel.restFormatted)
+                        .font(.system(size: 14, weight: .semibold))
+                        .monospacedDigit()
+                } else {
+                    Text("Rest")
+                        .font(.system(size: 14, weight: .medium))
+                }
+            }
+            .foregroundColor(viewModel.restSecondsRemaining != nil ? RuutineColor.accent : RuutineColor.muted)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(RuutineColor.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(RuutineColor.border, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var cancelWorkoutDialog: some View {
+        ZStack {
+            Color.black.opacity(0.65)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    showCancelConfirmation = false
+                }
+
+            VStack {
+                Spacer()
+
+                VStack(spacing: 20) {
+                    Text("Cancel workout? Your progress won't be saved.")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(RuutineColor.foreground)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    HStack(spacing: 12) {
+                        Button {
+                            showCancelConfirmation = false
+                        } label: {
+                            Text("Keep Going")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(RuutineColor.foreground)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(RuutineColor.surface)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(RuutineColor.border, lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            showCancelConfirmation = false
+                            viewModel.cancelWorkout()
+                            dismiss()
+                        } label: {
+                            Text("Cancel Workout")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(RuutineColor.destructive)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(RuutineColor.destructive.opacity(0.2))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(RuutineColor.destructive.opacity(0.85), lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(20)
+                .background(RuutineColor.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+        .animation(.easeInOut(duration: 0.2), value: showCancelConfirmation)
     }
 
     private func finishSession() {
