@@ -78,8 +78,10 @@ final class HomeViewModel: ObservableObject {
                     let volume = (log.weightKg ?? 0) * Double(log.reps ?? 0)
                     volumeBySession[sessionId, default: 0] += volume
                     guard weekSessionIds.contains(sessionId) else { continue }
-                    if let name = log.exerciseName, let muscle = ExerciseMuscleMap.muscle(for: name) {
-                        muscles.insert(muscle)
+                    if let name = log.exerciseName {
+                        for muscle in ExerciseMuscleMap.muscles(forExerciseName: name) {
+                            muscles.insert(muscle)
+                        }
                     }
                 }
             }

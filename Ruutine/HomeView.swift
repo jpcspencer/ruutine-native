@@ -221,7 +221,7 @@ struct HomeView: View {
                 .font(.bebas(24))
                 .foregroundColor(RuutineColor.foreground)
 
-            BodyHeatmapView(trainedMuscles: viewModel.trainedMuscles)
+            MuscleMapView(trainedMuscles: viewModel.trainedMuscles)
         }
         .ruuCard()
     }

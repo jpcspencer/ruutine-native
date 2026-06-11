@@ -164,7 +164,7 @@ struct WorkoutRecapView: View {
                 .foregroundColor(RuutineColor.muted)
                 .tracking(1)
 
-            BodyHeatmapView(trainedMuscles: data.trainedMuscles)
+            MuscleMapView(trainedMuscles: data.trainedMuscles)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
