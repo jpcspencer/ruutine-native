@@ -18,11 +18,18 @@ struct WorkoutSet: Codable, Identifiable, Equatable {
 struct WorkoutExercise: Codable, Identifiable, Equatable {
     let id: UUID
     var name: String
+    var primaryMuscle: String?
     var sets: [WorkoutSet]
 
-    init(id: UUID = UUID(), name: String, sets: [WorkoutSet] = [WorkoutSet()]) {
+    init(
+        id: UUID = UUID(),
+        name: String,
+        primaryMuscle: String? = nil,
+        sets: [WorkoutSet] = [WorkoutSet()]
+    ) {
         self.id = id
         self.name = name
+        self.primaryMuscle = primaryMuscle
         self.sets = sets
     }
 }
@@ -184,8 +191,10 @@ final class ActiveWorkoutViewModel: ObservableObject {
             .reps ?? ""
     }
 
-    func addExercise() {
-        exercises.append(WorkoutExercise(name: "New Exercise"))
+    func addExercise(_ exercise: Exercise) {
+        exercises.append(
+            WorkoutExercise(name: exercise.name, primaryMuscle: exercise.primaryMuscle)
+        )
         persist()
     }
 
@@ -220,7 +229,11 @@ final class ActiveWorkoutViewModel: ObservableObject {
 
             if !confirmedSets.isEmpty {
                 completedExercises.append(
-                    CompletedExercisePayload(name: exercise.name, sets: confirmedSets)
+                    CompletedExercisePayload(
+                        name: exercise.name,
+                        primaryMuscle: exercise.primaryMuscle,
+                        sets: confirmedSets
+                    )
                 )
             }
         }

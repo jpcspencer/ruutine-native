@@ -124,7 +124,13 @@ enum WorkoutSessionService {
                 )
             }
             if !recapSets.isEmpty {
-                recapExercises.append(RecapExercise(name: exercise.name, sets: recapSets))
+                recapExercises.append(
+                    RecapExercise(
+                        name: exercise.name,
+                        primaryMuscle: exercise.primaryMuscle,
+                        sets: recapSets
+                    )
+                )
             }
         }
 

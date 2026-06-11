@@ -12,4 +12,8 @@ struct Exercise: Identifiable, Codable, Hashable {
         case primaryMuscle = "primary_muscle"
         case secondaryMuscles = "secondary_muscles"
     }
+
+    static func lookup(name: String) -> Exercise? {
+        all.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
+    }
 }

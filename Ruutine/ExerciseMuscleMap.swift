@@ -44,4 +44,31 @@ enum ExerciseMuscleMap {
         }
         return trained.sorted()
     }
+
+    static func muscles(for exercises: [RecapExercise]) -> [String] {
+        var trained = Set<String>()
+        for exercise in exercises {
+            if let primary = exercise.primaryMuscle,
+               let mapped = heatmapMuscle(from: primary) {
+                trained.insert(mapped)
+            } else if let muscle = muscle(for: exercise.name) {
+                trained.insert(muscle)
+            }
+        }
+        return trained.sorted()
+    }
+
+    static func heatmapMuscle(from primaryMuscle: String) -> String? {
+        switch primaryMuscle {
+        case "Chest", "Shoulders", "Core", "Quadriceps", "Biceps", "Back",
+             "Glutes", "Hamstrings", "Calves", "Triceps":
+            return primaryMuscle
+        case "Upper back", "Lats", "Traps":
+            return "Back"
+        case "Obliques":
+            return "Core"
+        default:
+            return nil
+        }
+    }
 }

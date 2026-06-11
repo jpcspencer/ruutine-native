@@ -196,7 +196,12 @@ struct NewWorkoutView: View {
     }
 
     private func startWorkout(exercises names: [String]) {
-        onStart(names.map { WorkoutExercise(name: $0) })
+        onStart(names.map { name in
+            WorkoutExercise(
+                name: name,
+                primaryMuscle: Exercise.lookup(name: name)?.primaryMuscle
+            )
+        })
     }
 }
 

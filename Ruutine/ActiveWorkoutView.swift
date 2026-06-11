@@ -8,6 +8,7 @@ struct ActiveWorkoutView: View {
     @State private var recapData: WorkoutRecapData?
     @State private var isSaving = false
     @State private var saveError: String?
+    @State private var showExercisePicker = false
 
     var onWorkoutComplete: (() -> Void)?
 
@@ -29,6 +30,11 @@ struct ActiveWorkoutView: View {
                 recapData = nil
                 onWorkoutComplete?()
                 dismiss()
+            }
+        }
+        .sheet(isPresented: $showExercisePicker) {
+            ExercisePickerView { exercise in
+                viewModel.addExercise(exercise)
             }
         }
         .alert("Couldn't Save Workout", isPresented: Binding(
@@ -313,7 +319,7 @@ struct ActiveWorkoutView: View {
         VStack(spacing: 10) {
             HStack(spacing: 12) {
                 Button {
-                    viewModel.addExercise()
+                    showExercisePicker = true
                 } label: {
                     Text("Add Exercise")
                         .font(.system(size: 15, weight: .semibold))

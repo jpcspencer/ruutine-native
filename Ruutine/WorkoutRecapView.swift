@@ -260,6 +260,7 @@ struct WorkoutRecapView: View {
             exercises: [
                 RecapExercise(
                     name: "Bench Press",
+                    primaryMuscle: "Chest",
                     sets: [
                         RecapSet(setNumber: 1, weightKg: 60, reps: 10),
                         RecapSet(setNumber: 2, weightKg: 65, reps: 8),

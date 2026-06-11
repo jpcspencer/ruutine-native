@@ -10,6 +10,7 @@ struct RecapSet: Identifiable, Equatable {
 struct RecapExercise: Identifiable, Equatable {
     let id = UUID()
     let name: String
+    let primaryMuscle: String?
     let sets: [RecapSet]
 }
 
@@ -23,7 +24,7 @@ struct WorkoutRecapData: Identifiable, Equatable {
     let profileId: UUID
 
     var trainedMuscles: [String] {
-        ExerciseMuscleMap.muscles(for: exercises.map(\.name))
+        ExerciseMuscleMap.muscles(for: exercises)
     }
 
     var durationFormatted: String {
@@ -39,6 +40,7 @@ struct WorkoutRecapData: Identifiable, Equatable {
 
 struct CompletedExercisePayload {
     let name: String
+    let primaryMuscle: String?
     let sets: [CompletedSetPayload]
 }
 
