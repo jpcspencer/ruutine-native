@@ -2,6 +2,7 @@ import Auth
 import SwiftUI
 
 struct HistoryView: View {
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authVM: AuthViewModel
     @StateObject private var viewModel = HistoryViewModel()
     @State private var showCalendar = false
@@ -58,6 +59,19 @@ struct HistoryView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Home")
+                            .font(.system(size: 15, weight: .medium))
+                    }
+                    .foregroundColor(RuutineColor.foreground)
+                }
+            }
             ToolbarItem(placement: .principal) {
                 Text("SESSION HISTORY")
                     .font(.bebas(28))

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab: Tab = .home
+    @State private var homePath = NavigationPath()
     @State private var showNewWorkout = false
     @State private var showActiveWorkout = false
     @State private var pendingExercises: [WorkoutExercise]?
@@ -18,7 +19,7 @@ struct MainTabView: View {
             Group {
                 switch selectedTab {
                 case .home:
-                    NavigationStack {
+                    NavigationStack(path: $homePath) {
                         HomeView()
                     }
                 case .program:
@@ -86,6 +87,9 @@ struct MainTabView: View {
 
     private func tabItem(tab: Tab, icon: String, label: String) -> some View {
         Button {
+            if tab == .home {
+                homePath = NavigationPath()
+            }
             selectedTab = tab
         } label: {
             VStack(spacing: 4) {

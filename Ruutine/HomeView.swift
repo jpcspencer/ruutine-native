@@ -126,12 +126,23 @@ struct HomeView: View {
     private var statsRow: some View {
         HStack(spacing: 8) {
             statCard(value: "\(viewModel.streak)", label: "Streak")
-            statCard(value: "\(viewModel.totalSessions)", label: "Sessions")
+            NavigationLink {
+                HistoryView()
+            } label: {
+                statCardContent(value: "\(viewModel.totalSessions)", label: "Sessions")
+                    .ruuCard(padding: 12)
+            }
+            .buttonStyle(.plain)
             statCard(value: "\(viewModel.volumeDisplay)", label: "Vol (\(viewModel.volumeLabel))")
         }
     }
 
     private func statCard(value: String, label: String) -> some View {
+        statCardContent(value: value, label: label)
+            .ruuCard(padding: 12)
+    }
+
+    private func statCardContent(value: String, label: String) -> some View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.system(size: 18, weight: .semibold))
@@ -144,7 +155,6 @@ struct HomeView: View {
                 .foregroundColor(RuutineColor.muted)
         }
         .frame(maxWidth: .infinity)
-        .ruuCard(padding: 12)
     }
 
     private var progressCard: some View {
