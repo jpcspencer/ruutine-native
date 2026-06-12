@@ -10,6 +10,8 @@ struct ProfileView: View {
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var avatarImage: Image?
     @State private var showDeleteConfirm = false
+    @State private var showDeleteError = false
+    @State private var isDeletingAccount = false
     @State private var isSigningOut = false
 
     var body: some View {
@@ -46,6 +48,21 @@ struct ProfileView: View {
                     .padding(.bottom, 24)
                 }
             }
+
+            if isDeletingAccount {
+                RuutineColor.scrim.ignoresSafeArea()
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .tint(RuutineColor.accent)
+                    Text("Deleting your account…")
+                        .font(.system(size: 15))
+                        .foregroundColor(RuutineColor.foreground)
+                }
+            }
+
+            if showDeleteConfirm {
+                deleteAccountDialog
+            }
         }
         .task(id: authVM.session?.user.id) {
             reload()
@@ -55,15 +72,10 @@ struct ProfileView: View {
                 await loadAvatar(from: item)
             }
         }
-        .alert("Delete Account?", isPresented: $showDeleteConfirm) {
-            Button("Delete", role: .destructive) {
-                Task {
-                    try? await viewModel.deleteAccountPlaceholder()
-                }
-            }
-            Button("Cancel", role: .cancel) {}
+        .alert("Couldn't Delete Account", isPresented: $showDeleteError) {
+            Button("OK", role: .cancel) {}
         } message: {
-            Text("This will permanently delete your account and all data. This action cannot be undone.")
+            Text("Couldn't delete your account. Please try again.")
         }
     }
 
@@ -333,6 +345,81 @@ struct ProfileView: View {
         }
     }
 
+    private var deleteAccountDialog: some View {
+        ZStack {
+            RuutineColor.scrim
+                .ignoresSafeArea()
+                .onTapGesture {
+                    showDeleteConfirm = false
+                }
+
+            VStack {
+                Spacer()
+
+                VStack(spacing: 20) {
+                    Text("DELETE ACCOUNT")
+                        .font(.bebas(24))
+                        .foregroundColor(RuutineColor.foreground)
+                        .tracking(1)
+
+                    Text("This permanently deletes your account and all your data. This can't be undone.")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(RuutineColor.foreground)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    HStack(spacing: 12) {
+                        Button {
+                            showDeleteConfirm = false
+                        } label: {
+                            Text("Cancel")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(RuutineColor.foreground)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(RuutineColor.surface)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(RuutineColor.border, lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            showDeleteConfirm = false
+                            Task { await deleteAccount() }
+                        } label: {
+                            Text("Delete")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(RuutineColor.destructive)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(RuutineColor.destructive.opacity(0.2))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(RuutineColor.destructive.opacity(0.85), lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(20)
+                .background(RuutineColor.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+        .animation(.easeInOut(duration: 0.2), value: showDeleteConfirm)
+    }
+
     private var dangerZone: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("DANGER ZONE")
@@ -382,6 +469,26 @@ struct ProfileView: View {
         .disabled(isSigningOut)
     }
 
+    private func deleteAccount() async {
+        guard let userId = authVM.session?.user.id,
+              let profileId = viewModel.profile?.id
+        else {
+            showDeleteError = true
+            return
+        }
+
+        isDeletingAccount = true
+        defer { isDeletingAccount = false }
+
+        do {
+            try await viewModel.deleteAccount(userId: userId, profileId: profileId)
+            UserDefaults.standard.removeObject(forKey: "activeWorkoutState")
+            try await authVM.signOut()
+        } catch {
+            showDeleteError = true
+        }
+    }
+
     private func reload() {
         guard let userId = authVM.session?.user.id else { return }
         Task {
@@ -402,4 +509,5 @@ struct ProfileView: View {
 #Preview {
     ProfileView()
         .environmentObject(AuthViewModel())
+        .environmentObject(ThemeManager.shared)
 }

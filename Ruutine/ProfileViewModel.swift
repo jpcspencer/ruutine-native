@@ -60,7 +60,7 @@ final class ProfileViewModel: ObservableObject {
         isImperial ? kg * 2.20462 : kg
     }
 
-    func deleteAccountPlaceholder() async throws {
-        try await SupabaseClient.shared.auth.signOut()
+    func deleteAccount(userId: UUID, profileId: UUID) async throws {
+        try await AccountService.deleteAccount(userId: userId, profileId: profileId)
     }
 }
