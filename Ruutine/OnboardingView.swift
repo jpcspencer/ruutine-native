@@ -194,6 +194,17 @@ struct OnboardingView: View {
             }
             .buttonStyle(.plain)
             .disabled(service.isTyping || service.isGenerating)
+
+            Button {
+                Task { await service.selectChip("I'll skip this") }
+            } label: {
+                Text("I'll skip this")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(RuutineColor.muted)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.plain)
+            .disabled(service.isTyping || service.isGenerating)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

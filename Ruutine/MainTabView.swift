@@ -56,12 +56,14 @@ struct MainTabView: View {
         .background(RuutineColor.background)
         .onChange(of: authVM.session?.user.id) { _, userId in
             if let userId {
-                atlasService.configure(profileId: userId)
+                atlasService.setProfileId(userId)
+                Task { await atlasService.loadHistory() }
             }
         }
         .onAppear {
             if let userId = authVM.session?.user.id {
-                atlasService.configure(profileId: userId)
+                atlasService.setProfileId(userId)
+                Task { await atlasService.loadHistory() }
             }
         }
         .sheet(isPresented: $showAtlasChat) {

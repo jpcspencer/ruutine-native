@@ -35,8 +35,9 @@ struct WorkoutRecapView: View {
             AtlasChatView(atlasService: atlasService)
                 .environmentObject(authVM)
         }
-        .onAppear {
-            atlasService.configure(profileId: data.profileId)
+        .task(id: data.profileId) {
+            atlasService.setProfileId(data.profileId)
+            await atlasService.loadHistory()
         }
     }
 

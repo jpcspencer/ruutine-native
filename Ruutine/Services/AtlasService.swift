@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import Supabase
 
 struct AtlasMessage: Identifiable, Equatable {
     let id: UUID
@@ -22,16 +23,70 @@ struct AtlasMessage: Identifiable, Equatable {
 final class AtlasService: ObservableObject {
     @Published private(set) var messages: [AtlasMessage] = []
     @Published var isTyping = false
+    @Published private(set) var isLoadingHistory = false
 
     private var profileId: UUID?
     private var didSeedGreeting = false
+    private var loadedProfileId: UUID?
 
     private let endpoint = URL(string: "https://ruutine.app/api/coach/chat")!
 
+    static let defaultGreeting = "Hey, I'm Atlas. How can I help with your training today?"
+
+    func setProfileId(_ profileId: UUID) {
+        if self.profileId != profileId {
+            self.profileId = profileId
+            loadedProfileId = nil
+            didSeedGreeting = false
+            messages = []
+        }
+    }
+
     func configure(profileId: UUID) {
-        guard self.profileId != profileId || !didSeedGreeting else { return }
-        self.profileId = profileId
-        seedGreetingIfNeeded()
+        setProfileId(profileId)
+    }
+
+    func loadHistory() async {
+        guard let profileId else { return }
+        if loadedProfileId == profileId, !messages.isEmpty || didSeedGreeting { return }
+
+        isLoadingHistory = true
+        defer { isLoadingHistory = false }
+
+        struct CoachMessageRow: Decodable {
+            let id: UUID
+            let role: String
+            let content: String
+        }
+
+        do {
+            let rows: [CoachMessageRow] = try await SupabaseClient.shared
+                .from("coach_messages")
+                .select("id, role, content")
+                .eq("user_profile_id", value: profileId)
+                .order("created_at", ascending: true)
+                .execute()
+                .value
+
+            print("[AtlasService] loaded \(rows.count) coach_messages for profile \(profileId)")
+
+            if rows.isEmpty {
+                messages = []
+                didSeedGreeting = false
+                seedGreetingIfNeeded()
+            } else {
+                messages = rows.compactMap { row in
+                    guard let role = AtlasMessage.Role(rawValue: row.role) else { return nil }
+                    return AtlasMessage(id: row.id, role: role, content: row.content)
+                }
+                didSeedGreeting = true
+            }
+
+            loadedProfileId = profileId
+        } catch {
+            print("[AtlasService] load coach_messages error: \(error)")
+            seedGreetingIfNeeded()
+        }
     }
 
     func seedGreetingIfNeeded() {
@@ -39,10 +94,7 @@ final class AtlasService: ObservableObject {
         didSeedGreeting = true
         if messages.isEmpty {
             messages = [
-                AtlasMessage(
-                    role: .assistant,
-                    content: "Hey, I'm Atlas. How can I help with your training today?"
-                ),
+                AtlasMessage(role: .assistant, content: Self.defaultGreeting),
             ]
         }
     }
@@ -53,6 +105,14 @@ final class AtlasService: ObservableObject {
         guard let profileId else {
             appendAssistantError("You're not signed in. Please log in and try again.")
             return
+        }
+
+        let hadOnlyGreeting = messages.count == 1
+            && messages.first?.role == .assistant
+            && messages.first?.content == Self.defaultGreeting
+
+        if hadOnlyGreeting {
+            messages = []
         }
 
         messages.append(AtlasMessage(role: .user, content: trimmed))
@@ -101,12 +161,58 @@ final class AtlasService: ObservableObject {
                let reply = json["text"] as? String,
                !reply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 messages.append(AtlasMessage(role: .assistant, content: reply))
+                // coach/chat route persists user + assistant rows to coach_messages.
+                await reloadHistoryAfterSend(profileId: profileId)
             } else {
                 appendAssistantError("Atlas returned an empty response.")
             }
         } catch {
             print("[AtlasService] network error: \(error)")
             appendAssistantError("Couldn't reach Atlas. Check your connection and try again.")
+        }
+    }
+
+    func clearChat() async throws {
+        guard let profileId else { return }
+
+        print("[AtlasService] deleting coach_messages for profile \(profileId)")
+        try await SupabaseClient.shared
+            .from("coach_messages")
+            .delete()
+            .eq("user_profile_id", value: profileId)
+            .execute()
+
+        messages = []
+        didSeedGreeting = false
+        loadedProfileId = profileId
+        seedGreetingIfNeeded()
+        print("[AtlasService] coach chat cleared")
+    }
+
+    private func reloadHistoryAfterSend(profileId: UUID) async {
+        struct CoachMessageRow: Decodable {
+            let id: UUID
+            let role: String
+            let content: String
+        }
+
+        do {
+            let rows: [CoachMessageRow] = try await SupabaseClient.shared
+                .from("coach_messages")
+                .select("id, role, content")
+                .eq("user_profile_id", value: profileId)
+                .order("created_at", ascending: true)
+                .execute()
+                .value
+
+            messages = rows.compactMap { row in
+                guard let role = AtlasMessage.Role(rawValue: row.role) else { return nil }
+                return AtlasMessage(id: row.id, role: role, content: row.content)
+            }
+            didSeedGreeting = true
+            loadedProfileId = profileId
+        } catch {
+            print("[AtlasService] reload after send error: \(error)")
         }
     }
 

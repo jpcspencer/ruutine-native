@@ -63,7 +63,7 @@ enum OnboardingMaps {
         case .measurementsAsk:
             return ["I'll skip this", "Enter manually", "Skip"]
         case .measurementsInput:
-            return ["I'll skip this", "Skip"]
+            return []
         default:
             return []
         }

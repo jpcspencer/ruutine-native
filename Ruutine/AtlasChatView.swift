@@ -7,42 +7,57 @@ struct AtlasChatView: View {
     @ObservedObject var atlasService: AtlasService
 
     @State private var inputText = ""
+    @State private var showClearConfirmation = false
+    @State private var clearErrorMessage: String?
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
+        ZStack {
+            VStack(spacing: 0) {
+                header
 
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        ForEach(atlasService.messages) { message in
-                            messageBubble(message)
-                                .id(message.id)
-                        }
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            if atlasService.isLoadingHistory, atlasService.messages.isEmpty {
+                                ProgressView()
+                                    .tint(RuutineColor.accent)
+                                    .padding(.top, 24)
+                            }
 
-                        if atlasService.isTyping {
-                            typingIndicator
-                                .id("typing")
+                            ForEach(atlasService.messages) { message in
+                                messageBubble(message)
+                                    .id(message.id)
+                            }
+
+                            if atlasService.isTyping {
+                                typingIndicator
+                                    .id("typing")
+                            }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .onChange(of: atlasService.messages.count) { _, _ in
+                        scrollToBottom(proxy: proxy)
+                    }
+                    .onChange(of: atlasService.isTyping) { _, _ in
+                        scrollToBottom(proxy: proxy)
+                    }
                 }
-                .onChange(of: atlasService.messages.count) { _, _ in
-                    scrollToBottom(proxy: proxy)
-                }
-                .onChange(of: atlasService.isTyping) { _, _ in
-                    scrollToBottom(proxy: proxy)
-                }
-            }
 
-            inputBar
+                inputBar
+            }
+            .background(RuutineColor.background.ignoresSafeArea())
+
+            if showClearConfirmation {
+                clearChatDialog
+            }
         }
-        .background(RuutineColor.background.ignoresSafeArea())
-        .onAppear {
+        .task(id: authVM.session?.user.id) {
             if let userId = authVM.session?.user.id {
-                atlasService.configure(profileId: userId)
+                atlasService.setProfileId(userId)
+                await atlasService.loadHistory()
             }
         }
     }
@@ -55,6 +70,18 @@ struct AtlasChatView: View {
                 .tracking(1)
 
             Spacer()
+
+            Button {
+                showClearConfirmation = true
+                clearErrorMessage = nil
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(RuutineColor.muted)
+                    .frame(width: 36, height: 36)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Clear chat")
 
             Button {
                 dismiss()
@@ -76,17 +103,101 @@ struct AtlasChatView: View {
         }
     }
 
+    private var clearChatDialog: some View {
+        ZStack {
+            Color.black.opacity(0.65)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    showClearConfirmation = false
+                }
+
+            VStack {
+                Spacer()
+
+                VStack(spacing: 20) {
+                    Text("Clear this conversation? This can't be undone.")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(RuutineColor.foreground)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if let clearErrorMessage {
+                        Text(clearErrorMessage)
+                            .font(.system(size: 14))
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    HStack(spacing: 12) {
+                        Button {
+                            showClearConfirmation = false
+                        } label: {
+                            Text("Keep")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(RuutineColor.foreground)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(RuutineColor.surface)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(RuutineColor.border, lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            Task {
+                                await confirmClearChat()
+                            }
+                        } label: {
+                            Text("Clear")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(RuutineColor.destructive)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(RuutineColor.destructive.opacity(0.2))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(RuutineColor.destructive.opacity(0.85), lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(20)
+                .background(RuutineColor.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+        .animation(.easeInOut(duration: 0.2), value: showClearConfirmation)
+    }
+
+    private func confirmClearChat() async {
+        clearErrorMessage = nil
+        do {
+            try await atlasService.clearChat()
+            showClearConfirmation = false
+        } catch {
+            clearErrorMessage = "Couldn't clear chat. \(error.localizedDescription)"
+        }
+    }
+
     private func messageBubble(_ message: AtlasMessage) -> some View {
         HStack {
             if message.role == .user { Spacer(minLength: 48) }
 
             Text(message.content)
                 .font(.system(size: 15))
-                .foregroundColor(
-                    message.role == .user
-                        ? RuutineColor.foreground
-                        : RuutineColor.foreground
-                )
+                .foregroundColor(RuutineColor.foreground)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(

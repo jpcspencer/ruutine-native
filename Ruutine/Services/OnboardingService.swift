@@ -27,24 +27,55 @@ final class OnboardingService: ObservableObject {
         messages.isEmpty && step == .greetingName
     }
 
+    /// Matches Capacitor `onboarding-chat.tsx` chip selection (lines 578–584).
     var effectiveChipStep: OnboardingStep {
-        let lastAssistant = messages.last(where: { $0.role == .assistant })?.content ?? ""
-        let fromMessage = chipStep(from: lastAssistant)
-        if fromMessage == .none {
-            let chipSteps: Set<OnboardingStep> = [
-                .greetingName, .goal, .experience, .daysPerWeek, .trainingDays,
-                .equipment, .injuries, .injuriesCustom, .gender, .measurementsAsk, .measurementsInput,
-            ]
-            return chipSteps.contains(step) ? step : .none
-        }
-        if (fromMessage == .injuries || fromMessage == .injuriesCustom) && conversationMentionsInjury() {
+        if step == .measurementsInput || step == .generating || step == .programPreview {
             return .none
         }
-        return fromMessage
+
+        let lastAssistantMessage = messages.last(where: { $0.role == .assistant })?.content ?? ""
+        var chipStep = chipStepFromMessage(lastAssistantMessage)
+
+        if chipStep == .none {
+            if messages.isEmpty && step == .greetingName {
+                chipStep = .greetingName
+            } else {
+                chipStep = step
+            }
+        }
+
+        if (chipStep == .injuries || chipStep == .injuriesCustom) && conversationMentionsInjury() {
+            chipStep = .none
+        }
+
+        let stepsWithChips: Set<OnboardingStep> = [
+            .greetingName, .goal, .experience, .daysPerWeek, .trainingDays,
+            .equipment, .injuries, .injuriesCustom, .gender, .measurementsAsk, .measurementsInput,
+        ]
+
+        var effective = chipStep == .none && stepsWithChips.contains(step) ? step : chipStep
+
+        if effective != .none, stepsWithChips.contains(step), stepIndex(step) > stepIndex(effective) {
+            effective = step
+        }
+
+        return effective == .none ? .none : effective
     }
 
     var quickReplyChips: [String] {
-        OnboardingMaps.chips(for: effectiveChipStep)
+        let effective = effectiveChipStep
+        guard effective != .none else { return [] }
+        return OnboardingMaps.chips(for: effective)
+    }
+
+    private static let stepOrder: [OnboardingStep] = [
+        .greetingName, .goal, .experience, .daysPerWeek, .trainingDays,
+        .equipment, .injuries, .injuriesCustom, .gender, .measurementsAsk, .measurementsInput,
+        .generating, .programPreview,
+    ]
+
+    private func stepIndex(_ value: OnboardingStep) -> Int {
+        Self.stepOrder.firstIndex(of: value) ?? -1
     }
 
     var hidesInputBar: Bool {
@@ -425,7 +456,7 @@ final class OnboardingService: ObservableObject {
         return next
     }
 
-    private func chipStep(from message: String) -> OnboardingStep {
+    private func chipStepFromMessage(_ message: String) -> OnboardingStep {
         let sentences = message
             .components(separatedBy: CharacterSet(charactersIn: ".!?"))
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
