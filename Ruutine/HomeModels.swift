@@ -37,6 +37,59 @@ struct ProgramContent: Codable {
     let name: String?
     let week: Int?
     let days: [ProgramDay]?
+    let overview: String?
+    let description: String?
+    let rationale: String?
+    let duration: String?
+    let length: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name, week, days, overview, description, rationale, duration, length
+    }
+
+    init(
+        name: String? = nil,
+        week: Int? = nil,
+        days: [ProgramDay]? = nil,
+        overview: String? = nil,
+        description: String? = nil,
+        rationale: String? = nil,
+        duration: String? = nil,
+        length: String? = nil
+    ) {
+        self.name = name
+        self.week = week
+        self.days = days
+        self.overview = overview
+        self.description = description
+        self.rationale = rationale
+        self.duration = duration
+        self.length = length
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        week = try container.decodeIfPresent(Int.self, forKey: .week)
+        days = try container.decodeIfPresent([ProgramDay].self, forKey: .days)
+        overview = try container.decodeIfPresent(String.self, forKey: .overview)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        rationale = try container.decodeIfPresent(String.self, forKey: .rationale)
+        duration = try container.decodeIfPresent(String.self, forKey: .duration)
+        length = try container.decodeIfPresent(String.self, forKey: .length)
+    }
+
+    var storedOverview: String? {
+        [overview, description, rationale]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
+    }
+
+    var storedDuration: String? {
+        [duration, length]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
+    }
 }
 
 struct ProgramDay: Codable {
@@ -54,6 +107,14 @@ struct ProgramExercise: Codable {
 
     enum CodingKeys: String, CodingKey {
         case name, sets, reps, rest, notes, cue
+    }
+
+    init(name: String, sets: Int? = nil, reps: String? = nil, rest: String? = nil, notes: String? = nil) {
+        self.name = name
+        self.sets = sets
+        self.reps = reps
+        self.rest = rest
+        self.notes = notes
     }
 
     init(from decoder: Decoder) throws {

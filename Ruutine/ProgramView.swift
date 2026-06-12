@@ -3,14 +3,22 @@ import SwiftUI
 
 struct ProgramView: View {
     @Binding var showAtlasChat: Bool
+    var onStartDayWorkout: ((String, [WorkoutExercise]) -> Void)?
+
     @EnvironmentObject private var authVM: AuthViewModel
     @StateObject private var viewModel = ProgramViewModel()
     @State private var expandedDays: Set<Int> = []
-    @State private var showEditAlert = false
-    @State private var showNewProgramAlert = false
+    @State private var showEditProgram = false
+    @State private var showReplaceProgramConfirm = false
+    @State private var isRegenerating = false
+    @State private var programError: String?
 
-    init(showAtlasChat: Binding<Bool> = .constant(false)) {
+    init(
+        showAtlasChat: Binding<Bool> = .constant(false),
+        onStartDayWorkout: ((String, [WorkoutExercise]) -> Void)? = nil
+    ) {
         _showAtlasChat = showAtlasChat
+        self.onStartDayWorkout = onStartDayWorkout
     }
 
     var body: some View {
@@ -25,66 +33,116 @@ struct ProgramView: View {
             } else {
                 programContent
             }
+
+            if isRegenerating {
+                Color.black.opacity(0.55).ignoresSafeArea()
+                VStack(spacing: 12) {
+                    ProgressView().tint(RuutineColor.accent)
+                    Text("Building your new program…")
+                        .font(.system(size: 15))
+                        .foregroundColor(RuutineColor.foreground)
+                }
+            }
+
+            if showReplaceProgramConfirm {
+                replaceProgramDialog
+            }
         }
         .task(id: authVM.session?.user.id) {
             guard let userId = authVM.session?.user.id else { return }
             await viewModel.load(userId: userId)
         }
-        .alert("Edit Program", isPresented: $showEditAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Program editing is coming soon.")
+        .sheet(isPresented: $showEditProgram) {
+            if let userId = authVM.session?.user.id {
+                ProgramEditView(
+                    profileId: userId,
+                    programName: viewModel.programName,
+                    week: viewModel.programWeek,
+                    days: viewModel.days
+                ) {
+                    Task {
+                        guard let userId = authVM.session?.user.id else { return }
+                        await viewModel.load(userId: userId)
+                    }
+                }
+            }
         }
-        .alert("New Program", isPresented: $showNewProgramAlert) {
+        .alert("Program Error", isPresented: Binding(
+            get: { programError != nil },
+            set: { if !$0 { programError = nil } }
+        )) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Atlas program generation is coming soon.")
+            Text(programError ?? "")
         }
     }
 
     private var programContent: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    header
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                header
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
 
-                    VStack(spacing: 12) {
-                        ForEach(viewModel.days, id: \.day) { day in
-                            dayCard(day)
-                        }
-                    }
+                overviewCard
                     .padding(.horizontal, 16)
 
-                    bottomActions
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        .padding(.bottom, 24)
-                        .atlasScrollBottomInset()
+                VStack(spacing: 12) {
+                    ForEach(viewModel.days, id: \.day) { day in
+                        dayCard(day)
+                    }
                 }
+                .padding(.horizontal, 16)
+
+                bottomActions
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
+                    .atlasScrollBottomInset()
             }
         }
     }
 
     private var header: some View {
         HStack(alignment: .center, spacing: 10) {
-            Text("MY PROGRAM")
+            Text(viewModel.programName.uppercased())
                 .font(.bebas(32))
                 .foregroundColor(RuutineColor.foreground)
                 .tracking(1)
-
-            Button {
-                showEditAlert = true
-            } label: {
-                Image(systemName: "pencil")
-                    .font(.system(size: 14))
-                    .foregroundColor(RuutineColor.muted)
-            }
-            .buttonStyle(.plain)
+                .lineLimit(2)
 
             Spacer()
         }
+    }
+
+    private var overviewCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("PROGRAM OVERVIEW")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(RuutineColor.muted)
+                .tracking(1)
+
+            Text(viewModel.overviewText)
+                .font(.system(size: 14))
+                .foregroundColor(RuutineColor.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(viewModel.overviewFacts, id: \.self) { fact in
+                    Text(fact)
+                        .font(.system(size: 13))
+                        .foregroundColor(RuutineColor.muted)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(RuutineColor.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(RuutineColor.border, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private func dayCard(_ day: ProgramDay) -> some View {
@@ -92,33 +150,48 @@ struct ProgramView: View {
         let exerciseCount = day.exercises?.count ?? 0
 
         return VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
-                    toggleExpanded(day.day)
-                }
-            } label: {
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(day.name)
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(RuutineColor.foreground)
-                            .multilineTextAlignment(.leading)
-
-                        Text("\(exerciseCount) exercise\(exerciseCount == 1 ? "" : "s")")
-                            .font(.system(size: 13))
-                            .foregroundColor(RuutineColor.muted)
+            HStack(alignment: .center, spacing: 12) {
+                Button {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                        toggleExpanded(day.day)
                     }
+                } label: {
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(day.name)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(RuutineColor.foreground)
+                                .multilineTextAlignment(.leading)
 
-                    Spacer(minLength: 0)
+                            Text("\(exerciseCount) exercise\(exerciseCount == 1 ? "" : "s")")
+                                .font(.system(size: 13))
+                                .foregroundColor(RuutineColor.muted)
+                        }
 
-                    Text(isExpanded ? "−" : "+")
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundColor(RuutineColor.muted)
-                        .frame(width: 36, height: 36)
+                        Spacer(minLength: 0)
+
+                        Text(isExpanded ? "−" : "+")
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundColor(RuutineColor.muted)
+                            .frame(width: 28, height: 28)
+                    }
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+
+                Button {
+                    startDay(day)
+                } label: {
+                    Text("Start")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(RuutineColor.accentForeground)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(RuutineColor.accent)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             if isExpanded {
                 VStack(alignment: .leading, spacing: 12) {
@@ -169,7 +242,7 @@ struct ProgramView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(RuutineColor.surface)
+        .background(RuutineColor.background)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(RuutineColor.border, lineWidth: 1)
@@ -180,47 +253,37 @@ struct ProgramView: View {
     private var bottomActions: some View {
         HStack(spacing: 12) {
             Button {
-                showEditAlert = true
+                showEditProgram = true
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 14))
-                    Text("Edit Program")
-                        .font(.system(size: 14, weight: .medium))
-                }
-                .foregroundColor(RuutineColor.foreground)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(RuutineColor.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(RuutineColor.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                actionLabel(icon: "pencil", title: "Edit Program")
             }
             .buttonStyle(.plain)
 
             Button {
-                showNewProgramAlert = true
+                showReplaceProgramConfirm = true
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 14))
-                    Text("New Program")
-                        .font(.system(size: 14, weight: .medium))
-                }
-                .foregroundColor(RuutineColor.foreground)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(RuutineColor.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(RuutineColor.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                actionLabel(icon: "sparkles", title: "New Program")
             }
             .buttonStyle(.plain)
         }
+    }
+
+    private func actionLabel(icon: String, title: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+        }
+        .foregroundColor(RuutineColor.foreground)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(RuutineColor.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(RuutineColor.border, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var emptyState: some View {
@@ -251,6 +314,85 @@ struct ProgramView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 16)
+    }
+
+    private var replaceProgramDialog: some View {
+        ZStack {
+            Color.black.opacity(0.65)
+                .ignoresSafeArea()
+                .onTapGesture { showReplaceProgramConfirm = false }
+
+            VStack {
+                Spacer()
+
+                VStack(spacing: 20) {
+                    Text("This will replace your current program. Continue?")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(RuutineColor.foreground)
+                        .multilineTextAlignment(.center)
+
+                    HStack(spacing: 12) {
+                        Button { showReplaceProgramConfirm = false } label: {
+                            Text("Cancel")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(RuutineColor.foreground)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(RuutineColor.surface)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(RuutineColor.border, lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            showReplaceProgramConfirm = false
+                            Task { await regenerateProgram() }
+                        } label: {
+                            Text("Continue")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(RuutineColor.accentForeground)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(RuutineColor.accent)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(20)
+                .background(RuutineColor.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+        .animation(.easeInOut(duration: 0.2), value: showReplaceProgramConfirm)
+    }
+
+    private func startDay(_ day: ProgramDay) {
+        let exercises = viewModel.exercisesForDay(day)
+        guard !exercises.isEmpty else { return }
+        onStartDayWorkout?(day.name, exercises)
+    }
+
+    private func regenerateProgram() async {
+        guard let userId = authVM.session?.user.id else { return }
+        isRegenerating = true
+        defer { isRegenerating = false }
+        do {
+            try await ProgramService.regenerateProgram(profileId: userId)
+            await viewModel.load(userId: userId)
+        } catch {
+            programError = error.localizedDescription
+        }
     }
 
     private func toggleExpanded(_ day: Int) {

@@ -41,18 +41,22 @@ struct ActiveWorkoutState: Codable {
     var exercises: [WorkoutExercise]
     var startedAt: Date
     var restSecondsRemaining: Int?
+    var workoutNote: String?
+    var workoutPhotoJPEGBase64: String?
 }
 
 @MainActor
 final class ActiveWorkoutViewModel: ObservableObject {
     @Published var workoutName: String
     @Published var exercises: [WorkoutExercise]
+    @Published var workoutNote: String = ""
+    @Published var workoutPhotoData: Data?
     @Published var elapsedSeconds = 0
     @Published var restSecondsRemaining: Int?
     @Published var previousSetsByExercise: [String: [PreviousSetRecord]] = [:]
     @Published private(set) var hasConfirmedSet = false
 
-    private var startedAt: Date
+    private(set) var startedAt: Date
     private var elapsedTimer: Timer?
     private var restTimer: Timer?
 
@@ -68,12 +72,18 @@ final class ActiveWorkoutViewModel: ObservableObject {
             exercises = initialExercises
             startedAt = Date()
             restSecondsRemaining = nil
+            workoutNote = ""
+            workoutPhotoData = nil
             persist()
         } else if let saved = Self.loadState() {
             workoutName = saved.workoutName
             exercises = saved.exercises
             startedAt = saved.startedAt
             restSecondsRemaining = saved.restSecondsRemaining
+            workoutNote = saved.workoutNote ?? ""
+            if let base64 = saved.workoutPhotoJPEGBase64 {
+                workoutPhotoData = Data(base64Encoded: base64)
+            }
         } else {
             workoutName = Self.defaultWorkoutName()
             exercises = []
@@ -249,6 +259,15 @@ final class ActiveWorkoutViewModel: ObservableObject {
         return sets[setIndex]
     }
 
+    func applySettings(name: String, note: String, startTime: Date, photoData: Data?) {
+        workoutName = name
+        workoutNote = note
+        startedAt = startTime
+        workoutPhotoData = photoData
+        updateElapsed()
+        persist()
+    }
+
     func cancelWorkout() {
         clearPersistence()
     }
@@ -387,7 +406,9 @@ final class ActiveWorkoutViewModel: ObservableObject {
             workoutName: workoutName,
             exercises: exercises,
             startedAt: startedAt,
-            restSecondsRemaining: restSecondsRemaining
+            restSecondsRemaining: restSecondsRemaining,
+            workoutNote: workoutNote.isEmpty ? nil : workoutNote,
+            workoutPhotoJPEGBase64: workoutPhotoData?.base64EncodedString()
         )
         if let data = try? JSONEncoder().encode(state) {
             UserDefaults.standard.set(data, forKey: Self.storageKey)

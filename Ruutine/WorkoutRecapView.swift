@@ -16,6 +16,9 @@ struct WorkoutRecapView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     summaryCard
+                    if data.note != nil || data.photoData != nil {
+                        notePhotoCard
+                    }
                     exercisesCard
                     atlasCard
                     musclesCard
@@ -72,6 +75,35 @@ struct WorkoutRecapView: View {
             .padding(.horizontal, 16)
         }
         .padding(.bottom, 8)
+    }
+
+    private var notePhotoCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let note = data.note, !note.isEmpty {
+                Text(note)
+                    .font(.system(size: 14))
+                    .foregroundColor(RuutineColor.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let photoData = data.photoData, let image = UIImage(data: photoData) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 180)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(RuutineColor.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(RuutineColor.border, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var summaryCard: some View {

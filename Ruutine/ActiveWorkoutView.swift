@@ -11,6 +11,7 @@ struct ActiveWorkoutView: View {
     @State private var saveError: String?
     @State private var showExercisePicker = false
     @State private var showCancelConfirmation = false
+    @State private var showWorkoutSettings = false
     @State private var draggedExerciseID: UUID?
     @FocusState private var focusedField: WorkoutFieldFocus?
 
@@ -53,6 +54,21 @@ struct ActiveWorkoutView: View {
                 recapData = nil
                 onWorkoutComplete?()
                 dismiss()
+            }
+        }
+        .sheet(isPresented: $showWorkoutSettings) {
+            WorkoutSettingsSheet(
+                workoutName: viewModel.workoutName,
+                note: viewModel.workoutNote,
+                startedAt: viewModel.startedAt,
+                photoData: viewModel.workoutPhotoData
+            ) { name, note, startTime, photoData in
+                viewModel.applySettings(
+                    name: name,
+                    note: note,
+                    startTime: startTime,
+                    photoData: photoData
+                )
             }
         }
         .sheet(isPresented: $showExercisePicker) {
@@ -102,7 +118,7 @@ struct ActiveWorkoutView: View {
                 HStack {
                     Spacer()
                     Button {
-                        print("Workout settings tapped")
+                        showWorkoutSettings = true
                     } label: {
                         Image(systemName: "gearshape")
                             .font(.system(size: 17))
@@ -618,7 +634,9 @@ struct ActiveWorkoutView: View {
                     profileId: userId,
                     sessionName: viewModel.workoutName,
                     durationSeconds: payload.durationSeconds,
-                    exercises: payload.exercises
+                    exercises: payload.exercises,
+                    notes: viewModel.workoutNote,
+                    photoData: viewModel.workoutPhotoData
                 )
                 viewModel.finishWorkout()
                 recapData = recap

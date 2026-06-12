@@ -13,12 +13,14 @@ enum WorkoutSessionService {
         let userProfileId: UUID
         let sessionName: String
         let exercisesCompleted: [SessionExerciseCompletedJSON]
+        let notes: String?
 
         enum CodingKeys: String, CodingKey {
             case userId = "user_id"
             case userProfileId = "user_profile_id"
             case sessionName = "session_name"
             case exercisesCompleted = "exercises_completed"
+            case notes
         }
     }
 
@@ -57,7 +59,9 @@ enum WorkoutSessionService {
         profileId: UUID,
         sessionName: String,
         durationSeconds: Int,
-        exercises: [CompletedExercisePayload]
+        exercises: [CompletedExercisePayload],
+        notes: String? = nil,
+        photoData: Data? = nil
     ) async throws -> WorkoutRecapData {
         let trimmedSessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
         let exercisesWithSets = exercises.filter { !$0.sets.isEmpty }
@@ -68,11 +72,13 @@ enum WorkoutSessionService {
         print("[WorkoutSessionService] completed_sessions columns: user_id, user_profile_id, session_name, exercises_completed")
         print("[WorkoutSessionService] exercise_logs columns: user_id, session_id, exercise_name, set_number, weight_kg, reps, completed")
 
+        let trimmedNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines)
         let sessionInsert = SessionInsert(
             userId: userId,
             userProfileId: profileId,
             sessionName: trimmedSessionName,
-            exercisesCompleted: exercisesJSON
+            exercisesCompleted: exercisesJSON,
+            notes: trimmedNotes?.isEmpty == false ? trimmedNotes : nil
         )
 
         let session: SessionIDRow
@@ -139,7 +145,9 @@ enum WorkoutSessionService {
             totalSets: totalSets,
             totalVolumeKg: totalVolume,
             exercises: recapExercises,
-            profileId: profileId
+            profileId: profileId,
+            note: trimmedNotes,
+            photoData: photoData
         )
     }
 

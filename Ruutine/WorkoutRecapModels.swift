@@ -22,6 +22,30 @@ struct WorkoutRecapData: Identifiable, Equatable {
     let totalVolumeKg: Double
     let exercises: [RecapExercise]
     let profileId: UUID
+    let note: String?
+    let photoData: Data?
+
+    init(
+        id: UUID,
+        sessionName: String,
+        durationSeconds: Int,
+        totalSets: Int,
+        totalVolumeKg: Double,
+        exercises: [RecapExercise],
+        profileId: UUID,
+        note: String? = nil,
+        photoData: Data? = nil
+    ) {
+        self.id = id
+        self.sessionName = sessionName
+        self.durationSeconds = durationSeconds
+        self.totalSets = totalSets
+        self.totalVolumeKg = totalVolumeKg
+        self.exercises = exercises
+        self.profileId = profileId
+        self.note = note
+        self.photoData = photoData
+    }
 
     var trainedMuscles: [String] {
         ExerciseMuscleMap.muscles(for: exercises)

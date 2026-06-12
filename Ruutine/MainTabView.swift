@@ -32,7 +32,11 @@ struct MainTabView: View {
                         HomeView(showAtlasChat: $showAtlasChat)
                     }
                 case .program:
-                    ProgramView(showAtlasChat: $showAtlasChat)
+                    ProgramView(showAtlasChat: $showAtlasChat) { workoutName, exercises in
+                        pendingExercises = exercises
+                        pendingWorkoutName = workoutName
+                        showActiveWorkout = true
+                    }
                 case .glossary:
                     GlossaryView()
                 case .profile:
