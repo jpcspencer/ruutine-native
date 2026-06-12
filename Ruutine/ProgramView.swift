@@ -10,6 +10,9 @@ struct ProgramView: View {
     @State private var expandedDays: Set<Int> = []
     @State private var showEditProgram = false
     @State private var showReplaceProgramConfirm = false
+    @State private var showRenameDialog = false
+    @State private var renameInput = ""
+    @State private var isSavingName = false
     @State private var isRegenerating = false
     @State private var programError: String?
 
@@ -46,6 +49,10 @@ struct ProgramView: View {
 
             if showReplaceProgramConfirm {
                 replaceProgramDialog
+            }
+
+            if showRenameDialog {
+                renameProgramDialog
             }
         }
         .task(id: authVM.session?.user.id) {
@@ -104,14 +111,27 @@ struct ProgramView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 10) {
-            Text(viewModel.programName.uppercased())
+        HStack(alignment: .center, spacing: 8) {
+            Text(viewModel.displayTitle)
                 .font(.bebas(32))
                 .foregroundColor(RuutineColor.foreground)
                 .tracking(1)
                 .lineLimit(2)
+                .minimumScaleFactor(0.75)
 
-            Spacer()
+            Button {
+                renameInput = viewModel.renameFieldValue
+                showRenameDialog = true
+            } label: {
+                Image(systemName: "pencil")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(RuutineColor.muted)
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Rename program")
+
+            Spacer(minLength: 0)
         }
     }
 
@@ -288,7 +308,7 @@ struct ProgramView: View {
 
     private var emptyState: some View {
         VStack(spacing: 16) {
-            Text("MY PROGRAM")
+            Text(viewModel.displayTitle)
                 .font(.bebas(32))
                 .foregroundColor(RuutineColor.foreground)
                 .tracking(1)
@@ -314,6 +334,97 @@ struct ProgramView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 16)
+    }
+
+    private var renameProgramDialog: some View {
+        ZStack {
+            Color.black.opacity(0.65)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    guard !isSavingName else { return }
+                    showRenameDialog = false
+                }
+
+            VStack {
+                Spacer()
+
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("RENAME PROGRAM")
+                        .font(.bebas(24))
+                        .foregroundColor(RuutineColor.foreground)
+                        .tracking(1)
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                    TextField("Program name", text: $renameInput)
+                        .font(.system(size: 15))
+                        .foregroundColor(RuutineColor.foreground)
+                        .padding(14)
+                        .background(RuutineColor.background)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(RuutineColor.border, lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .textInputAutocapitalization(.words)
+                        .disabled(isSavingName)
+
+                    Text("Leave blank to reset to your default title.")
+                        .font(.system(size: 12))
+                        .foregroundColor(RuutineColor.muted)
+
+                    HStack(spacing: 12) {
+                        Button {
+                            showRenameDialog = false
+                        } label: {
+                            Text("Cancel")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(RuutineColor.foreground)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(RuutineColor.background)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(RuutineColor.border, lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isSavingName)
+
+                        Button {
+                            Task { await saveProgramName() }
+                        } label: {
+                            Group {
+                                if isSavingName {
+                                    ProgressView().tint(RuutineColor.accentForeground)
+                                } else {
+                                    Text("Save")
+                                        .font(.system(size: 15, weight: .semibold))
+                                }
+                            }
+                            .foregroundColor(RuutineColor.accentForeground)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(RuutineColor.accent)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isSavingName)
+                    }
+                }
+                .padding(20)
+                .background(RuutineColor.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+        .animation(.easeInOut(duration: 0.2), value: showRenameDialog)
     }
 
     private var replaceProgramDialog: some View {
@@ -381,6 +492,18 @@ struct ProgramView: View {
         let exercises = viewModel.exercisesForDay(day)
         guard !exercises.isEmpty else { return }
         onStartDayWorkout?(day.name, exercises)
+    }
+
+    private func saveProgramName() async {
+        guard let userId = authVM.session?.user.id else { return }
+        isSavingName = true
+        defer { isSavingName = false }
+        do {
+            try await viewModel.saveProgramName(renameInput, userId: userId)
+            showRenameDialog = false
+        } catch {
+            programError = error.localizedDescription
+        }
     }
 
     private func regenerateProgram() async {

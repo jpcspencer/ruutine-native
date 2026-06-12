@@ -5,15 +5,34 @@ import Supabase
 @MainActor
 final class ProgramViewModel: ObservableObject {
     @Published var days: [ProgramDay] = []
-    @Published var programName = "My Program"
+    @Published var customProgramName: String?
     @Published var programWeek = 1
     @Published var programContent: ProgramContent?
+    @Published var profileFirstName = ""
     @Published var profileGoal = ""
     @Published var profileDaysPerWeek = 0
     @Published var overviewText = ""
     @Published var overviewFacts: [String] = []
     @Published var isLoading = true
     @Published var errorMessage: String?
+
+    /// Stored custom name for program edit saves; empty when using the default possessive title.
+    var programName: String { customProgramName ?? "" }
+
+    var displayTitle: String {
+        if let custom = customProgramName?.trimmingCharacters(in: .whitespacesAndNewlines), !custom.isEmpty {
+            return custom.uppercased()
+        }
+        return ProgramTitleFormatter.possessiveProgramTitle(firstName: profileFirstName)
+    }
+
+    /// Value to pre-fill in the rename field (preserves custom casing when set).
+    var renameFieldValue: String {
+        if let custom = customProgramName?.trimmingCharacters(in: .whitespacesAndNewlines), !custom.isEmpty {
+            return custom
+        }
+        return displayTitle
+    }
 
     func load(userId: UUID) async {
         isLoading = true
@@ -28,9 +47,15 @@ final class ProgramViewModel: ObservableObject {
                 .execute()
                 .value
 
+            profileFirstName = ProgramTitleFormatter.extractFirstName(from: profile.name)
             profileGoal = profile.goal
             profileDaysPerWeek = profile.daysPerWeek
+        } catch {
+            profileFirstName = ""
+            print("[ProgramViewModel] profile load error: \(error)")
+        }
 
+        do {
             let program: TrainingProgram = try await SupabaseClient.shared
                 .from("training_programs")
                 .select()
@@ -47,20 +72,64 @@ final class ProgramViewModel: ObservableObject {
             }
 
             programContent = program.programContent
-            programName = program.programContent.name ?? "My Program"
+            customProgramName = Self.resolvedCustomName(from: program.programContent.name)
             programWeek = program.programContent.week ?? 1
             days = program.programContent.days ?? []
             buildOverview()
         } catch {
             days = []
-            programName = "My Program"
+            customProgramName = nil
             programContent = nil
             overviewText = ""
             overviewFacts = []
-            print("[ProgramViewModel] load error: \(error)")
+            print("[ProgramViewModel] program load error: \(error)")
         }
 
         isLoading = false
+    }
+
+    func saveProgramName(_ input: String, userId: UUID) async throws {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmed.isEmpty {
+            try await clearCustomProgramName(userId: userId)
+            customProgramName = nil
+        } else {
+            try await ProgramService.updateProgramName(profileId: userId, name: trimmed)
+            customProgramName = trimmed
+        }
+
+        if let content = programContent {
+            programContent = ProgramContent(
+                name: trimmed.isEmpty ? nil : trimmed,
+                week: content.week,
+                days: content.days,
+                overview: content.overview,
+                description: content.description,
+                rationale: content.rationale,
+                duration: content.duration,
+                length: content.length
+            )
+        }
+    }
+
+    private func clearCustomProgramName(userId: UUID) async throws {
+        guard let content = programContent else { return }
+        guard let data = try? JSONEncoder().encode(content),
+              var dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
+            throw ProgramServiceError.server("Could not update program")
+        }
+        dict.removeValue(forKey: "name")
+        try await ProgramService.saveProgram(profileId: userId, programContent: dict)
+    }
+
+    private static func resolvedCustomName(from storedName: String?) -> String? {
+        guard let storedName = storedName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !storedName.isEmpty,
+              storedName.caseInsensitiveCompare("My Program") != .orderedSame
+        else { return nil }
+        return storedName
     }
 
     func exercisesForDay(_ day: ProgramDay) -> [WorkoutExercise] {
@@ -118,6 +187,21 @@ final class ProgramViewModel: ObservableObject {
             return "focused training split"
         }
         return "balanced training split"
+    }
+}
+
+enum ProgramTitleFormatter {
+    /// Names ending in "s" use apostrophe only (e.g. CHRIS'); others use 'S (e.g. COLONY'S).
+    static func possessiveProgramTitle(firstName: String) -> String {
+        let raw = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let base = raw.isEmpty ? "MY" : raw.uppercased()
+        let possessive = base.hasSuffix("S") ? "\(base)'" : "\(base)'S"
+        return "\(possessive) PROGRAM"
+    }
+
+    static func extractFirstName(from fullName: String) -> String {
+        let trimmed = fullName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.components(separatedBy: .whitespaces).first ?? trimmed
     }
 }
 
