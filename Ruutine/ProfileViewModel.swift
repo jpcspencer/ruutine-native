@@ -60,7 +60,7 @@ final class ProfileViewModel: ObservableObject {
         isImperial ? kg * 2.20462 : kg
     }
 
-    func deleteAccount(userId: UUID, profileId: UUID) async throws {
-        try await AccountService.deleteAccount(userId: userId, profileId: profileId)
+    func deleteAccount(accessToken: String) async throws {
+        try await AccountService.deleteAccount(accessToken: accessToken)
     }
 }

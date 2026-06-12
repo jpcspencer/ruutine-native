@@ -470,9 +470,7 @@ struct ProfileView: View {
     }
 
     private func deleteAccount() async {
-        guard let userId = authVM.session?.user.id,
-              let profileId = viewModel.profile?.id
-        else {
+        guard let accessToken = authVM.session?.accessToken else {
             showDeleteError = true
             return
         }
@@ -481,7 +479,7 @@ struct ProfileView: View {
         defer { isDeletingAccount = false }
 
         do {
-            try await viewModel.deleteAccount(userId: userId, profileId: profileId)
+            try await viewModel.deleteAccount(accessToken: accessToken)
             UserDefaults.standard.removeObject(forKey: "activeWorkoutState")
             try await authVM.signOut()
         } catch {
