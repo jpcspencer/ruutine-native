@@ -66,8 +66,8 @@ enum ProfileLabels {
         "bodyweight": "Bodyweight only",
     ]
 
-    static let themes = ["onyx", "chalk", "ember", "slate"]
-    static let themeNames = ["Onyx", "Chalk", "Ember", "Slate"]
+    static let themes = ["onyx", "chalk", "bloom", "slate"]
+    static let themeNames = ["Onyx", "Chalk", "Bloom", "Slate"]
 
     static let weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 

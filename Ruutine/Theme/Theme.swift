@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 enum AppTheme: String, CaseIterable, Identifiable {
-    case onyx, chalk, ember, slate
+    case onyx, chalk, bloom, slate
 
     var id: String { rawValue }
 
@@ -11,7 +11,7 @@ enum AppTheme: String, CaseIterable, Identifiable {
         switch self {
         case .onyx: return "Onyx"
         case .chalk: return "Chalk"
-        case .ember: return "Ember"
+        case .bloom: return "Bloom"
         case .slate: return "Slate"
         }
     }
@@ -50,17 +50,17 @@ extension AppTheme {
                 accentForeground: Color(hex: "1C1A15"),
                 destructive: Color(hex: "D33A2C")
             )
-        case .ember:
+        case .bloom:
             return ThemePalette(
-                background: Color(hex: "160C09"),
-                surface: Color(hex: "1F120D"),
-                surfaceElevated: Color(hex: "271710"),
-                border: Color(hex: "3A2018"),
-                foreground: Color(hex: "F8E9E1"),
-                muted: Color(hex: "B58A7B"),
-                accent: Color(hex: "FF5A33"),
-                accentForeground: Color(hex: "160C09"),
-                destructive: Color(hex: "E11D48")
+                background: Color(hex: "1A1020"),
+                surface: Color(hex: "241730"),
+                surfaceElevated: Color(hex: "2C1D3A"),
+                border: Color(hex: "3C2B4C"),
+                foreground: Color(hex: "F4E9F1"),
+                muted: Color(hex: "A98FB4"),
+                accent: Color(hex: "F58FB4"),
+                accentForeground: Color(hex: "1A1020"),
+                destructive: Color(hex: "F43F5E")
             )
         case .slate:
             return ThemePalette(
@@ -88,12 +88,17 @@ final class ThemeManager: ObservableObject {
     }
 
     private init() {
-        if let raw = UserDefaults.standard.string(forKey: storageKey),
-           let saved = AppTheme(rawValue: raw) {
-            current = saved
-        } else {
-            current = .onyx
+        if let raw = UserDefaults.standard.string(forKey: storageKey) {
+            let migrated = raw == "ember" ? AppTheme.bloom.rawValue : raw
+            if let saved = AppTheme(rawValue: migrated) {
+                current = saved
+                if migrated != raw {
+                    UserDefaults.standard.set(migrated, forKey: storageKey)
+                }
+                return
+            }
         }
+        current = .onyx
     }
 
     func setTheme(_ theme: AppTheme) { current = theme }
