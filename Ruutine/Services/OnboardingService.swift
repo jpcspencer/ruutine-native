@@ -27,13 +27,26 @@ final class OnboardingService: ObservableObject {
         messages.isEmpty && step == .greetingName
     }
 
-    /// Matches Capacitor `onboarding-chat.tsx` chip selection (lines 578–584).
+    var showsQuickReplyChips: Bool {
+        !hidesInputBar && !quickReplyChips.isEmpty
+    }
+
+    /// Matches Capacitor `onboarding-chat.tsx` chip selection (lines 578–584), with handoff + free-text guards.
     var effectiveChipStep: OnboardingStep {
-        if step == .measurementsInput || step == .generating || step == .programPreview {
+        if step == .generating || step == .programPreview || isGenerating {
+            return .none
+        }
+
+        // Height/weight are free-text — no quick-reply chips (input only).
+        if step == .measurementsAsk || step == .measurementsInput {
             return .none
         }
 
         let lastAssistantMessage = messages.last(where: { $0.role == .assistant })?.content ?? ""
+        if Self.isGeneratingHandoffMessage(lastAssistantMessage) {
+            return .none
+        }
+
         var chipStep = chipStepFromMessage(lastAssistantMessage)
 
         if chipStep == .none {
@@ -50,7 +63,7 @@ final class OnboardingService: ObservableObject {
 
         let stepsWithChips: Set<OnboardingStep> = [
             .greetingName, .goal, .experience, .daysPerWeek, .trainingDays,
-            .equipment, .injuries, .injuriesCustom, .gender, .measurementsAsk, .measurementsInput,
+            .equipment, .injuries, .injuriesCustom, .gender,
         ]
 
         var effective = chipStep == .none && stepsWithChips.contains(step) ? step : chipStep
@@ -59,7 +72,8 @@ final class OnboardingService: ObservableObject {
             effective = step
         }
 
-        return effective == .none ? .none : effective
+        guard stepsWithChips.contains(effective) else { return .none }
+        return effective
     }
 
     var quickReplyChips: [String] {
@@ -79,7 +93,28 @@ final class OnboardingService: ObservableObject {
     }
 
     var hidesInputBar: Bool {
-        step == .generating || step == .programPreview
+        if step == .generating || step == .programPreview || isGenerating {
+            return true
+        }
+        let lastAssistant = messages.last(where: { $0.role == .assistant })?.content ?? ""
+        return Self.isGeneratingHandoffMessage(lastAssistant)
+    }
+
+    /// Atlas transition copy — not a question; Capacitor hides input and auto-starts generate.
+    static func isGeneratingHandoffMessage(_ text: String) -> Bool {
+        let lower = text.lowercased()
+        return lower.contains("everything i need")
+            || lower.contains("generating your personalized program")
+            || lower.contains("generating your program")
+            || (lower.contains("got everything") && lower.contains("program"))
+    }
+
+    func handleGeneratingHandoffIfNeeded() async {
+        guard !isGenerating, step != .generating, step != .programPreview else { return }
+        guard let last = messages.last(where: { $0.role == .assistant })?.content else { return }
+        guard Self.isGeneratingHandoffMessage(last) else { return }
+        step = .generating
+        await triggerGenerate()
     }
 
     func configure(session: Session) {
@@ -191,6 +226,7 @@ final class OnboardingService: ObservableObject {
         if let height, let weight {
             userText = "\(Int(height))cm, \(weight)kg"
         } else {
+            collected.measurementsSkip = true
             userText = "Skip"
         }
         appendUser(userText)
@@ -258,8 +294,15 @@ final class OnboardingService: ObservableObject {
             let extracted = json["extracted"] as? [String: Any] ?? [:]
             collected = mergeExtracted(collected, extracted: extracted)
 
-            if !cleanAtlasMessage(text).isEmpty {
-                appendAssistant(cleanAtlasMessage(text))
+            let cleaned = cleanAtlasMessage(text)
+            if !cleaned.isEmpty {
+                appendAssistant(cleaned)
+            }
+
+            if Self.isGeneratingHandoffMessage(cleaned) {
+                step = .generating
+                await triggerGenerate()
+                return
             }
 
             let next = nextStep(from: collected)

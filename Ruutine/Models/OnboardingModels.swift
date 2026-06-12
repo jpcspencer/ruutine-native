@@ -60,9 +60,7 @@ enum OnboardingMaps {
             return ["None", "Lower Back", "Knee", "Shoulder", "Hip", "Type my own...", "Skip"]
         case .gender:
             return ["Male", "Female", "Prefer not to say", "Skip"]
-        case .measurementsAsk:
-            return ["I'll skip this", "Enter manually", "Skip"]
-        case .measurementsInput:
+        case .measurementsAsk, .measurementsInput:
             return []
         default:
             return []
@@ -79,7 +77,7 @@ enum OnboardingMaps {
         case .equipment: return "e.g. Full gym, dumbbells..."
         case .injuries, .injuriesCustom: return "Add any details..."
         case .gender: return "e.g. Male, female..."
-        case .measurementsAsk: return "Type or tap a chip..."
+        case .measurementsAsk: return "e.g. 180cm, 80kg — or type skip"
         case .measurementsInput: return "Tap send when ready..."
         default: return "Message Atlas…"
         }

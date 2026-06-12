@@ -29,7 +29,7 @@ struct OnboardingView: View {
                                 .id(message.id)
                         }
 
-                        if !service.quickReplyChips.isEmpty, !service.hidesInputBar {
+                        if service.showsQuickReplyChips {
                             chipRow
                                 .id("chips")
                         }
@@ -77,6 +77,9 @@ struct OnboardingView: View {
             if let session = authVM.session {
                 service.configure(session: session)
             }
+        }
+        .task(id: service.messages.last?.id) {
+            await service.handleGeneratingHandoffIfNeeded()
         }
         .task(id: service.step) {
             if service.step == .programPreview, service.program != nil, !service.isSaving {
@@ -330,7 +333,7 @@ struct OnboardingView: View {
     private var inputBar: some View {
         HStack(spacing: 10) {
             TextField(
-                OnboardingMaps.placeholder(for: service.effectiveChipStep == .none ? service.step : service.effectiveChipStep),
+                inputPlaceholder,
                 text: $inputText,
                 axis: .vertical
             )
@@ -370,6 +373,16 @@ struct OnboardingView: View {
                         .frame(height: 1)
                 }
         )
+    }
+
+    private var inputPlaceholder: String {
+        if service.step == .measurementsAsk || service.step == .measurementsInput {
+            return OnboardingMaps.placeholder(for: service.step)
+        }
+        if service.effectiveChipStep != .none {
+            return OnboardingMaps.placeholder(for: service.effectiveChipStep)
+        }
+        return OnboardingMaps.placeholder(for: service.step)
     }
 
     private var canSend: Bool {
