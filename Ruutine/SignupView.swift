@@ -3,6 +3,7 @@ import SwiftUI
 struct SignupView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authVM: AuthViewModel
+    @EnvironmentObject private var themeManager: ThemeManager
 
     let onConfirmationRequired: (String) -> Void
 
@@ -58,7 +59,7 @@ struct SignupView: View {
                     if let emailError {
                         Text(emailError)
                             .font(.system(size: 14))
-                            .foregroundColor(.red)
+                            .foregroundColor(RuutineColor.destructive)
                     }
 
                     passwordField
@@ -67,7 +68,7 @@ struct SignupView: View {
                     if let passwordMatchError {
                         Text(passwordMatchError)
                             .font(.system(size: 14))
-                            .foregroundColor(.red)
+                            .foregroundColor(RuutineColor.destructive)
                     }
 
                     Button {
@@ -94,7 +95,7 @@ struct SignupView: View {
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.system(size: 14))
-                            .foregroundColor(.red)
+                            .foregroundColor(RuutineColor.destructive)
                     }
 
                     Button {
@@ -257,7 +258,7 @@ struct SignupView: View {
     }
 
     private func fieldBorderColor(isInvalid: Bool, isFocused: Bool) -> Color {
-        if isInvalid { return .red }
+        if isInvalid { return RuutineColor.destructive }
         if isFocused { return RuutineColor.accent }
         return RuutineColor.border
     }
@@ -292,6 +293,8 @@ struct SignupView: View {
 }
 
 struct EmailConfirmationView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+
     let email: String
     let onBackToSignIn: () -> Void
 

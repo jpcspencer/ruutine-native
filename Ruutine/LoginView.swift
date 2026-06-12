@@ -3,6 +3,7 @@ import SwiftUI
 struct LoginView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authVM: AuthViewModel
+    @EnvironmentObject private var themeManager: ThemeManager
     @State private var email = ""
     @State private var password = ""
     @State private var showPassword = false
@@ -78,7 +79,7 @@ struct LoginView: View {
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.system(size: 14))
-                            .foregroundColor(.red)
+                            .foregroundColor(RuutineColor.destructive)
                     }
                 }
                 .padding(.horizontal, 24)

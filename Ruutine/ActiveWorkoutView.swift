@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct ActiveWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authVM: AuthViewModel
+    @EnvironmentObject private var themeManager: ThemeManager
     @StateObject private var viewModel: ActiveWorkoutViewModel
     @State private var recapData: WorkoutRecapData?
     @State private var isSaving = false
@@ -303,7 +304,7 @@ struct ActiveWorkoutView: View {
                 .stroke(RuutineColor.accent.opacity(0.5), lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
+        .shadow(color: RuutineColor.foreground.opacity(0.25), radius: 8, y: 3)
         .frame(maxWidth: UIScreen.main.bounds.width - 32)
     }
 
@@ -552,7 +553,7 @@ struct ActiveWorkoutView: View {
 
     private var cancelWorkoutDialog: some View {
         ZStack {
-            Color.black.opacity(0.65)
+            RuutineColor.scrim
                 .ignoresSafeArea()
                 .onTapGesture {
                     showCancelConfirmation = false

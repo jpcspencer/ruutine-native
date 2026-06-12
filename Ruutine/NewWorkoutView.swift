@@ -8,6 +8,7 @@ struct WorkoutTemplate: Identifiable {
 }
 
 struct NewWorkoutView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
 

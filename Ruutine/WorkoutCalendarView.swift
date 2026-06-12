@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct WorkoutCalendarView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     let workoutDays: Set<DateComponents>
     @State private var displayedMonth: Date

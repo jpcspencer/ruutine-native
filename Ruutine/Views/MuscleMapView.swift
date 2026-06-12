@@ -5,6 +5,8 @@ import WebKit
 // SVG assets: ~/ruutine/public/svgs/man-front.svg, man-back.svg
 
 struct MuscleMapView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+
     let trainedMuscles: [String]
     var compact: Bool = true
     var gender: MuscleMapGender = .male
@@ -17,14 +19,20 @@ struct MuscleMapView: View {
         HStack(spacing: compact ? 8 : 16) {
             MuscleMapSVGCanvas(
                 svgResourceName: gender.frontResourceName,
-                trainedIds: trainedSvgIds
+                trainedIds: trainedSvgIds,
+                accentHex: RuutineColor.accent.ruuHexString,
+                baseHex: RuutineColor.muted.ruuHexString,
+                themeKey: themeManager.current.rawValue
             )
             .frame(maxWidth: .infinity)
             .frame(height: compact ? 160 : 256)
 
             MuscleMapSVGCanvas(
                 svgResourceName: gender.backResourceName,
-                trainedIds: trainedSvgIds
+                trainedIds: trainedSvgIds,
+                accentHex: RuutineColor.accent.ruuHexString,
+                baseHex: RuutineColor.muted.ruuHexString,
+                themeKey: themeManager.current.rawValue
             )
             .frame(maxWidth: .infinity)
             .frame(height: compact ? 160 : 256)
@@ -53,9 +61,6 @@ enum MuscleMapGender {
 }
 
 enum MuscleMapDefinitions {
-    static let accentHex = "#f5c518"
-    static let defaultHex = "#8892a4"
-
     /// Capacitor `MUSCLE_TO_SVG_IDS`
     static let muscleToSvgIds: [String: [String]] = [
         "Chest": ["chest"],
@@ -87,6 +92,9 @@ enum MuscleMapDefinitions {
 private struct MuscleMapSVGCanvas: UIViewRepresentable {
     let svgResourceName: String
     let trainedIds: Set<String>
+    let accentHex: String
+    let baseHex: String
+    let themeKey: String
 
     func makeUIView(context: Context) -> WKWebView {
         let webView = WKWebView(frame: .zero)
@@ -101,11 +109,17 @@ private struct MuscleMapSVGCanvas: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {
         let trainedKey = trainedIds.sorted().joined(separator: "|")
         if context.coordinator.svgResourceName == svgResourceName,
-           context.coordinator.trainedKey == trainedKey {
+           context.coordinator.trainedKey == trainedKey,
+           context.coordinator.themeKey == themeKey,
+           context.coordinator.accentHex == accentHex,
+           context.coordinator.baseHex == baseHex {
             return
         }
         context.coordinator.svgResourceName = svgResourceName
         context.coordinator.trainedKey = trainedKey
+        context.coordinator.themeKey = themeKey
+        context.coordinator.accentHex = accentHex
+        context.coordinator.baseHex = baseHex
 
         guard let url = Bundle.main.url(
             forResource: svgResourceName,
@@ -135,8 +149,8 @@ private struct MuscleMapSVGCanvas: UIViewRepresentable {
         \(svgText)
         <script>
         (function() {
-          const accent = '\(MuscleMapDefinitions.accentHex)';
-          const fallback = '\(MuscleMapDefinitions.defaultHex)';
+          const accent = '#\(accentHex)';
+          const fallback = '#\(baseHex)';
           const allIds = \(allIdsJSON);
           const trainedIds = new Set(\(trainedJSON));
           const svg = document.querySelector('svg');
@@ -168,6 +182,9 @@ private struct MuscleMapSVGCanvas: UIViewRepresentable {
     final class Coordinator {
         var svgResourceName: String?
         var trainedKey: String?
+        var themeKey: String?
+        var accentHex: String?
+        var baseHex: String?
     }
 
     private func jsonString(from values: [String]) -> String {
@@ -183,4 +200,5 @@ private struct MuscleMapSVGCanvas: UIViewRepresentable {
     MuscleMapView(trainedMuscles: ["Chest", "Back", "Quadriceps"])
         .padding()
         .background(RuutineColor.background)
+        .environmentObject(ThemeManager.shared)
 }

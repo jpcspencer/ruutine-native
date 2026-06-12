@@ -5,6 +5,7 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject private var authVM: AuthViewModel
+    @EnvironmentObject private var themeManager: ThemeManager
     @StateObject private var viewModel = ProfileViewModel()
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var avatarImage: Image?
@@ -309,14 +310,12 @@ struct ProfileView: View {
                 .tracking(1.2)
 
             HStack(spacing: 8) {
-                ForEach(Array(zip(ProfileLabels.themes, ProfileLabels.themeNames)), id: \.0) { theme, name in
-                    let isActive = viewModel.selectedTheme == theme
+                ForEach(AppTheme.allCases) { theme in
+                    let isActive = themeManager.current == theme
                     Button {
-                        if theme == "onyx" {
-                            viewModel.selectedTheme = theme
-                        }
+                        themeManager.setTheme(theme)
                     } label: {
-                        Text(name)
+                        Text(theme.displayName)
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(isActive ? RuutineColor.accent : RuutineColor.foreground)
                             .padding(.horizontal, 14)

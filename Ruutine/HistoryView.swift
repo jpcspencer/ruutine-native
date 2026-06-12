@@ -2,6 +2,7 @@ import Auth
 import SwiftUI
 
 struct HistoryView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authVM: AuthViewModel
     @StateObject private var viewModel = HistoryViewModel()

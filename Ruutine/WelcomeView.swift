@@ -7,6 +7,7 @@ private enum AuthRoute: Hashable {
 }
 
 struct WelcomeView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @State private var path = NavigationPath()
 
     var body: some View {

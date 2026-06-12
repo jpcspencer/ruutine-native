@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject private var authVM: AuthViewModel
+    @EnvironmentObject private var themeManager: ThemeManager
     @StateObject private var atlasService = AtlasService()
     @State private var selectedTab: Tab = .home
     @State private var homePath = NavigationPath()
@@ -105,7 +106,7 @@ struct MainTabView: View {
 
     private func placeholderScreen(_ title: String) -> some View {
         Text(title)
-            .foregroundColor(.white)
+            .foregroundColor(RuutineColor.foreground)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(RuutineColor.background)
     }
@@ -164,7 +165,7 @@ struct MainTabView: View {
                 .frame(width: 52, height: 52)
                 .background(RuutineColor.accent)
                 .clipShape(Circle())
-                .shadow(color: .black.opacity(0.3), radius: 6, y: 2)
+                .shadow(color: RuutineColor.foreground.opacity(0.25), radius: 6, y: 2)
         }
         .offset(y: -6)
         .frame(maxWidth: .infinity)
@@ -175,4 +176,5 @@ struct MainTabView: View {
 #Preview {
     MainTabView()
         .environmentObject(AuthViewModel())
+        .environmentObject(ThemeManager.shared)
 }

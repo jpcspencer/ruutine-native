@@ -2,6 +2,7 @@ import Auth
 import SwiftUI
 
 struct OnboardingView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var authVM: AuthViewModel
     @StateObject private var service = OnboardingService()
 

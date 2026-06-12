@@ -3,6 +3,7 @@ import Charts
 import SwiftUI
 
 struct HomeView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @Binding var showAtlasChat: Bool
     @EnvironmentObject private var authVM: AuthViewModel
     @StateObject private var viewModel = HomeViewModel()

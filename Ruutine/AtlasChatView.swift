@@ -2,6 +2,7 @@ import Auth
 import SwiftUI
 
 struct AtlasChatView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authVM: AuthViewModel
     @ObservedObject var atlasService: AtlasService
@@ -105,7 +106,7 @@ struct AtlasChatView: View {
 
     private var clearChatDialog: some View {
         ZStack {
-            Color.black.opacity(0.65)
+            RuutineColor.scrim
                 .ignoresSafeArea()
                 .onTapGesture {
                     showClearConfirmation = false
@@ -124,7 +125,7 @@ struct AtlasChatView: View {
                     if let clearErrorMessage {
                         Text(clearErrorMessage)
                             .font(.system(size: 14))
-                            .foregroundColor(.red)
+                            .foregroundColor(RuutineColor.destructive)
                             .multilineTextAlignment(.center)
                     }
 

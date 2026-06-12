@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SessionDetailView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
 
     let session: HistorySessionItem

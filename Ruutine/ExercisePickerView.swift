@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ExercisePickerView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     @FocusState private var isSearchFocused: Bool

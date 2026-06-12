@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct WorkoutRecapView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+
     let data: WorkoutRecapData
     let onDone: () -> Void
 

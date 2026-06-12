@@ -2,6 +2,8 @@ import Auth
 import SwiftUI
 
 struct ProgramView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+
     @Binding var showAtlasChat: Bool
     var onStartDayWorkout: ((String, [WorkoutExercise]) -> Void)?
 
@@ -38,7 +40,7 @@ struct ProgramView: View {
             }
 
             if isRegenerating {
-                Color.black.opacity(0.55).ignoresSafeArea()
+                RuutineColor.scrim.ignoresSafeArea()
                 VStack(spacing: 12) {
                     ProgressView().tint(RuutineColor.accent)
                     Text("Building your new program…")
@@ -338,7 +340,7 @@ struct ProgramView: View {
 
     private var renameProgramDialog: some View {
         ZStack {
-            Color.black.opacity(0.65)
+            RuutineColor.scrim
                 .ignoresSafeArea()
                 .onTapGesture {
                     guard !isSavingName else { return }
@@ -429,7 +431,7 @@ struct ProgramView: View {
 
     private var replaceProgramDialog: some View {
         ZStack {
-            Color.black.opacity(0.65)
+            RuutineColor.scrim
                 .ignoresSafeArea()
                 .onTapGesture { showReplaceProgramConfirm = false }
 

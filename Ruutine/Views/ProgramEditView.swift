@@ -61,6 +61,7 @@ struct EditableProgramDay: Identifiable, Equatable {
 
 struct ProgramEditView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
 
     let profileId: UUID
     let programName: String

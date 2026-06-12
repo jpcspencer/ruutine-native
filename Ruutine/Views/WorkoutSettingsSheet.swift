@@ -3,6 +3,7 @@ import SwiftUI
 
 struct WorkoutSettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
 
     @State private var name: String
     @State private var note: String

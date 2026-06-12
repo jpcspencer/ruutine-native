@@ -15,6 +15,8 @@ enum AtlasFloatingButtonLayout {
 }
 
 struct AtlasFloatingButton: View {
+  @EnvironmentObject private var themeManager: ThemeManager
+
   let action: () -> Void
 
   var body: some View {
@@ -25,7 +27,7 @@ struct AtlasFloatingButton: View {
         .frame(width: AtlasFloatingButtonLayout.size, height: AtlasFloatingButtonLayout.size)
         .background(RuutineColor.accent)
         .clipShape(Circle())
-        .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
+        .shadow(color: RuutineColor.foreground.opacity(0.25), radius: 8, y: 3)
     }
     .buttonStyle(.plain)
     .accessibilityLabel("Chat with Atlas")

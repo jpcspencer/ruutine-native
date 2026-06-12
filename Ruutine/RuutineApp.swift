@@ -10,6 +10,7 @@ import SwiftUI
 @main
 struct RuutineApp: App {
     @StateObject private var authVM = AuthViewModel()
+    @ObservedObject private var themeManager = ThemeManager.shared
 
     var body: some Scene {
         WindowGroup {
@@ -43,6 +44,8 @@ struct RuutineApp: App {
                 }
             }
             .environmentObject(authVM)
+            .environmentObject(themeManager)
+            .preferredColorScheme(themeManager.current.isLight ? .light : .dark)
         }
     }
 }
