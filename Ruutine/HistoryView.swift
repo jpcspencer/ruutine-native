@@ -164,9 +164,21 @@ struct HistoryView: View {
                     .buttonStyle(.plain)
                 }
 
-                Text(HistoryFormatting.volumeLabel(session.volume, isImperial: viewModel.isImperial))
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(RuutineColor.foreground)
+                HStack(spacing: 16) {
+                    Text(HistoryFormatting.volumeLabel(session.volume, isImperial: viewModel.isImperial))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(RuutineColor.foreground)
+
+                    if let durationSeconds = session.durationSeconds {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 12))
+                            Text(HistoryFormatting.workoutLengthLabel(durationSeconds))
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(RuutineColor.foreground)
+                    }
+                }
 
                 Rectangle()
                     .fill(RuutineColor.border)

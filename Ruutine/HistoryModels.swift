@@ -155,6 +155,39 @@ enum HistoryFormatting {
     }
 }
 
+enum SessionTiming {
+    static func sessionTimestamp(day: Date, startTime: Date, calendar: Calendar = .current) -> Date {
+        combine(day: day, timeFrom: startTime, calendar: calendar)
+    }
+
+    static func durationSeconds(
+        day: Date,
+        startTime: Date,
+        endTime: Date,
+        calendar: Calendar = .current
+    ) -> Int? {
+        let start = combine(day: day, timeFrom: startTime, calendar: calendar)
+        var end = combine(day: day, timeFrom: endTime, calendar: calendar)
+        if end <= start {
+            end = calendar.date(byAdding: .day, value: 1, to: end) ?? end.addingTimeInterval(86_400)
+        }
+        let seconds = Int(end.timeIntervalSince(start))
+        return seconds > 0 ? seconds : nil
+    }
+
+    private static func combine(day: Date, timeFrom: Date, calendar: Calendar) -> Date {
+        let dayComponents = calendar.dateComponents([.year, .month, .day], from: day)
+        let timeComponents = calendar.dateComponents([.hour, .minute], from: timeFrom)
+        var merged = DateComponents()
+        merged.year = dayComponents.year
+        merged.month = dayComponents.month
+        merged.day = dayComponents.day
+        merged.hour = timeComponents.hour
+        merged.minute = timeComponents.minute
+        return calendar.date(from: merged) ?? day
+    }
+}
+
 enum ExerciseLogDeduper {
     static func dedupe<T: Identifiable>(_ rows: [T], key: (T) -> String, prefer: (T, T) -> T) -> [T] {
         var best: [String: T] = [:]

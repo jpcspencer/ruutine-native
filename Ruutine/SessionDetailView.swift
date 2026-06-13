@@ -168,35 +168,37 @@ struct SessionDetailView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    sectionHeader("DATE & TIME")
-                    DatePicker(
-                        "Session date",
-                        selection: $editState.sessionDate,
-                        displayedComponents: [.date, .hourAndMinute]
+                    sectionHeader("DATE")
+                    datePickerField(
+                        selection: $editState.sessionDay,
+                        components: [.date]
                     )
-                    .datePickerStyle(.compact)
-                    .labelsHidden()
-                    .tint(RuutineColor.accent)
-                    .padding(14)
-                    .background(RuutineColor.surface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(RuutineColor.border, lineWidth: 1)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    sectionHeader("LENGTH")
-                    HStack(spacing: 12) {
-                        durationField(
-                            label: "Hours",
-                            text: $editState.durationHoursInput
-                        )
-                        durationField(
-                            label: "Minutes",
-                            text: $editState.durationMinutesInput
-                        )
+                    sectionHeader("START TIME")
+                    datePickerField(
+                        selection: $editState.startTime,
+                        components: [.hourAndMinute]
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    sectionHeader("END TIME")
+                    datePickerField(
+                        selection: $editState.endTime,
+                        components: [.hourAndMinute]
+                    )
+                }
+
+                if let durationSeconds = editState.derivedDurationSeconds {
+                    HStack(spacing: 6) {
+                        Text("Duration")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(RuutineColor.muted)
+                        Text(HistoryFormatting.workoutLengthLabel(durationSeconds))
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(RuutineColor.foreground)
                     }
                 }
             }
@@ -226,26 +228,18 @@ struct SessionDetailView: View {
         return "\(time) · \(HistoryFormatting.workoutLengthLabel(durationSeconds))"
     }
 
-    private func durationField(label: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label.uppercased())
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(RuutineColor.muted)
-                .tracking(1)
-
-            TextField("0", text: text)
-                .keyboardType(.numberPad)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(RuutineColor.foreground)
-                .padding(14)
-                .background(RuutineColor.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(RuutineColor.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .frame(maxWidth: .infinity)
+    private func datePickerField(selection: Binding<Date>, components: DatePickerComponents) -> some View {
+        DatePicker("", selection: selection, displayedComponents: components)
+            .datePickerStyle(.compact)
+            .labelsHidden()
+            .tint(RuutineColor.accent)
+            .padding(14)
+            .background(RuutineColor.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(RuutineColor.border, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var addExerciseButton: some View {

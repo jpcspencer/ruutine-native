@@ -12,9 +12,9 @@ struct SessionEditDraft {
 
 struct SessionEditState {
     var sessionName: String
-    var sessionDate: Date
-    var durationHoursInput: String
-    var durationMinutesInput: String
+    var sessionDay: Date
+    var startTime: Date
+    var endTime: Date
     var exercises: [WorkoutExercise]
     let originalLogIds: Set<UUID>
     let isImperial: Bool
@@ -27,35 +27,36 @@ struct SessionEditState {
         isImperial: Bool
     ) {
         self.sessionName = sessionName
-        self.sessionDate = sessionDate
         self.isImperial = isImperial
-        if let durationSeconds {
-            durationHoursInput = String(durationSeconds / 3600)
-            durationMinutesInput = String((durationSeconds % 3600) / 60)
+        let calendar = Calendar.current
+        sessionDay = calendar.startOfDay(for: sessionDate)
+        startTime = sessionDate
+        if let durationSeconds, durationSeconds > 0 {
+            endTime = sessionDate.addingTimeInterval(TimeInterval(durationSeconds))
         } else {
-            durationHoursInput = "0"
-            durationMinutesInput = "0"
+            endTime = sessionDate
         }
         let converted = SessionLogConverter.exercises(from: logs, isImperial: isImperial)
         exercises = converted.exercises
         originalLogIds = converted.originalLogIds
     }
 
+    var derivedDurationSeconds: Int? {
+        SessionTiming.durationSeconds(day: sessionDay, startTime: startTime, endTime: endTime)
+    }
+
+    var derivedSessionDate: Date {
+        SessionTiming.sessionTimestamp(day: sessionDay, startTime: startTime)
+    }
+
     var draft: SessionEditDraft {
         SessionEditDraft(
             sessionName: sessionName,
-            sessionDate: sessionDate,
-            durationSeconds: resolvedDurationSeconds(),
+            sessionDate: derivedSessionDate,
+            durationSeconds: derivedDurationSeconds,
             exercises: exercises,
             originalLogIds: originalLogIds
         )
-    }
-
-    func resolvedDurationSeconds() -> Int? {
-        let hours = Int(durationHoursInput.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
-        let minutes = Int(durationMinutesInput.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
-        let total = max(0, hours) * 3600 + max(0, minutes) * 60
-        return total > 0 ? total : nil
     }
 
     mutating func addExercise(_ exercise: Exercise) {
