@@ -51,14 +51,7 @@ struct ProfileView: View {
             }
 
             if isDeletingAccount {
-                RuutineColor.scrim.ignoresSafeArea()
-                VStack(spacing: 12) {
-                    ProgressView()
-                        .tint(RuutineColor.accent)
-                    Text("Deleting your account…")
-                        .font(.system(size: 15))
-                        .foregroundColor(RuutineColor.foreground)
-                }
+                deletingAccountOverlay
             }
 
             if showDeleteConfirm {
@@ -346,6 +339,32 @@ struct ProfileView: View {
         }
     }
 
+    private var deletingAccountOverlay: some View {
+        ZStack {
+            RuutineColor.scrim
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                ProgressView()
+                    .tint(RuutineColor.accent)
+
+                Text("Deleting your account…")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(RuutineColor.foreground)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity)
+            .background(RuutineColor.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(RuutineColor.border, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal, 32)
+        }
+    }
+
     private var deleteAccountDialog: some View {
         ZStack {
             RuutineColor.scrim
@@ -354,70 +373,65 @@ struct ProfileView: View {
                     showDeleteConfirm = false
                 }
 
-            VStack {
-                Spacer()
+            VStack(spacing: 20) {
+                Text("DELETE ACCOUNT")
+                    .font(.bebas(24))
+                    .foregroundColor(RuutineColor.foreground)
+                    .tracking(1)
 
-                VStack(spacing: 20) {
-                    Text("DELETE ACCOUNT")
-                        .font(.bebas(24))
-                        .foregroundColor(RuutineColor.foreground)
-                        .tracking(1)
+                Text("This permanently deletes your account and all your data. This can't be undone.")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(RuutineColor.foreground)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    Text("This permanently deletes your account and all your data. This can't be undone.")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(RuutineColor.foreground)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    HStack(spacing: 12) {
-                        Button {
-                            showDeleteConfirm = false
-                        } label: {
-                            Text("Cancel")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(RuutineColor.foreground)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(RuutineColor.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(RuutineColor.border, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .buttonStyle(.plain)
-
-                        Button {
-                            showDeleteConfirm = false
-                            Task { await deleteAccount() }
-                        } label: {
-                            Text("Delete")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(RuutineColor.destructive)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(RuutineColor.destructive.opacity(0.2))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(RuutineColor.destructive.opacity(0.85), lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .buttonStyle(.plain)
+                HStack(spacing: 12) {
+                    Button {
+                        showDeleteConfirm = false
+                    } label: {
+                        Text("Cancel")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(RuutineColor.foreground)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(RuutineColor.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(RuutineColor.border, lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showDeleteConfirm = false
+                        Task { await deleteAccount() }
+                    } label: {
+                        Text("Delete")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(RuutineColor.destructive)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(RuutineColor.destructive.opacity(0.2))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(RuutineColor.destructive.opacity(0.85), lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .padding(20)
-                .background(RuutineColor.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(RuutineColor.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal, 24)
-                .padding(.bottom, 32)
             }
+            .padding(20)
+            .background(RuutineColor.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(RuutineColor.border, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal, 24)
         }
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
+        .transition(.opacity)
         .animation(.easeInOut(duration: 0.2), value: showDeleteConfirm)
     }
 
