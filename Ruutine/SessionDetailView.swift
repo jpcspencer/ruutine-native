@@ -175,20 +175,24 @@ struct SessionDetailView: View {
                     )
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    sectionHeader("START TIME")
-                    datePickerField(
-                        selection: $editState.startTime,
-                        components: [.hourAndMinute]
-                    )
-                }
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        sectionHeader("START TIME")
+                        datePickerField(
+                            selection: $editState.startTime,
+                            components: [.hourAndMinute]
+                        )
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    sectionHeader("END TIME")
-                    datePickerField(
-                        selection: $editState.endTime,
-                        components: [.hourAndMinute]
-                    )
+                    VStack(alignment: .leading, spacing: 8) {
+                        sectionHeader("END TIME")
+                        datePickerField(
+                            selection: $editState.endTime,
+                            components: [.hourAndMinute]
+                        )
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 if let durationSeconds = editState.derivedDurationSeconds {
