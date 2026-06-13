@@ -320,6 +320,10 @@ struct ProfileView: View {
                     let isActive = themeManager.current == theme
                     Button {
                         themeManager.setTheme(theme)
+                        guard let userId = authVM.session?.user.id else { return }
+                        Task {
+                            try? await viewModel.saveTheme(theme, userId: userId)
+                        }
                     } label: {
                         Text(theme.displayName)
                             .font(.system(size: 13, weight: .medium))

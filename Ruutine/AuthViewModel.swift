@@ -104,6 +104,7 @@ final class AuthViewModel: ObservableObject {
     func signOut() async throws {
         try await SupabaseClient.shared.auth.signOut()
         hasCompletedOnboarding = nil
+        ThemeManager.shared.resetToDefault()
     }
 
     func markOnboardingComplete() {
@@ -113,25 +114,28 @@ final class AuthViewModel: ObservableObject {
     func refreshOnboardingStatus() async {
         guard let userId = session?.user.id else {
             hasCompletedOnboarding = nil
+            ThemeManager.shared.resetToDefault()
             return
         }
 
         isCheckingOnboarding = true
         defer { isCheckingOnboarding = false }
 
-        struct ProfileIDRow: Decodable {
+        struct ProfileThemeRow: Decodable {
             let id: UUID
+            let theme: String?
         }
 
         do {
-            let _: ProfileIDRow = try await SupabaseClient.shared
+            let profile: ProfileThemeRow = try await SupabaseClient.shared
                 .from("user_profiles")
-                .select("id")
+                .select("id, theme")
                 .eq("id", value: userId)
                 .single()
                 .execute()
                 .value
             hasCompletedOnboarding = true
+            ThemeManager.shared.applyFromProfile(profile.theme)
         } catch {
             hasCompletedOnboarding = false
         }

@@ -49,6 +49,7 @@ final class ProfileViewModel: ObservableObject {
             self.weightLogs = logs
             self.isImperial = profile.unitPreference == "imperial"
             self.selectedTheme = profile.theme ?? "onyx"
+            ThemeManager.shared.applyFromProfile(profile.theme)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -58,6 +59,15 @@ final class ProfileViewModel: ObservableObject {
 
     func displayWeight(_ kg: Double) -> Double {
         isImperial ? kg * 2.20462 : kg
+    }
+
+    func saveTheme(_ theme: AppTheme, userId: UUID) async throws {
+        try await SupabaseClient.shared
+            .from("user_profiles")
+            .update(["theme": theme.rawValue])
+            .eq("id", value: userId)
+            .execute()
+        selectedTheme = theme.rawValue
     }
 
     func deleteAccount(accessToken: String) async throws {

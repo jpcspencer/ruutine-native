@@ -17,6 +17,14 @@ enum AppTheme: String, CaseIterable, Identifiable {
     }
 
     var isLight: Bool { self == .chalk }
+
+    static func from(storedValue raw: String?) -> AppTheme {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return .onyx
+        }
+        let migrated = raw == "ember" ? AppTheme.bloom.rawValue : raw
+        return AppTheme(rawValue: migrated) ?? .onyx
+    }
 }
 
 struct ThemePalette {
@@ -102,6 +110,14 @@ final class ThemeManager: ObservableObject {
     }
 
     func setTheme(_ theme: AppTheme) { current = theme }
+
+    func applyFromProfile(_ themeValue: String?) {
+        setTheme(AppTheme.from(storedValue: themeValue))
+    }
+
+    func resetToDefault() {
+        setTheme(.onyx)
+    }
 }
 
 enum RuutineColor {
