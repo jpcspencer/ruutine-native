@@ -102,8 +102,13 @@ struct HistoryView: View {
             SessionDetailView(
                 session: session,
                 logs: viewModel.logs(for: session.id),
-                isImperial: viewModel.isImperial
+                isImperial: viewModel.isImperial,
+                onSave: { updates in
+                    try await viewModel.saveExerciseLogs(updates, sessionId: session.id)
+                    reload()
+                }
             )
+            .environmentObject(themeManager)
         }
         .alert("Delete Session?", isPresented: Binding(
             get: { sessionToDelete != nil },

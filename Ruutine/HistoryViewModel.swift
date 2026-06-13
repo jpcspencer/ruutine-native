@@ -138,4 +138,42 @@ final class HistoryViewModel: ObservableObject {
             .eq("id", value: sessionId)
             .execute()
     }
+
+    func saveExerciseLogs(
+        _ updates: [ExerciseLogUpdate],
+        sessionId: UUID
+    ) async throws {
+        for update in updates {
+            let payload = ExerciseLogSavePayload(
+                weight_kg: update.weightKg,
+                reps: update.reps
+            )
+
+            try await SupabaseClient.shared
+                .from("exercise_logs")
+                .update(payload)
+                .eq("id", value: update.id)
+                .execute()
+        }
+
+        guard var sessionLogs = logsBySession[sessionId] else { return }
+        for update in updates {
+            guard let logIndex = sessionLogs.firstIndex(where: { $0.id == update.id }) else { continue }
+            let existing = sessionLogs[logIndex]
+            sessionLogs[logIndex] = ExerciseLogDetail(
+                id: existing.id,
+                sessionId: existing.sessionId,
+                exerciseName: existing.exerciseName,
+                weightKg: update.weightKg,
+                reps: update.reps,
+                setNumber: existing.setNumber
+            )
+        }
+        logsBySession[sessionId] = sessionLogs
+    }
+}
+
+private struct ExerciseLogSavePayload: Encodable {
+    let weight_kg: Double?
+    let reps: Int?
 }

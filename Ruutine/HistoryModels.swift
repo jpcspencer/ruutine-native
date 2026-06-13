@@ -57,6 +57,20 @@ enum HistoryFormatting {
         return formatter.string(from: date)
     }
 
+    static func detailDateLabel(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.dateFormat = "MMMM d, yyyy"
+        return formatter.string(from: date).uppercased()
+    }
+
+    static func detailTimeLabel(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date)
+    }
+
     static func detailDateTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US")
