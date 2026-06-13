@@ -183,6 +183,7 @@ struct WorkoutSetRowView: View {
 struct WorkoutExerciseEditorCard<SetRows: View>: View {
     let exerciseName: String
     var showsDragHandle = false
+    var isDragging = false
     let showsDeleteColumn: Bool
     let weightLabel: String
     let hasSets: Bool
@@ -235,8 +236,84 @@ struct WorkoutExerciseEditorCard<SetRows: View>: View {
         .background(RuutineColor.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(RuutineColor.border, lineWidth: 1)
+                .stroke(
+                    isDragging ? RuutineColor.accent.opacity(0.4) : RuutineColor.border,
+                    lineWidth: 1
+                )
         )
         .clipShape(RoundedRectangle(cornerRadius: 10))
+        .opacity(isDragging ? 0.35 : 1)
+        .animation(.easeInOut(duration: 0.15), value: isDragging)
     }
+}
+
+struct WorkoutExerciseDragPreview<SetRows: View>: View {
+    let exerciseName: String
+    let weightLabel: String
+    let hasSets: Bool
+    @ViewBuilder let setRows: () -> SetRows
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(RuutineColor.muted)
+                    .frame(width: 24, height: 24)
+
+                Text(exerciseName)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(RuutineColor.foreground)
+                    .lineLimit(2)
+
+                Spacer()
+            }
+
+            if hasSets {
+                WorkoutSetColumnHeader(weightLabel: weightLabel)
+            }
+
+            setRows()
+        }
+        .padding(10)
+        .background(RuutineColor.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(RuutineColor.accent.opacity(0.5), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .shadow(color: RuutineColor.foreground.opacity(0.25), radius: 8, y: 3)
+        .frame(maxWidth: UIScreen.main.bounds.width - 32)
+    }
+}
+
+struct WorkoutExerciseDropDelegate: DropDelegate {
+    let targetExercise: WorkoutExercise
+    let onMove: (UUID, UUID) -> Void
+    @Binding var draggedExerciseID: UUID?
+
+    func validateDrop(info: DropInfo) -> Bool {
+        draggedExerciseID != nil
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let draggedID = draggedExerciseID,
+              draggedID != targetExercise.id
+        else { return }
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            onMove(draggedID, targetExercise.id)
+        }
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggedExerciseID = nil
+        return true
+    }
+
+    func dropExited(info: DropInfo) {}
 }

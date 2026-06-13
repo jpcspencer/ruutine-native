@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SessionDetailView: View {
     @EnvironmentObject private var themeManager: ThemeManager
@@ -16,6 +17,7 @@ struct SessionDetailView: View {
     @State private var isSaving = false
     @State private var saveError: String?
     @State private var showExercisePicker = false
+    @State private var draggedExerciseID: UUID?
     @FocusState private var focusedField: WorkoutFieldFocus?
 
     init(
@@ -221,53 +223,95 @@ struct SessionDetailView: View {
                 .font(.system(size: 14))
                 .foregroundColor(RuutineColor.muted)
         } else {
-            ForEach($editState.exercises) { $exercise in
-                editExerciseCard(exercise: $exercise)
+            VStack(spacing: 10) {
+                ForEach(editState.exercises) { exercise in
+                    editExerciseCard(for: exercise)
+                        .onDrop(
+                            of: [UTType.plainText],
+                            delegate: WorkoutExerciseDropDelegate(
+                                targetExercise: exercise,
+                                onMove: { draggedID, targetID in
+                                    editState.moveExercise(draggedID: draggedID, before: targetID)
+                                },
+                                draggedExerciseID: $draggedExerciseID
+                            )
+                        )
+                }
             }
         }
     }
 
-    private func editExerciseCard(exercise: Binding<WorkoutExercise>) -> some View {
-        WorkoutExerciseEditorCard(
-            exerciseName: exercise.wrappedValue.name,
+    private func editExerciseCard(for exercise: WorkoutExercise) -> some View {
+        let isDragging = draggedExerciseID == exercise.id
+
+        return WorkoutExerciseEditorCard(
+            exerciseName: exercise.name,
+            showsDragHandle: true,
+            isDragging: isDragging,
             showsDeleteColumn: true,
             weightLabel: weightColumnLabel,
-            hasSets: !exercise.wrappedValue.sets.isEmpty,
+            hasSets: !exercise.sets.isEmpty,
             onRemoveExercise: {
-                editState.removeExercise(exercise.wrappedValue)
+                editState.removeExercise(exercise)
             },
             onAddSet: {
-                editState.addSet(to: exercise.wrappedValue.id)
+                editState.addSet(to: exercise.id)
             }
         ) {
-            ForEach(Array(exercise.wrappedValue.sets.enumerated()), id: \.element.id) { index, set in
-                let exerciseValue = exercise.wrappedValue
-                let isConfirmed = editState.isSetConfirmed(exerciseID: exerciseValue.id, setID: set.id)
-                let weightPlaceholder = editState.placeholderWeight(for: exerciseValue, setIndex: index)
-                let repsPlaceholder = editState.placeholderReps(for: exerciseValue, setIndex: index)
+            ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { index, set in
+                let isConfirmed = editState.isSetConfirmed(exerciseID: exercise.id, setID: set.id)
+                let weightPlaceholder = editState.placeholderWeight(for: exercise, setIndex: index)
+                let repsPlaceholder = editState.placeholderReps(for: exercise, setIndex: index)
                 let canConfirm = (!set.weight.isEmpty || !weightPlaceholder.isEmpty)
                     && (!set.reps.isEmpty || !repsPlaceholder.isEmpty)
 
                 WorkoutSetRowView(
                     setNumber: index + 1,
                     previousText: "—",
-                    weight: weightBinding(exerciseID: exerciseValue.id, setID: set.id),
-                    reps: repsBinding(exerciseID: exerciseValue.id, setID: set.id),
+                    weight: weightBinding(exerciseID: exercise.id, setID: set.id),
+                    reps: repsBinding(exerciseID: exercise.id, setID: set.id),
                     weightPlaceholder: weightPlaceholder,
                     repsPlaceholder: repsPlaceholder,
                     isConfirmed: isConfirmed,
                     canConfirm: canConfirm,
-                    exerciseID: exerciseValue.id,
+                    exerciseID: exercise.id,
                     setID: set.id,
                     showsDeleteButton: true,
                     onToggleConfirm: {
-                        editState.toggleSetConfirmed(exerciseID: exerciseValue.id, setID: set.id)
+                        editState.toggleSetConfirmed(exerciseID: exercise.id, setID: set.id)
                     },
                     onDelete: {
-                        editState.removeSet(exerciseID: exerciseValue.id, setID: set.id)
+                        editState.removeSet(exerciseID: exercise.id, setID: set.id)
                     },
                     focusedField: $focusedField
                 )
+            }
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 10))
+        .onDrag {
+            draggedExerciseID = exercise.id
+            return NSItemProvider(object: exercise.id.uuidString as NSString)
+        } preview: {
+            sessionExerciseDragPreview(exercise)
+        }
+    }
+
+    private func sessionExerciseDragPreview(_ exercise: WorkoutExercise) -> some View {
+        WorkoutExerciseDragPreview(
+            exerciseName: exercise.name,
+            weightLabel: weightColumnLabel,
+            hasSets: !exercise.sets.isEmpty
+        ) {
+            ForEach(Array(exercise.sets.prefix(3).enumerated()), id: \.element.id) { index, set in
+                Text("Set \(index + 1): \(HistoryFormatting.setLine(weightKg: HistoryFormatting.parseWeight(set.weight, isImperial: isImperial), reps: HistoryFormatting.parseReps(set.reps), isImperial: isImperial))")
+                    .font(.system(size: 13))
+                    .foregroundColor(RuutineColor.muted)
+            }
+
+            if exercise.sets.count > 3 {
+                Text("+\(exercise.sets.count - 3) more sets")
+                    .font(.system(size: 12))
+                    .foregroundColor(RuutineColor.muted)
             }
         }
     }
@@ -371,6 +415,7 @@ struct SessionDetailView: View {
         isEditing = false
         saveError = nil
         focusedField = nil
+        draggedExerciseID = nil
     }
 
     private func saveEdits() async {
@@ -391,6 +436,7 @@ struct SessionDetailView: View {
             )
             isEditing = false
             focusedField = nil
+            draggedExerciseID = nil
         } catch {
             saveError = error.localizedDescription
         }

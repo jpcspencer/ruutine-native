@@ -11,6 +11,7 @@ final class HistoryViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private var logsBySession: [UUID: [ExerciseLogDetail]] = [:]
+    private var exerciseOrderBySession: [UUID: [String]] = [:]
 
     func load(userId: UUID) async {
         isLoading = true
@@ -29,11 +30,21 @@ final class HistoryViewModel: ObservableObject {
 
             let sessions: [CompletedSession] = try await SupabaseClient.shared
                 .from("completed_sessions")
-                .select("id, user_profile_id, session_name, finished_at, created_at")
+                .select("id, user_profile_id, session_name, finished_at, created_at, exercises_completed")
                 .eq("user_profile_id", value: userId)
                 .order("created_at", ascending: false)
                 .execute()
                 .value
+
+            exerciseOrderBySession = Dictionary(
+                uniqueKeysWithValues: sessions.map { session in
+                    (
+                        session.id,
+                        session.exercisesCompleted?.map(\.name)
+                            ?? []
+                    )
+                }
+            )
 
             let sessionIds = sessions.map(\.id)
             var volumeBySession: [UUID: Double] = [:]
@@ -71,8 +82,10 @@ final class HistoryViewModel: ObservableObject {
                 }
 
                 for sessionId in sessionIds {
-                    logsBySession[sessionId] = (logsBySession[sessionId] ?? [])
-                        .sorted {
+                    let order = exerciseOrderBySession[sessionId] ?? []
+                    let sessionLogs = logsBySession[sessionId] ?? []
+                    logsBySession[sessionId] = order.isEmpty
+                        ? sessionLogs.sorted {
                             let left = $0.setNumber ?? 0
                             let right = $1.setNumber ?? 0
                             if left == right {
@@ -80,6 +93,7 @@ final class HistoryViewModel: ObservableObject {
                             }
                             return left < right
                         }
+                        : SessionLogConverter.sortLogs(sessionLogs, exerciseOrder: order)
                 }
             }
 
@@ -222,6 +236,7 @@ final class HistoryViewModel: ObservableObject {
             sessionId: sessionId,
             isImperial: isImperial
         )
+        exerciseOrderBySession[sessionId] = draft.exercises.map(\.name)
     }
 }
 

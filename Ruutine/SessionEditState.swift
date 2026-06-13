@@ -1,4 +1,6 @@
 import Foundation
+import SwiftUI
+import UIKit
 
 struct SessionEditDraft {
     let sessionName: String
@@ -45,6 +47,19 @@ struct SessionEditState {
 
     mutating func removeExercise(_ exercise: WorkoutExercise) {
         exercises.removeAll { $0.id == exercise.id }
+    }
+
+    mutating func moveExercise(draggedID: UUID, before targetID: UUID) {
+        guard let from = exercises.firstIndex(where: { $0.id == draggedID }),
+              let to = exercises.firstIndex(where: { $0.id == targetID }),
+              from != to
+        else { return }
+
+        exercises.move(
+            fromOffsets: IndexSet(integer: from),
+            toOffset: to > from ? to + 1 : to
+        )
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
     mutating func addSet(to exerciseID: UUID) {
@@ -143,24 +158,23 @@ struct SessionEditState {
 enum SessionLogConverter {
     static func exercises(
         from logs: [ExerciseLogDetail],
-        isImperial: Bool
+        isImperial: Bool,
+        exerciseOrder: [String]? = nil
     ) -> (exercises: [WorkoutExercise], originalLogIds: Set<UUID>) {
         var originalLogIds = Set<UUID>()
-        var exerciseOrder: [String] = []
         var grouped: [String: [ExerciseLogDetail]] = [:]
 
         for log in logs {
             originalLogIds.insert(log.id)
             let name = log.exerciseName ?? "Unknown"
-            if grouped[name] == nil {
-                exerciseOrder.append(name)
-                grouped[name] = []
-            }
-            grouped[name]?.append(log)
+            grouped[name, default: []].append(log)
         }
 
-        let exercises = exerciseOrder.map { name in
-            let sets = (grouped[name] ?? [])
+        let exerciseOrder = exerciseOrder ?? orderedExerciseNames(from: logs)
+
+        let exercises = exerciseOrder.compactMap { name -> WorkoutExercise? in
+            guard let exerciseLogs = grouped[name] else { return nil }
+            let sets = exerciseLogs
                 .sorted { ($0.setNumber ?? 0) < ($1.setNumber ?? 0) }
                 .map { log in
                     WorkoutSet(
@@ -179,6 +193,39 @@ enum SessionLogConverter {
         }
 
         return (exercises, originalLogIds)
+    }
+
+    static func orderedExerciseNames(from logs: [ExerciseLogDetail]) -> [String] {
+        var order: [String] = []
+        for log in logs {
+            let name = log.exerciseName ?? "Unknown"
+            if !order.contains(name) {
+                order.append(name)
+            }
+        }
+        return order
+    }
+
+    static func sortLogs(
+        _ logs: [ExerciseLogDetail],
+        exerciseOrder: [String]
+    ) -> [ExerciseLogDetail] {
+        guard !exerciseOrder.isEmpty else { return logs }
+
+        let orderIndex = Dictionary(
+            uniqueKeysWithValues: exerciseOrder.enumerated().map { ($1, $0) }
+        )
+
+        return logs.sorted { lhs, rhs in
+            let leftName = lhs.exerciseName ?? ""
+            let rightName = rhs.exerciseName ?? ""
+            let leftOrder = orderIndex[leftName] ?? Int.max
+            let rightOrder = orderIndex[rightName] ?? Int.max
+            if leftOrder != rightOrder {
+                return leftOrder < rightOrder
+            }
+            return (lhs.setNumber ?? 0) < (rhs.setNumber ?? 0)
+        }
     }
 
     static func logs(

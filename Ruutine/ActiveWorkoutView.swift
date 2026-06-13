@@ -175,9 +175,11 @@ struct ActiveWorkoutView: View {
                     exerciseCard(exercise)
                         .onDrop(
                             of: [UTType.plainText],
-                            delegate: ExerciseDropDelegate(
+                            delegate: WorkoutExerciseDropDelegate(
                                 targetExercise: exercise,
-                                viewModel: viewModel,
+                                onMove: { draggedID, targetID in
+                                    viewModel.moveExercise(draggedID: draggedID, before: targetID)
+                                },
                                 draggedExerciseID: $draggedExerciseID
                             )
                         )
@@ -550,37 +552,6 @@ struct ActiveWorkoutView: View {
             isSaving = false
         }
     }
-}
-
-private struct ExerciseDropDelegate: DropDelegate {
-    let targetExercise: WorkoutExercise
-    let viewModel: ActiveWorkoutViewModel
-    @Binding var draggedExerciseID: UUID?
-
-    func validateDrop(info: DropInfo) -> Bool {
-        draggedExerciseID != nil
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
-    }
-
-    func dropEntered(info: DropInfo) {
-        guard let draggedID = draggedExerciseID,
-              draggedID != targetExercise.id
-        else { return }
-
-        withAnimation(.easeInOut(duration: 0.2)) {
-            viewModel.moveExercise(draggedID: draggedID, before: targetExercise.id)
-        }
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        draggedExerciseID = nil
-        return true
-    }
-
-    func dropExited(info: DropInfo) {}
 }
 
 #Preview {

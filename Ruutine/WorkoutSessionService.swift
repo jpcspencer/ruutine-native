@@ -25,7 +25,7 @@ enum WorkoutSessionService {
     }
 
     /// Matches Capacitor: `{ name, sets: <confirmed set count> }`
-    struct SessionExerciseCompletedJSON: Encodable {
+    struct SessionExerciseCompletedJSON: Codable {
         let name: String
         let sets: Int
     }
