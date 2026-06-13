@@ -14,6 +14,8 @@ struct ProfileView: View {
     @State private var showDeleteError = false
     @State private var isDeletingAccount = false
     @State private var isSigningOut = false
+    @State private var showEditProfile = false
+    @State private var showWeightLogSheet = false
 
     var body: some View {
         ZStack {
@@ -71,6 +73,22 @@ struct ProfileView: View {
         } message: {
             Text("Couldn't delete your account. Please try again.")
         }
+        .sheet(isPresented: $showEditProfile) {
+            if let profile = viewModel.profile, let userId = authVM.session?.user.id {
+                ProfileEditView(profile: profile) { draft in
+                    try await viewModel.saveProfile(draft, userId: userId)
+                }
+                .environmentObject(themeManager)
+            }
+        }
+        .sheet(isPresented: $showWeightLogSheet) {
+            if let userId = authVM.session?.user.id {
+                WeightLogSheet(isImperial: viewModel.isImperial) { weightKg in
+                    try await viewModel.logWeight(weightKg: weightKg, userId: userId)
+                }
+                .environmentObject(themeManager)
+            }
+        }
     }
 
     private var header: some View {
@@ -124,8 +142,9 @@ struct ProfileView: View {
                 Spacer()
 
                 Button("Edit") {
-                    print("Edit profile tapped")
+                    showEditProfile = true
                 }
+                .buttonStyle(.plain)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(RuutineColor.foreground)
                 .padding(.horizontal, 12)
@@ -150,29 +169,10 @@ struct ProfileView: View {
                     : "None"
             )
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("HEIGHT & WEIGHT")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(RuutineColor.muted)
-                    .tracking(1.2)
-
-                HStack(spacing: 8) {
-                    unitPill(title: "Metric", isActive: !viewModel.isImperial) {
-                        viewModel.isImperial = false
-                    }
-                    unitPill(title: "Imperial", isActive: viewModel.isImperial) {
-                        viewModel.isImperial = true
-                    }
-                }
-
-                Text(ProfileLabels.heightWeight(
-                    heightCm: profile.heightCm,
-                    weightKg: profile.weightKg,
-                    isImperial: viewModel.isImperial
-                ))
-                .font(.system(size: 15))
-                .foregroundColor(RuutineColor.foreground)
-            }
+            infoSection(
+                title: "HEIGHT",
+                value: ProfileLabels.heightDisplay(heightCm: profile.heightCm, isImperial: viewModel.isImperial)
+            )
         }
         .padding(16)
         .background(RuutineColor.surface)
@@ -215,19 +215,48 @@ struct ProfileView: View {
 
     private var weightHistorySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("WEIGHT HISTORY")
+            HStack(alignment: .center) {
+                Text("BODY WEIGHT")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(RuutineColor.muted)
                     .tracking(1.2)
 
                 Spacer()
 
-                Button("View all") {
-                    print("View all weight logs tapped")
+                Button {
+                    showWeightLogSheet = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(RuutineColor.accentForeground)
+                        .frame(width: 32, height: 32)
+                        .background(RuutineColor.accent)
+                        .clipShape(Circle())
                 }
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(RuutineColor.accent)
+                .buttonStyle(.plain)
+                .accessibilityLabel("Log weight")
+            }
+
+            HStack(spacing: 8) {
+                unitPill(title: "Metric", isActive: !viewModel.isImperial) {
+                    Task { await setUnitPreference(imperial: false) }
+                }
+                unitPill(title: "Imperial", isActive: viewModel.isImperial) {
+                    Task { await setUnitPreference(imperial: true) }
+                }
+            }
+
+            if let currentKg = viewModel.currentWeightKg {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("CURRENT")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(RuutineColor.muted)
+                        .tracking(1)
+
+                    Text(ProfileLabels.weightValue(currentKg, isImperial: viewModel.isImperial))
+                        .font(.bebas(28))
+                        .foregroundColor(RuutineColor.foreground)
+                }
             }
 
             if viewModel.weightLogs.count >= 2 {
@@ -277,7 +306,7 @@ struct ProfileView: View {
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
-                Text("Log your weight to see progress over time.")
+                Text("Tap + to log your first weigh-in and track progress over time.")
                     .font(.system(size: 13))
                     .foregroundColor(RuutineColor.muted)
                     .padding(12)
@@ -507,6 +536,17 @@ struct ProfileView: View {
         } catch {
             showDeleteError = true
         }
+    }
+
+    private func setUnitPreference(imperial: Bool) async {
+        guard let userId = authVM.session?.user.id else { return }
+        viewModel.isImperial = imperial
+        let preference = imperial ? "imperial" : "metric"
+        try? await SupabaseClient.shared
+            .from("user_profiles")
+            .update(["unit_preference": preference])
+            .eq("id", value: userId)
+            .execute()
     }
 
     private func reload() {

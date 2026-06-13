@@ -91,6 +91,22 @@ enum ProfileLabels {
         return labels.isEmpty ? "—" : labels.joined(separator: ", ")
     }
 
+    static func heightDisplay(heightCm: Double?, isImperial: Bool) -> String {
+        guard let heightCm else { return "—" }
+
+        if isImperial {
+            let totalInches = heightCm / 2.54
+            let feet = Int(totalInches / 12)
+            let inches = Int(totalInches.rounded()) % 12
+            return "\(feet)'\(inches)\""
+        }
+
+        let heightText = heightCm.truncatingRemainder(dividingBy: 1) == 0
+            ? String(format: "%.0f", heightCm)
+            : String(format: "%.1f", heightCm)
+        return "\(heightText) cm"
+    }
+
     static func heightWeight(heightCm: Double?, weightKg: Double?, isImperial: Bool) -> String {
         guard let heightCm, let weightKg else { return "—" }
 
