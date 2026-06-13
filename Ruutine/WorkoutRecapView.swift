@@ -261,7 +261,7 @@ struct WorkoutRecapView: View {
     }
 
     private func fetchAtlasMessage() async {
-        guard let url = URL(string: "https://ruutine.app/api/sessions/recap-message") else {
+        guard let url = URL(string: "https://www.ruutine.app/api/sessions/recap-message") else {
             atlasMessage = fallbackMessage
             return
         }

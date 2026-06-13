@@ -1,7 +1,7 @@
 import Foundation
 
 enum AccountService {
-    private static let deleteURL = URL(string: "https://ruutine.app/api/account/delete")!
+    private static let deleteURL = URL(string: "https://www.ruutine.app/api/account/delete")!
 
     static func deleteAccount(accessToken: String) async throws {
         var request = URLRequest(url: deleteURL)

@@ -19,9 +19,9 @@ final class OnboardingService: ObservableObject {
     private var accessToken: String?
     private var didSeedGreeting = false
 
-    private let chatURL = URL(string: "https://ruutine.app/api/onboarding/chat")!
-    private let generateURL = URL(string: "https://ruutine.app/api/onboarding/generate")!
-    private let completeURL = URL(string: "https://ruutine.app/api/onboarding/complete")!
+    private let chatURL = URL(string: "https://www.ruutine.app/api/onboarding/chat")!
+    private let generateURL = URL(string: "https://www.ruutine.app/api/onboarding/generate")!
+    private let completeURL = URL(string: "https://www.ruutine.app/api/onboarding/complete")!
 
     var showInitialGreeting: Bool {
         messages.isEmpty && step == .greetingName

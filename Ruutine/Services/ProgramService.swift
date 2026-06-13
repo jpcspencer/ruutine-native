@@ -1,10 +1,10 @@
 import Foundation
 
 enum ProgramService {
-    private static let generateURL = URL(string: "https://ruutine.app/api/coach/generate")!
-    private static let programURL = URL(string: "https://ruutine.app/api/program")!
-    private static let programEditURL = URL(string: "https://ruutine.app/api/program/edit")!
-    private static let updateNameURL = URL(string: "https://ruutine.app/api/program/update-name")!
+    private static let generateURL = URL(string: "https://www.ruutine.app/api/coach/generate")!
+    private static let programURL = URL(string: "https://www.ruutine.app/api/program")!
+    private static let programEditURL = URL(string: "https://www.ruutine.app/api/program/edit")!
+    private static let updateNameURL = URL(string: "https://www.ruutine.app/api/program/update-name")!
 
     static func regenerateProgram(profileId: UUID) async throws {
         let body: [String: Any] = [

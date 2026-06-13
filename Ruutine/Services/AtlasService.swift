@@ -29,7 +29,7 @@ final class AtlasService: ObservableObject {
     private var didSeedGreeting = false
     private var loadedProfileId: UUID?
 
-    private let endpoint = URL(string: "https://ruutine.app/api/coach/chat")!
+    private let endpoint = URL(string: "https://www.ruutine.app/api/coach/chat")!
 
     static let defaultGreeting = "Hey, I'm Atlas. How can I help with your training today?"
 
