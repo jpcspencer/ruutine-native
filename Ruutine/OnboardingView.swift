@@ -7,6 +7,8 @@ struct OnboardingView: View {
     @StateObject private var service = OnboardingService()
 
     @State private var inputText = ""
+    @State private var showSignOutConfirm = false
+    @State private var skipError: String?
     @FocusState private var isInputFocused: Bool
 
     let onComplete: () -> Void
@@ -87,20 +89,68 @@ struct OnboardingView: View {
                 await saveAndFinish()
             }
         }
+        .overlay {
+            if service.isSkipping {
+                skipLoadingOverlay
+            }
+        }
+        .alert("Sign out?", isPresented: $showSignOutConfirm) {
+            Button("Sign out", role: .destructive) {
+                Task {
+                    try? await authVM.signOut()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You'll return to the welcome screen.")
+        }
+        .alert("Couldn't Skip Onboarding", isPresented: Binding(
+            get: { skipError != nil },
+            set: { if !$0 { skipError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(skipError ?? "")
+        }
+    }
+
+    private var skipLoadingOverlay: some View {
+        ZStack {
+            RuutineColor.background.opacity(0.94).ignoresSafeArea()
+            VStack(spacing: 14) {
+                ProgressView()
+                    .tint(RuutineColor.accent)
+                Text("Setting up your account...")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(RuutineColor.foreground)
+            }
+        }
     }
 
     private var header: some View {
-        HStack {
+        HStack(spacing: 12) {
             Text("ATLAS")
                 .font(.bebas(28))
                 .foregroundColor(RuutineColor.foreground)
                 .tracking(1)
 
+            Button("Sign out") {
+                showSignOutConfirm = true
+            }
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(RuutineColor.muted)
+            .buttonStyle(.plain)
+            .disabled(service.isSkipping || service.isSaving)
+
             Spacer()
 
-            Text("Onboarding")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(RuutineColor.muted)
+            Button("Skip") {
+                Task { await skipTapped() }
+            }
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundColor(RuutineColor.accent)
+            .buttonStyle(.plain)
+            .disabled(service.isSkipping || service.isSaving || service.isGenerating)
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)
@@ -430,6 +480,17 @@ struct OnboardingView: View {
             service.appendErrorMessage(
                 "Couldn't save your profile. Please try again. (\(error.localizedDescription))"
             )
+        }
+    }
+
+    private func skipTapped() async {
+        skipError = nil
+        do {
+            try await service.skipOnboarding()
+            authVM.markOnboardingComplete()
+            onComplete()
+        } catch {
+            skipError = error.localizedDescription
         }
     }
 }

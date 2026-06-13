@@ -315,7 +315,7 @@ struct ProgramView: View {
                 .foregroundColor(RuutineColor.foreground)
                 .tracking(1)
 
-            Text("No program yet. Chat with Atlas to generate one.")
+            Text("No program yet — generate one.")
                 .font(.system(size: 14))
                 .foregroundColor(RuutineColor.muted)
                 .multilineTextAlignment(.center)
@@ -324,7 +324,7 @@ struct ProgramView: View {
             Button {
                 showAtlasChat = true
             } label: {
-                Text("Talk to Atlas")
+                Text("Generate Program")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(RuutineColor.accentForeground)
                     .padding(.horizontal, 24)

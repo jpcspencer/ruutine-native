@@ -9,6 +9,7 @@ final class OnboardingService: ObservableObject {
     @Published var isTyping = false
     @Published var isGenerating = false
     @Published var isSaving = false
+    @Published var isSkipping = false
     @Published var step: OnboardingStep = .greetingName
     @Published private(set) var collected = OnboardingChatData()
     @Published private(set) var program: OnboardingProgramPayload?
@@ -251,6 +252,37 @@ final class OnboardingService: ObservableObject {
         try await completeViaSupabase(userId: userId)
     }
 
+    /// Completes onboarding with safe defaults and no generated program (header Skip escape hatch).
+    func skipOnboarding() async throws {
+        guard let userId else { throw OnboardingError.missingData }
+        isSkipping = true
+        defer { isSkipping = false }
+
+        collected = Self.defaultSkipData(preservingNameFrom: collected)
+
+        if let token = accessToken, !token.isEmpty {
+            if await completeSkipViaAPI(token: token) { return }
+            print("[OnboardingService] skip complete API failed — falling back to Supabase client")
+        }
+
+        try await completeProfileOnlyViaSupabase(userId: userId)
+    }
+
+    static func defaultSkipData(preservingNameFrom existing: OnboardingChatData) -> OnboardingChatData {
+        var data = OnboardingChatData()
+        let trimmedName = existing.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        data.name = trimmedName.count >= 2 ? trimmedName : "there"
+        data.goal = "general"
+        data.experienceLevel = "beginner"
+        data.daysPerWeek = 3
+        data.trainingDays = [1, 3, 5]
+        data.equipmentAccess = ["full_gym"]
+        data.injuriesLimitations = nil
+        data.gender = "prefer_not_to_say"
+        data.measurementsSkip = true
+        return data
+    }
+
     // MARK: - Chat API
 
     private func sendToAtlas(_ message: String) async {
@@ -413,15 +445,63 @@ final class OnboardingService: ObservableObject {
         }
     }
 
+    private func completeSkipViaAPI(token: String) async -> Bool {
+        let body: [String: Any] = ["data": generatePayload()]
+        do {
+            let (data, response) = try await postJSON(to: completeURL, body: body, authToken: token)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            let raw = String(data: data, encoding: .utf8) ?? ""
+            print("[OnboardingService] POST \(completeURL.absoluteString) (skip)")
+            print("[OnboardingService] HTTP status: \(status)")
+            print("[OnboardingService] raw response: \(raw)")
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                return false
+            }
+            if parseError(from: data) != nil { return false }
+            return true
+        } catch {
+            print("[OnboardingService] skip complete API error: \(error)")
+            return false
+        }
+    }
+
     private func completeViaSupabase(userId: UUID) async throws {
         guard let program else { throw OnboardingError.missingData }
 
+        try await insertProfile(userId: userId)
+
+        let programInsert = TrainingProgramInsert(
+            userProfileId: userId,
+            weekNumber: 1,
+            programContent: program
+        )
+        print("[OnboardingService] Supabase insert training_programs: week 1")
+        try await SupabaseClient.shared
+            .from("training_programs")
+            .insert(programInsert)
+            .execute()
+    }
+
+    private func completeProfileOnlyViaSupabase(userId: UUID) async throws {
+        try await insertProfile(userId: userId)
+    }
+
+    private func insertProfile(userId: UUID) async throws {
+        let profileInsert = makeProfileInsert(userId: userId)
+        print("[OnboardingService] Supabase insert user_profiles: \(profileInsert)")
+        try await SupabaseClient.shared
+            .from("user_profiles")
+            .insert(profileInsert)
+            .execute()
+    }
+
+    private func makeProfileInsert(userId: UUID) -> OnboardingProfileInsert {
         let unitPreference = ["metric", "imperial"].contains(collected.unitPreference)
             ? collected.unitPreference
             : "metric"
         let trainingDays = collected.trainingDays.isEmpty ? [1, 3, 5] : collected.trainingDays
 
-        let profileInsert = OnboardingProfileInsert(
+        return OnboardingProfileInsert(
             id: userId,
             name: collected.name.trimmingCharacters(in: .whitespacesAndNewlines),
             goal: collected.goal,
@@ -438,23 +518,6 @@ final class OnboardingService: ObservableObject {
             unitPreference: unitPreference,
             theme: "onyx"
         )
-
-        print("[OnboardingService] Supabase insert user_profiles: \(profileInsert)")
-        try await SupabaseClient.shared
-            .from("user_profiles")
-            .insert(profileInsert)
-            .execute()
-
-        let programInsert = TrainingProgramInsert(
-            userProfileId: userId,
-            weekNumber: 1,
-            programContent: program
-        )
-        print("[OnboardingService] Supabase insert training_programs: week 1")
-        try await SupabaseClient.shared
-            .from("training_programs")
-            .insert(programInsert)
-            .execute()
     }
 
     // MARK: - Step logic (Capacitor onboarding-chat.tsx)
