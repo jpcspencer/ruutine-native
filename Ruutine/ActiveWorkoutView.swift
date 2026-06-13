@@ -216,7 +216,7 @@ struct ActiveWorkoutView: View {
             }
 
             if !exercise.sets.isEmpty {
-                setColumnHeader
+                WorkoutSetColumnHeader(weightLabel: "kg")
             }
 
             ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { index, set in
@@ -254,22 +254,7 @@ struct ActiveWorkoutView: View {
     }
 
     private var setColumnHeader: some View {
-        HStack(spacing: SetColumn.spacing) {
-            Text("Set")
-                .frame(width: SetColumn.set, alignment: .center)
-            Text("Previous")
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text("kg")
-                .frame(width: SetColumn.kg, alignment: .center)
-            Text("Reps")
-                .frame(width: SetColumn.reps, alignment: .center)
-            Text("✓")
-                .frame(width: SetColumn.check, alignment: .center)
-        }
-        .font(.system(size: 10, weight: .semibold))
-        .foregroundColor(RuutineColor.muted)
-        .textCase(.uppercase)
-        .padding(.top, 2)
+        WorkoutSetColumnHeader(weightLabel: "kg")
     }
 
     private func exerciseDragPreview(_ exercise: WorkoutExercise) -> some View {
@@ -284,7 +269,7 @@ struct ActiveWorkoutView: View {
             }
 
             if !exercise.sets.isEmpty {
-                setColumnHeader
+                WorkoutSetColumnHeader(weightLabel: "kg")
             }
 
             ForEach(Array(exercise.sets.prefix(3).enumerated()), id: \.element.id) { index, set in
@@ -329,106 +314,23 @@ struct ActiveWorkoutView: View {
         let previousText = viewModel.previousSet(for: exercise.name, setIndex: setIndex)?.displayText ?? "—"
         let canConfirm = (!weight.isEmpty || !weightPlaceholder.isEmpty)
             && (!reps.isEmpty || !repsPlaceholder.isEmpty)
-        let weightFocus = WorkoutFieldFocus.weight(exerciseID: exercise.id, setID: set.id)
-        let repsFocus = WorkoutFieldFocus.reps(exerciseID: exercise.id, setID: set.id)
 
-        return HStack(spacing: SetColumn.spacing) {
-            Text("\(setNumber)")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(isConfirmed ? RuutineColor.muted : RuutineColor.foreground)
-                .frame(width: SetColumn.set, height: 22)
-                .background(RuutineColor.background)
-                .clipShape(RoundedRectangle(cornerRadius: 5))
-
-            Text(previousText)
-                .font(.system(size: 11))
-                .foregroundColor(RuutineColor.muted)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            workoutField(
-                text: weightBinding(exerciseID: exercise.id, setID: set.id),
-                placeholder: weightPlaceholder,
-                width: SetColumn.kg,
-                isConfirmed: isConfirmed,
-                keyboardType: .decimalPad,
-                focus: weightFocus
-            )
-
-            workoutField(
-                text: repsBinding(exerciseID: exercise.id, setID: set.id),
-                placeholder: repsPlaceholder,
-                width: SetColumn.reps,
-                isConfirmed: isConfirmed,
-                keyboardType: .numberPad,
-                focus: repsFocus
-            )
-
-            Button {
+        return WorkoutSetRowView(
+            setNumber: setNumber,
+            previousText: previousText,
+            weight: weightBinding(exerciseID: exercise.id, setID: set.id),
+            reps: repsBinding(exerciseID: exercise.id, setID: set.id),
+            weightPlaceholder: weightPlaceholder,
+            repsPlaceholder: repsPlaceholder,
+            isConfirmed: isConfirmed,
+            canConfirm: canConfirm,
+            exerciseID: exercise.id,
+            setID: set.id,
+            onToggleConfirm: {
                 viewModel.toggleSetConfirmed(exerciseID: exercise.id, setID: set.id)
-            } label: {
-                confirmButton(isConfirmed: isConfirmed)
-            }
-            .buttonStyle(.plain)
-            .frame(width: SetColumn.check)
-            .opacity(canConfirm ? 1 : 0.4)
-        }
-        .padding(.vertical, 2)
-    }
-
-    private func confirmButton(isConfirmed: Bool) -> some View {
-        ZStack {
-            if isConfirmed {
-                Circle()
-                    .fill(RuutineColor.accent)
-                    .frame(width: 24, height: 24)
-                Image(systemName: "checkmark")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(RuutineColor.accentForeground)
-            } else {
-                Circle()
-                    .stroke(RuutineColor.muted, lineWidth: 1.5)
-                    .frame(width: 24, height: 24)
-            }
-        }
-    }
-
-    private func workoutField(
-        text: Binding<String>,
-        placeholder: String,
-        width: CGFloat,
-        isConfirmed: Bool,
-        keyboardType: UIKeyboardType,
-        focus: WorkoutFieldFocus
-    ) -> some View {
-        let isFocused = focusedField == focus
-
-        return ZStack {
-            if text.wrappedValue.isEmpty, !placeholder.isEmpty {
-                Text(placeholder)
-                    .font(.system(size: 13))
-                    .foregroundColor(RuutineColor.muted.opacity(0.55))
-            }
-
-            TextField("", text: text)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(isConfirmed ? RuutineColor.muted : RuutineColor.foreground)
-                .multilineTextAlignment(.center)
-                .keyboardType(keyboardType)
-                .disabled(isConfirmed)
-                .focused($focusedField, equals: focus)
-        }
-        .frame(width: width, height: 30)
-        .background(RuutineColor.background)
-        .overlay(
-            RoundedRectangle(cornerRadius: 7)
-                .stroke(
-                    isFocused ? RuutineColor.accent : RuutineColor.border,
-                    lineWidth: isFocused ? 2 : 1
-                )
+            },
+            focusedField: $focusedField
         )
-        .clipShape(RoundedRectangle(cornerRadius: 7))
     }
 
     private func weightBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {
@@ -648,19 +550,6 @@ struct ActiveWorkoutView: View {
             isSaving = false
         }
     }
-}
-
-private enum SetColumn {
-    static let set: CGFloat = 26
-    static let kg: CGFloat = 52
-    static let reps: CGFloat = 44
-    static let check: CGFloat = 28
-    static let spacing: CGFloat = 5
-}
-
-private enum WorkoutFieldFocus: Hashable {
-    case weight(exerciseID: UUID, setID: UUID)
-    case reps(exerciseID: UUID, setID: UUID)
 }
 
 private struct ExerciseDropDelegate: DropDelegate {

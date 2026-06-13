@@ -7,6 +7,7 @@ struct ExerciseLogDetail: Codable, Identifiable {
     let weightKg: Double?
     let reps: Int?
     let setNumber: Int?
+    let completed: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -15,6 +16,7 @@ struct ExerciseLogDetail: Codable, Identifiable {
         case weightKg = "weight_kg"
         case reps
         case setNumber = "set_number"
+        case completed
     }
 }
 
@@ -114,6 +116,28 @@ enum HistoryFormatting {
             return "\(weightText) \(unit) × \(repCount) reps"
         }
         return "\(repCount) reps"
+    }
+
+    static func displayWeight(kg: Double?, isImperial: Bool) -> String {
+        guard let kg else { return "" }
+        let display = isImperial ? kg * 2.20462 : kg
+        if display.truncatingRemainder(dividingBy: 1) == 0 {
+            return String(format: "%.0f", display)
+        }
+        return String(format: "%.1f", display)
+    }
+
+    static func parseWeight(_ text: String, isImperial: Bool) -> Double? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let value = Double(trimmed) else { return nil }
+        let kg = isImperial ? value / 2.20462 : value
+        return (kg * 10).rounded() / 10
+    }
+
+    static func parseReps(_ text: String) -> Int? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let value = Int(trimmed) else { return nil }
+        return value
     }
 }
 

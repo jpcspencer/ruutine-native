@@ -4,38 +4,65 @@ struct SessionDetailView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
 
-    let session: HistorySessionItem
+    let sessionId: UUID
     let isImperial: Bool
-    let onSave: ([ExerciseLogUpdate]) async throws -> Void
+    let onSave: (SessionEditDraft) async throws -> Void
 
+    @State private var displayedName: String
+    @State private var displayedDate: Date
     @State private var logs: [ExerciseLogDetail]
+    @State private var editState: SessionEditState
     @State private var isEditing = false
     @State private var isSaving = false
-    @State private var editWeightByLogId: [UUID: String] = [:]
-    @State private var editRepsByLogId: [UUID: String] = [:]
     @State private var saveError: String?
+    @State private var showExercisePicker = false
+    @FocusState private var focusedField: WorkoutFieldFocus?
 
     init(
         session: HistorySessionItem,
         logs: [ExerciseLogDetail],
         isImperial: Bool,
-        onSave: @escaping ([ExerciseLogUpdate]) async throws -> Void
+        onSave: @escaping (SessionEditDraft) async throws -> Void
     ) {
-        self.session = session
+        sessionId = session.id
         self.isImperial = isImperial
         self.onSave = onSave
+        _displayedName = State(initialValue: session.sessionName)
+        _displayedDate = State(initialValue: session.date)
         _logs = State(initialValue: logs)
+        _editState = State(
+            initialValue: SessionEditState(
+                sessionName: session.sessionName,
+                sessionDate: session.date,
+                logs: logs,
+                isImperial: isImperial
+            )
+        )
     }
 
     private var groupedExercises: [(name: String, sets: [ExerciseLogDetail])] {
         var groups: [String: [ExerciseLogDetail]] = [:]
+        var order: [String] = []
+
         for log in logs {
             let name = log.exerciseName ?? "Unknown"
-            groups[name, default: []].append(log)
+            if groups[name] == nil {
+                order.append(name)
+                groups[name] = []
+            }
+            groups[name]?.append(log)
         }
-        return groups
-            .map { (name: $0.key, sets: $0.value.sorted { ($0.setNumber ?? 0) < ($1.setNumber ?? 0) }) }
-            .sorted { $0.name < $1.name }
+
+        return order.map { name in
+            (
+                name: name,
+                sets: (groups[name] ?? []).sorted { ($0.setNumber ?? 0) < ($1.setNumber ?? 0) }
+            )
+        }
+    }
+
+    private var weightColumnLabel: String {
+        isImperial ? "lb" : "kg"
     }
 
     var body: some View {
@@ -48,13 +75,16 @@ struct SessionDetailView: View {
 
                     sectionHeader("EXERCISES")
 
-                    if groupedExercises.isEmpty {
+                    if isEditing {
+                        editExercisesList
+                        addExerciseButton
+                    } else if groupedExercises.isEmpty {
                         Text("No exercise logs for this session.")
                             .font(.system(size: 14))
                             .foregroundColor(RuutineColor.muted)
                     } else {
                         ForEach(groupedExercises, id: \.name) { exercise in
-                            exerciseCard(exercise)
+                            readOnlyExerciseCard(exercise)
                         }
                     }
 
@@ -70,6 +100,12 @@ struct SessionDetailView: View {
         }
         .background(RuutineColor.background.ignoresSafeArea())
         .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showExercisePicker) {
+            ExercisePickerView { exercise in
+                editState.addExercise(exercise)
+            }
+            .environmentObject(themeManager)
+        }
     }
 
     private var topBar: some View {
@@ -108,21 +144,157 @@ struct SessionDetailView: View {
         }
     }
 
+    @ViewBuilder
     private var sessionHeader: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(HistoryFormatting.detailDateLabel(session.date))
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(RuutineColor.muted)
-                .tracking(1.2)
+        if isEditing {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 8) {
+                    sectionHeader("WORKOUT NAME")
+                    TextField("Workout name", text: $editState.sessionName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(RuutineColor.foreground)
+                        .padding(14)
+                        .background(RuutineColor.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(RuutineColor.border, lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
 
-            Text(session.sessionName)
-                .font(.system(size: 24, weight: .bold))
-                .foregroundColor(RuutineColor.foreground)
+                VStack(alignment: .leading, spacing: 8) {
+                    sectionHeader("DATE & TIME")
+                    DatePicker(
+                        "Session date",
+                        selection: $editState.sessionDate,
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                    .datePickerStyle(.compact)
+                    .labelsHidden()
+                    .tint(RuutineColor.accent)
+                    .padding(14)
+                    .background(RuutineColor.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(RuutineColor.border, lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(HistoryFormatting.detailDateLabel(displayedDate))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(RuutineColor.muted)
+                    .tracking(1.2)
 
-            Text(HistoryFormatting.detailTimeLabel(session.date))
+                Text(displayedName)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(RuutineColor.foreground)
+
+                Text(HistoryFormatting.detailTimeLabel(displayedDate))
+                    .font(.system(size: 14))
+                    .foregroundColor(RuutineColor.muted)
+            }
+        }
+    }
+
+    private var addExerciseButton: some View {
+        Button {
+            showExercisePicker = true
+        } label: {
+            Text("Add Exercise")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(RuutineColor.accentForeground)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(RuutineColor.accent)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var editExercisesList: some View {
+        if editState.exercises.isEmpty {
+            Text("No exercises yet. Add one below.")
                 .font(.system(size: 14))
                 .foregroundColor(RuutineColor.muted)
+        } else {
+            ForEach($editState.exercises) { $exercise in
+                editExerciseCard(exercise: $exercise)
+            }
         }
+    }
+
+    private func editExerciseCard(exercise: Binding<WorkoutExercise>) -> some View {
+        WorkoutExerciseEditorCard(
+            exerciseName: exercise.wrappedValue.name,
+            showsDeleteColumn: true,
+            weightLabel: weightColumnLabel,
+            hasSets: !exercise.wrappedValue.sets.isEmpty,
+            onRemoveExercise: {
+                editState.removeExercise(exercise.wrappedValue)
+            },
+            onAddSet: {
+                editState.addSet(to: exercise.wrappedValue.id)
+            }
+        ) {
+            ForEach(Array(exercise.wrappedValue.sets.enumerated()), id: \.element.id) { index, set in
+                let exerciseValue = exercise.wrappedValue
+                let isConfirmed = editState.isSetConfirmed(exerciseID: exerciseValue.id, setID: set.id)
+                let weightPlaceholder = editState.placeholderWeight(for: exerciseValue, setIndex: index)
+                let repsPlaceholder = editState.placeholderReps(for: exerciseValue, setIndex: index)
+                let canConfirm = (!set.weight.isEmpty || !weightPlaceholder.isEmpty)
+                    && (!set.reps.isEmpty || !repsPlaceholder.isEmpty)
+
+                WorkoutSetRowView(
+                    setNumber: index + 1,
+                    previousText: "—",
+                    weight: weightBinding(exerciseID: exerciseValue.id, setID: set.id),
+                    reps: repsBinding(exerciseID: exerciseValue.id, setID: set.id),
+                    weightPlaceholder: weightPlaceholder,
+                    repsPlaceholder: repsPlaceholder,
+                    isConfirmed: isConfirmed,
+                    canConfirm: canConfirm,
+                    exerciseID: exerciseValue.id,
+                    setID: set.id,
+                    showsDeleteButton: true,
+                    onToggleConfirm: {
+                        editState.toggleSetConfirmed(exerciseID: exerciseValue.id, setID: set.id)
+                    },
+                    onDelete: {
+                        editState.removeSet(exerciseID: exerciseValue.id, setID: set.id)
+                    },
+                    focusedField: $focusedField
+                )
+            }
+        }
+    }
+
+    private func readOnlyExerciseCard(_ exercise: (name: String, sets: [ExerciseLogDetail])) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(exercise.name)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(RuutineColor.foreground)
+
+            ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { index, set in
+                HStack(spacing: 8) {
+                    if set.completed == true {
+                        WorkoutSetConfirmButton(isConfirmed: true)
+                            .scaleEffect(0.75)
+                    }
+
+                    Text("Set \(set.setNumber ?? index + 1): \(HistoryFormatting.setLine(weightKg: set.weightKg, reps: set.reps, isImperial: isImperial))")
+                        .font(.system(size: 13))
+                        .foregroundColor(RuutineColor.muted)
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RuutineColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private func sectionHeader(_ title: String) -> some View {
@@ -162,95 +334,43 @@ struct SessionDetailView: View {
         .buttonStyle(.plain)
     }
 
-    private func exerciseCard(_ exercise: (name: String, sets: [ExerciseLogDetail])) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(exercise.name)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(RuutineColor.foreground)
-
-            ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { index, set in
-                if isEditing {
-                    editableSetRow(set, fallbackIndex: index)
-                } else {
-                    Text("Set \(set.setNumber ?? index + 1): \(HistoryFormatting.setLine(weightKg: set.weightKg, reps: set.reps, isImperial: isImperial))")
-                        .font(.system(size: 13))
-                        .foregroundColor(RuutineColor.muted)
-                }
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RuutineColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-
-    private func editableSetRow(_ set: ExerciseLogDetail, fallbackIndex: Int) -> some View {
-        HStack(spacing: 8) {
-            Text("Set \(set.setNumber ?? fallbackIndex + 1)")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(RuutineColor.muted)
-                .frame(width: 44, alignment: .leading)
-
-            TextField(isImperial ? "lb" : "kg", text: weightBinding(for: set.id))
-                .keyboardType(.decimalPad)
-                .font(.system(size: 14))
-                .foregroundColor(RuutineColor.foreground)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(RuutineColor.background)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(RuutineColor.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .frame(maxWidth: .infinity)
-
-            TextField("reps", text: repsBinding(for: set.id))
-                .keyboardType(.numberPad)
-                .font(.system(size: 14))
-                .foregroundColor(RuutineColor.foreground)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(RuutineColor.background)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(RuutineColor.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .frame(maxWidth: .infinity)
-        }
-    }
-
-    private func weightBinding(for logId: UUID) -> Binding<String> {
+    private func weightBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {
         Binding(
-            get: { editWeightByLogId[logId] ?? "" },
-            set: { editWeightByLogId[logId] = $0 }
+            get: {
+                editState.exercises
+                    .first(where: { $0.id == exerciseID })?
+                    .sets.first(where: { $0.id == setID })?.weight ?? ""
+            },
+            set: { editState.updateSet(exerciseID: exerciseID, setID: setID, weight: $0) }
         )
     }
 
-    private func repsBinding(for logId: UUID) -> Binding<String> {
+    private func repsBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {
         Binding(
-            get: { editRepsByLogId[logId] ?? "" },
-            set: { editRepsByLogId[logId] = $0 }
+            get: {
+                editState.exercises
+                    .first(where: { $0.id == exerciseID })?
+                    .sets.first(where: { $0.id == setID })?.reps ?? ""
+            },
+            set: { editState.updateSet(exerciseID: exerciseID, setID: setID, reps: $0) }
         )
     }
 
     private func beginEditing() {
         saveError = nil
-        editWeightByLogId = Dictionary(uniqueKeysWithValues: logs.map { log in
-            (log.id, weightDisplayString(for: log))
-        })
-        editRepsByLogId = Dictionary(uniqueKeysWithValues: logs.map { log in
-            (log.id, log.reps.map(String.init) ?? "")
-        })
+        editState = SessionEditState(
+            sessionName: displayedName,
+            sessionDate: displayedDate,
+            logs: logs,
+            isImperial: isImperial
+        )
         isEditing = true
     }
 
     private func cancelEditing() {
         isEditing = false
-        editWeightByLogId = [:]
-        editRepsByLogId = [:]
         saveError = nil
+        focusedField = nil
     }
 
     private func saveEdits() async {
@@ -258,60 +378,21 @@ struct SessionDetailView: View {
         saveError = nil
         defer { isSaving = false }
 
-        let updates = logs.map { log in
-            ExerciseLogUpdate(
-                id: log.id,
-                weightKg: parseWeightText(editWeightByLogId[log.id] ?? ""),
-                reps: parseRepsText(editRepsByLogId[log.id] ?? "")
-            )
-        }
+        let draft = editState.draft
 
         do {
-            try await onSave(updates)
-            logs = logs.map { log in
-                guard let update = updates.first(where: { $0.id == log.id }) else { return log }
-                return ExerciseLogDetail(
-                    id: log.id,
-                    sessionId: log.sessionId,
-                    exerciseName: log.exerciseName,
-                    weightKg: update.weightKg,
-                    reps: update.reps,
-                    setNumber: log.setNumber
-                )
-            }
+            try await onSave(draft)
+            displayedName = draft.sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
+            displayedDate = draft.sessionDate
+            logs = SessionLogConverter.logs(
+                from: draft,
+                sessionId: sessionId,
+                isImperial: isImperial
+            )
             isEditing = false
-            editWeightByLogId = [:]
-            editRepsByLogId = [:]
+            focusedField = nil
         } catch {
             saveError = error.localizedDescription
         }
     }
-
-    private func weightDisplayString(for log: ExerciseLogDetail) -> String {
-        guard let kg = log.weightKg else { return "" }
-        let display = isImperial ? kg * 2.20462 : kg
-        if display.truncatingRemainder(dividingBy: 1) == 0 {
-            return String(format: "%.0f", display)
-        }
-        return String(format: "%.1f", display)
-    }
-
-    private func parseWeightText(_ text: String) -> Double? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, let value = Double(trimmed) else { return nil }
-        let kg = isImperial ? value / 2.20462 : value
-        return (kg * 10).rounded() / 10
-    }
-
-    private func parseRepsText(_ text: String) -> Int? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, let value = Int(trimmed) else { return nil }
-        return value
-    }
-}
-
-struct ExerciseLogUpdate {
-    let id: UUID
-    let weightKg: Double?
-    let reps: Int?
 }

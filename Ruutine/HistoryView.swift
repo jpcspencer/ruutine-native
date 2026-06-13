@@ -103,8 +103,14 @@ struct HistoryView: View {
                 session: session,
                 logs: viewModel.logs(for: session.id),
                 isImperial: viewModel.isImperial,
-                onSave: { updates in
-                    try await viewModel.saveExerciseLogs(updates, sessionId: session.id)
+                onSave: { draft in
+                    guard let userId = authVM.session?.user.id else { return }
+                    try await viewModel.saveSessionEdit(
+                        sessionId: session.id,
+                        userId: userId,
+                        draft: draft,
+                        isImperial: viewModel.isImperial
+                    )
                     reload()
                 }
             )

@@ -44,7 +44,7 @@ final class HistoryViewModel: ObservableObject {
             if !sessionIds.isEmpty {
                 let logs: [ExerciseLogDetail] = try await SupabaseClient.shared
                     .from("exercise_logs")
-                    .select("id, session_id, exercise_name, weight_kg, reps, set_number")
+                    .select("id, session_id, exercise_name, weight_kg, reps, set_number, completed")
                     .in("session_id", values: sessionIds)
                     .execute()
                     .value
@@ -139,41 +139,110 @@ final class HistoryViewModel: ObservableObject {
             .execute()
     }
 
-    func saveExerciseLogs(
-        _ updates: [ExerciseLogUpdate],
-        sessionId: UUID
+    func saveSessionEdit(
+        sessionId: UUID,
+        userId: UUID,
+        draft: SessionEditDraft,
+        isImperial: Bool
     ) async throws {
-        for update in updates {
-            let payload = ExerciseLogSavePayload(
-                weight_kg: update.weightKg,
-                reps: update.reps
-            )
+        let trimmedName = draft.sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let exercisesCompleted = draft.exercises
+            .filter { !$0.sets.isEmpty }
+            .map {
+                WorkoutSessionService.SessionExerciseCompletedJSON(
+                    name: $0.name,
+                    sets: $0.sets.count
+                )
+            }
 
+        let sessionPayload = CompletedSessionUpdatePayload(
+            sessionName: trimmedName,
+            createdAt: draft.sessionDate,
+            finishedAt: draft.sessionDate,
+            exercisesCompleted: exercisesCompleted
+        )
+
+        try await SupabaseClient.shared
+            .from("completed_sessions")
+            .update(sessionPayload)
+            .eq("id", value: sessionId)
+            .execute()
+
+        var currentLogIds = Set<UUID>()
+
+        for exercise in draft.exercises {
+            for (index, set) in exercise.sets.enumerated() {
+                let setNumber = index + 1
+                let weightKg = HistoryFormatting.parseWeight(set.weight, isImperial: isImperial)
+                let reps = HistoryFormatting.parseReps(set.reps)
+                let logPayload = ExerciseLogSavePayload(
+                    weight_kg: weightKg,
+                    reps: reps,
+                    set_number: setNumber,
+                    exercise_name: exercise.name,
+                    completed: set.isConfirmed
+                )
+
+                if draft.originalLogIds.contains(set.id) {
+                    currentLogIds.insert(set.id)
+                    try await SupabaseClient.shared
+                        .from("exercise_logs")
+                        .update(logPayload)
+                        .eq("id", value: set.id)
+                        .execute()
+                } else {
+                    let insert = WorkoutSessionService.ExerciseLogInsert(
+                        userId: userId,
+                        sessionId: sessionId,
+                        exerciseName: exercise.name,
+                        setNumber: setNumber,
+                        weightKg: weightKg,
+                        reps: reps,
+                        completed: set.isConfirmed
+                    )
+                    try await SupabaseClient.shared
+                        .from("exercise_logs")
+                        .insert(insert)
+                        .execute()
+                }
+            }
+        }
+
+        let deletedLogIds = draft.originalLogIds.subtracting(currentLogIds)
+        for logId in deletedLogIds {
             try await SupabaseClient.shared
                 .from("exercise_logs")
-                .update(payload)
-                .eq("id", value: update.id)
+                .delete()
+                .eq("id", value: logId)
                 .execute()
         }
 
-        guard var sessionLogs = logsBySession[sessionId] else { return }
-        for update in updates {
-            guard let logIndex = sessionLogs.firstIndex(where: { $0.id == update.id }) else { continue }
-            let existing = sessionLogs[logIndex]
-            sessionLogs[logIndex] = ExerciseLogDetail(
-                id: existing.id,
-                sessionId: existing.sessionId,
-                exerciseName: existing.exerciseName,
-                weightKg: update.weightKg,
-                reps: update.reps,
-                setNumber: existing.setNumber
-            )
-        }
-        logsBySession[sessionId] = sessionLogs
+        logsBySession[sessionId] = SessionLogConverter.logs(
+            from: draft,
+            sessionId: sessionId,
+            isImperial: isImperial
+        )
+    }
+}
+
+private struct CompletedSessionUpdatePayload: Encodable {
+    let sessionName: String
+    let createdAt: Date
+    let finishedAt: Date
+    let exercisesCompleted: [WorkoutSessionService.SessionExerciseCompletedJSON]
+
+    enum CodingKeys: String, CodingKey {
+        case sessionName = "session_name"
+        case createdAt = "created_at"
+        case finishedAt = "finished_at"
+        case exercisesCompleted = "exercises_completed"
     }
 }
 
 private struct ExerciseLogSavePayload: Encodable {
     let weight_kg: Double?
     let reps: Int?
+    let set_number: Int
+    let exercise_name: String
+    let completed: Bool
 }
