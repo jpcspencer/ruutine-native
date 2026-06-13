@@ -5,6 +5,7 @@ import UIKit
 struct SessionEditDraft {
     let sessionName: String
     let sessionDate: Date
+    let durationSeconds: Int?
     let exercises: [WorkoutExercise]
     let originalLogIds: Set<UUID>
 }
@@ -12,6 +13,8 @@ struct SessionEditDraft {
 struct SessionEditState {
     var sessionName: String
     var sessionDate: Date
+    var durationHoursInput: String
+    var durationMinutesInput: String
     var exercises: [WorkoutExercise]
     let originalLogIds: Set<UUID>
     let isImperial: Bool
@@ -19,12 +22,20 @@ struct SessionEditState {
     init(
         sessionName: String,
         sessionDate: Date,
+        durationSeconds: Int?,
         logs: [ExerciseLogDetail],
         isImperial: Bool
     ) {
         self.sessionName = sessionName
         self.sessionDate = sessionDate
         self.isImperial = isImperial
+        if let durationSeconds {
+            durationHoursInput = String(durationSeconds / 3600)
+            durationMinutesInput = String((durationSeconds % 3600) / 60)
+        } else {
+            durationHoursInput = "0"
+            durationMinutesInput = "0"
+        }
         let converted = SessionLogConverter.exercises(from: logs, isImperial: isImperial)
         exercises = converted.exercises
         originalLogIds = converted.originalLogIds
@@ -34,9 +45,17 @@ struct SessionEditState {
         SessionEditDraft(
             sessionName: sessionName,
             sessionDate: sessionDate,
+            durationSeconds: resolvedDurationSeconds(),
             exercises: exercises,
             originalLogIds: originalLogIds
         )
+    }
+
+    func resolvedDurationSeconds() -> Int? {
+        let hours = Int(durationHoursInput.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
+        let minutes = Int(durationMinutesInput.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
+        let total = max(0, hours) * 3600 + max(0, minutes) * 60
+        return total > 0 ? total : nil
     }
 
     mutating func addExercise(_ exercise: Exercise) {

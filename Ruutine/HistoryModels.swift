@@ -33,6 +33,7 @@ struct HistorySessionItem: Identifiable {
     let id: UUID
     let sessionName: String
     let date: Date
+    let durationSeconds: Int?
     let volume: Double
     let exercises: [String]
     let bestSets: [String: BestSet]
@@ -71,6 +72,19 @@ enum HistoryFormatting {
         formatter.locale = Locale(identifier: "en_US")
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: date)
+    }
+
+    static func workoutLengthLabel(_ durationSeconds: Int) -> String {
+        let hours = durationSeconds / 3600
+        let minutes = (durationSeconds % 3600) / 60
+
+        if hours > 0, minutes > 0 {
+            return "\(hours)h \(minutes)m"
+        }
+        if hours > 0 {
+            return "\(hours)h"
+        }
+        return "\(minutes)m"
     }
 
     static func detailDateTime(_ date: Date) -> String {

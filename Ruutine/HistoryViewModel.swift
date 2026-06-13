@@ -30,7 +30,7 @@ final class HistoryViewModel: ObservableObject {
 
             let sessions: [CompletedSession] = try await SupabaseClient.shared
                 .from("completed_sessions")
-                .select("id, user_profile_id, session_name, finished_at, created_at, exercises_completed")
+                .select("id, user_profile_id, session_name, finished_at, created_at, exercises_completed, duration_seconds")
                 .eq("user_profile_id", value: userId)
                 .order("created_at", ascending: false)
                 .execute()
@@ -110,6 +110,7 @@ final class HistoryViewModel: ObservableObject {
                     id: session.id,
                     sessionName: session.sessionName,
                     date: date,
+                    durationSeconds: session.durationSeconds,
                     volume: volumeBySession[session.id] ?? 0,
                     exercises: exercisesBySession[session.id] ?? [],
                     bestSets: bestSetsBySession[session.id] ?? [:]
@@ -173,6 +174,7 @@ final class HistoryViewModel: ObservableObject {
             sessionName: trimmedName,
             createdAt: draft.sessionDate,
             finishedAt: draft.sessionDate,
+            durationSeconds: draft.durationSeconds,
             exercisesCompleted: exercisesCompleted
         )
 
@@ -244,12 +246,14 @@ private struct CompletedSessionUpdatePayload: Encodable {
     let sessionName: String
     let createdAt: Date
     let finishedAt: Date
+    let durationSeconds: Int?
     let exercisesCompleted: [WorkoutSessionService.SessionExerciseCompletedJSON]
 
     enum CodingKeys: String, CodingKey {
         case sessionName = "session_name"
         case createdAt = "created_at"
         case finishedAt = "finished_at"
+        case durationSeconds = "duration_seconds"
         case exercisesCompleted = "exercises_completed"
     }
 }

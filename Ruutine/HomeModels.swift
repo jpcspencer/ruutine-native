@@ -169,6 +169,7 @@ struct CompletedSession: Codable, Identifiable {
     let finishedAt: Date?
     let createdAt: Date?
     let exercisesCompleted: [WorkoutSessionService.SessionExerciseCompletedJSON]?
+    let durationSeconds: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -177,6 +178,7 @@ struct CompletedSession: Codable, Identifiable {
         case finishedAt = "finished_at"
         case createdAt = "created_at"
         case exercisesCompleted = "exercises_completed"
+        case durationSeconds = "duration_seconds"
     }
 
     var effectiveDate: Date? {

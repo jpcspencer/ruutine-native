@@ -13,6 +13,7 @@ enum WorkoutSessionService {
         let userProfileId: UUID
         let sessionName: String
         let exercisesCompleted: [SessionExerciseCompletedJSON]
+        let durationSeconds: Int?
         let notes: String?
 
         enum CodingKeys: String, CodingKey {
@@ -20,6 +21,7 @@ enum WorkoutSessionService {
             case userProfileId = "user_profile_id"
             case sessionName = "session_name"
             case exercisesCompleted = "exercises_completed"
+            case durationSeconds = "duration_seconds"
             case notes
         }
     }
@@ -69,7 +71,7 @@ enum WorkoutSessionService {
             SessionExerciseCompletedJSON(name: exercise.name, sets: exercise.sets.count)
         }
 
-        print("[WorkoutSessionService] completed_sessions columns: user_id, user_profile_id, session_name, exercises_completed")
+        print("[WorkoutSessionService] completed_sessions columns: user_id, user_profile_id, session_name, exercises_completed, duration_seconds")
         print("[WorkoutSessionService] exercise_logs columns: user_id, session_id, exercise_name, set_number, weight_kg, reps, completed")
 
         let trimmedNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -78,6 +80,7 @@ enum WorkoutSessionService {
             userProfileId: profileId,
             sessionName: trimmedSessionName,
             exercisesCompleted: exercisesJSON,
+            durationSeconds: durationSeconds,
             notes: trimmedNotes?.isEmpty == false ? trimmedNotes : nil
         )
 

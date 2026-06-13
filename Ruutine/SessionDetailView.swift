@@ -11,6 +11,7 @@ struct SessionDetailView: View {
 
     @State private var displayedName: String
     @State private var displayedDate: Date
+    @State private var displayedDurationSeconds: Int?
     @State private var logs: [ExerciseLogDetail]
     @State private var editState: SessionEditState
     @State private var isEditing = false
@@ -31,11 +32,13 @@ struct SessionDetailView: View {
         self.onSave = onSave
         _displayedName = State(initialValue: session.sessionName)
         _displayedDate = State(initialValue: session.date)
+        _displayedDurationSeconds = State(initialValue: session.durationSeconds)
         _logs = State(initialValue: logs)
         _editState = State(
             initialValue: SessionEditState(
                 sessionName: session.sessionName,
                 sessionDate: session.date,
+                durationSeconds: session.durationSeconds,
                 logs: logs,
                 isImperial: isImperial
             )
@@ -182,6 +185,20 @@ struct SessionDetailView: View {
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    sectionHeader("LENGTH")
+                    HStack(spacing: 12) {
+                        durationField(
+                            label: "Hours",
+                            text: $editState.durationHoursInput
+                        )
+                        durationField(
+                            label: "Minutes",
+                            text: $editState.durationMinutesInput
+                        )
+                    }
+                }
             }
         } else {
             VStack(alignment: .leading, spacing: 6) {
@@ -194,11 +211,41 @@ struct SessionDetailView: View {
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(RuutineColor.foreground)
 
-                Text(HistoryFormatting.detailTimeLabel(displayedDate))
+                Text(sessionTimeLine)
                     .font(.system(size: 14))
                     .foregroundColor(RuutineColor.muted)
             }
         }
+    }
+
+    private var sessionTimeLine: String {
+        let time = HistoryFormatting.detailTimeLabel(displayedDate)
+        guard let durationSeconds = displayedDurationSeconds else {
+            return time
+        }
+        return "\(time) · \(HistoryFormatting.workoutLengthLabel(durationSeconds))"
+    }
+
+    private func durationField(label: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label.uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(RuutineColor.muted)
+                .tracking(1)
+
+            TextField("0", text: text)
+                .keyboardType(.numberPad)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(RuutineColor.foreground)
+                .padding(14)
+                .background(RuutineColor.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var addExerciseButton: some View {
@@ -405,6 +452,7 @@ struct SessionDetailView: View {
         editState = SessionEditState(
             sessionName: displayedName,
             sessionDate: displayedDate,
+            durationSeconds: displayedDurationSeconds,
             logs: logs,
             isImperial: isImperial
         )
@@ -429,6 +477,7 @@ struct SessionDetailView: View {
             try await onSave(draft)
             displayedName = draft.sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
             displayedDate = draft.sessionDate
+            displayedDurationSeconds = draft.durationSeconds
             logs = SessionLogConverter.logs(
                 from: draft,
                 sessionId: sessionId,
