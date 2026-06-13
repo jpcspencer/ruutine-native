@@ -1,6 +1,7 @@
 import Auth
 import Charts
 import PhotosUI
+import Supabase
 import SwiftUI
 
 struct ProfileView: View {
@@ -470,7 +471,10 @@ struct ProfileView: View {
     }
 
     private func deleteAccount() async {
-        guard let accessToken = authVM.session?.accessToken else {
+        let accessToken: String
+        do {
+            accessToken = try await SupabaseClient.shared.auth.session.accessToken
+        } catch {
             showDeleteError = true
             return
         }
