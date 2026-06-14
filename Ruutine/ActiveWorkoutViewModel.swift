@@ -93,8 +93,11 @@ final class ActiveWorkoutViewModel: ObservableObject {
         updateElapsed()
         refreshHasConfirmedSet()
         startElapsedTimer()
-        if restSecondsRemaining != nil {
+        if let remaining = restSecondsRemaining {
             startRestTimer()
+            RestTimerNotificationManager.scheduleRestEnd(
+                at: Date().addingTimeInterval(TimeInterval(remaining))
+            )
         }
         syncLiveActivity(startIfNeeded: true)
     }
@@ -106,15 +109,12 @@ final class ActiveWorkoutViewModel: ObservableObject {
 
     func toggleRestTimer() {
         if restSecondsRemaining != nil {
-            restSecondsRemaining = nil
-            restTimer?.invalidate()
-            restTimer = nil
+            stopRestTimer()
+            persist()
+            syncLiveActivity()
         } else {
-            restSecondsRemaining = 90
-            startRestTimer()
+            beginRest(seconds: 90)
         }
-        persist()
-        syncLiveActivity()
     }
 
     func removeExercise(_ exercise: WorkoutExercise) {
@@ -387,6 +387,23 @@ final class ActiveWorkoutViewModel: ObservableObject {
         elapsedSeconds = max(0, Int(Date().timeIntervalSince(startedAt)))
     }
 
+    private func beginRest(seconds: Int) {
+        restSecondsRemaining = seconds
+        startRestTimer()
+        RestTimerNotificationManager.scheduleRestEnd(
+            at: Date().addingTimeInterval(TimeInterval(seconds))
+        )
+        persist()
+        syncLiveActivity()
+    }
+
+    private func stopRestTimer() {
+        restSecondsRemaining = nil
+        restTimer?.invalidate()
+        restTimer = nil
+        RestTimerNotificationManager.cancelRestEnd()
+    }
+
     private func startRestTimer() {
         restTimer?.invalidate()
         restTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -394,9 +411,9 @@ final class ActiveWorkoutViewModel: ObservableObject {
                 guard let self else { return }
                 guard let remaining = self.restSecondsRemaining else { return }
                 if remaining <= 1 {
-                    self.restSecondsRemaining = nil
-                    self.restTimer?.invalidate()
-                    self.restTimer = nil
+                    self.stopRestTimer()
+                    SoundFX.restEnd()
+                    Haptics.notify(.success)
                     self.persist()
                     self.syncLiveActivity()
                 } else {
@@ -428,6 +445,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
     }
 
     private func clearPersistence() {
+        RestTimerNotificationManager.cancelRestEnd()
         UserDefaults.standard.removeObject(forKey: Self.storageKey)
         elapsedTimer?.invalidate()
         restTimer?.invalidate()

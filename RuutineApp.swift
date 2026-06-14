@@ -9,6 +9,7 @@ import SwiftUI
 
 @main
 struct RuutineApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var authVM = AuthViewModel()
     @ObservedObject private var themeManager = ThemeManager.shared
 
