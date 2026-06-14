@@ -106,8 +106,10 @@ struct SessionDetailView: View {
         .background(RuutineColor.background.ignoresSafeArea())
         .presentationDragIndicator(.visible)
         .sheet(isPresented: $showExercisePicker) {
-            ExercisePickerView { exercise in
-                editState.addExercise(exercise)
+            ExercisePickerView { exercises in
+                for exercise in exercises {
+                    editState.addExercise(exercise)
+                }
             }
             .environmentObject(themeManager)
         }

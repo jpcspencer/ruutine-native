@@ -78,11 +78,13 @@ struct ActiveWorkoutView: View {
             }
         }
         .sheet(isPresented: $showExercisePicker) {
-            ExercisePickerView { exercise in
-                viewModel.addExercise(exercise)
-                if let userId = authVM.session?.user.id {
-                    Task {
-                        await viewModel.loadPreviousSets(for: exercise.name, userId: userId)
+            ExercisePickerView { exercises in
+                for exercise in exercises {
+                    viewModel.addExercise(exercise)
+                    if let userId = authVM.session?.user.id {
+                        Task {
+                            await viewModel.loadPreviousSets(for: exercise.name, userId: userId)
+                        }
                     }
                 }
             }
