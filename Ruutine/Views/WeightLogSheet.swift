@@ -75,13 +75,14 @@ struct WeightLogSheet: View {
             .padding(20)
             .background(RuutineColor.background)
             .navigationBarTitleDisplayMode(.inline)
+            .ruutineNavigationChrome()
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("LOG WEIGHT")
                         .font(.bebas(22))
                         .tracking(1)
                 }
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     RuutineNavButton(kind: .cancel) { dismiss() }
                 }
             }

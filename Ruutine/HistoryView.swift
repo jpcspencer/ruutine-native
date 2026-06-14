@@ -59,6 +59,7 @@ struct HistoryView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .ruutineNavigationChrome()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 RuutineNavButton(kind: .home) {

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Themed navigation chrome — Back, Home, Done, Finish, etc. Uses `RuutineColor` (active theme).
+/// Themed navigation chrome — back chevrons, pills for Cancel/Save/Done. Uses `RuutineColor`.
 struct RuutineNavButton: View {
     enum Kind {
         case back
@@ -17,110 +17,147 @@ struct RuutineNavButton: View {
     }
 
     let kind: Kind
-    let action: () -> Void
     var isDisabled: Bool = false
+    var isLoading: Bool = false
+    let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             label
         }
         .buttonStyle(.plain)
-        .disabled(isDisabled)
+        .disabled(isDisabled || isLoading)
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     @ViewBuilder
     private var label: some View {
         switch kind {
         case .back:
-            labeledNav(text: "BACK", icon: "chevron.left")
+            chevronOnly(color: RuutineColor.foreground)
 
         case .home:
-            labeledNav(text: "HOME", icon: "chevron.left")
+            homeCapsule
 
         case .done:
-            Text("DONE")
-                .font(.bebas(17))
-                .foregroundColor(RuutineColor.foreground)
-                .tracking(0.8)
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
+            pillLabel(title: "Done", style: .tertiary)
 
         case .cancel:
-            Text("CANCEL")
-                .font(.bebas(17))
-                .foregroundColor(RuutineColor.muted)
-                .tracking(0.8)
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
+            pillLabel(title: "Cancel", style: .secondary)
 
         case .save:
-            Text("SAVE")
-                .font(.bebas(17))
-                .foregroundColor(RuutineColor.accent)
-                .tracking(0.8)
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
+            pillLabel(title: "Save", style: .primary)
 
         case .confirm(let text):
-            Text(text.uppercased())
-                .font(.bebas(17))
-                .foregroundColor(RuutineColor.accent)
-                .tracking(0.8)
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
+            pillLabel(title: text, style: .primary)
 
         case .close:
-            iconButton("xmark", color: RuutineColor.muted)
+            chevronOnly(color: RuutineColor.muted, systemName: "xmark")
 
         case .iconBack:
-            iconButton("chevron.left", color: RuutineColor.accent)
+            chevronOnly(color: RuutineColor.foreground)
 
-        case .finish(let isLoading):
-            finishLabel(isLoading: isLoading)
+        case .finish(let loading):
+            finishPill(isLoading: loading)
 
         case .gear:
-            iconButton("gearshape.fill", color: RuutineColor.foreground)
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundColor(RuutineColor.foreground)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
 
         case .custom(let text, let icon):
             if let icon {
-                labeledNav(text: text.uppercased(), icon: icon)
+                labeledCapsule(text: text.uppercased(), icon: icon)
             } else {
-                Text(text.uppercased())
-                    .font(.bebas(17))
-                    .foregroundColor(RuutineColor.foreground)
-                    .tracking(0.8)
-                    .frame(minHeight: 44)
-                    .contentShape(Rectangle())
+                pillLabel(title: text, style: .tertiary)
             }
         }
     }
 
-    private func labeledNav(text: String, icon: String) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: icon)
-                .font(.system(size: 11, weight: .heavy))
-                .foregroundColor(RuutineColor.accent)
-
-            Text(text)
-                .font(.bebas(17))
-                .foregroundColor(RuutineColor.foreground)
-                .tracking(0.8)
-        }
-        .padding(.horizontal, 2)
-        .frame(minHeight: 44)
-        .contentShape(Rectangle())
-    }
-
-    private func iconButton(_ systemName: String, color: Color) -> some View {
+    private func chevronOnly(color: Color, systemName: String = "chevron.left") -> some View {
         Image(systemName: systemName)
-            .font(.system(size: 16, weight: .semibold))
+            .font(.system(size: 17, weight: .semibold))
             .foregroundColor(color)
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
     }
 
+    private var homeCapsule: some View {
+        labeledCapsule(text: "HOME", icon: "chevron.left")
+    }
+
+    private func labeledCapsule(text: String, icon: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(RuutineColor.accent)
+
+            Text(text)
+                .font(.bebas(16))
+                .foregroundColor(RuutineColor.foreground)
+                .tracking(0.6)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 36)
+        .background(RuutineColor.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(RuutineColor.border, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
     @ViewBuilder
-    private func finishLabel(isLoading: Bool) -> some View {
+    private func pillLabel(title: String, style: RuutinePillButton.Style) -> some View {
+        Group {
+            if isLoading {
+                ProgressView()
+                    .tint(style == .primary ? RuutineColor.accentForeground : RuutineColor.foreground)
+                    .scaleEffect(0.8)
+            } else {
+                Text(title.uppercased())
+                    .font(.bebas(16))
+                    .tracking(0.6)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+        .foregroundColor(pillForeground(style))
+        .frame(height: 36)
+        .padding(.horizontal, 14)
+        .background(pillBackground(style))
+        .overlay {
+            if style != .primary {
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(RuutineColor.border, lineWidth: 1)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .opacity(isDisabled ? 0.45 : 1)
+    }
+
+    private func pillForeground(_ style: RuutinePillButton.Style) -> Color {
+        switch style {
+        case .primary: return RuutineColor.accentForeground
+        case .secondary: return RuutineColor.foreground
+        case .tertiary: return RuutineColor.muted
+        }
+    }
+
+    private func pillBackground(_ style: RuutinePillButton.Style) -> Color {
+        switch style {
+        case .primary: return RuutineColor.accent
+        case .secondary: return RuutineColor.surface
+        case .tertiary: return RuutineColor.surface.opacity(0.5)
+        }
+    }
+
+    @ViewBuilder
+    private func finishPill(isLoading: Bool) -> some View {
         Group {
             if isLoading {
                 ProgressView()
@@ -128,16 +165,15 @@ struct RuutineNavButton: View {
                     .scaleEffect(0.85)
             } else {
                 Text("FINISH")
-                    .font(.bebas(20))
-                    .tracking(1)
+                    .font(.bebas(18))
+                    .tracking(0.8)
+                    .lineLimit(1)
             }
         }
         .foregroundColor(RuutineColor.accentForeground)
         .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .frame(height: 36)
         .background(RuutineColor.accent)
-        .clipShape(Capsule())
-        .frame(minHeight: 44)
-        .contentShape(Capsule())
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }

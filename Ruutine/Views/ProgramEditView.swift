@@ -142,17 +142,18 @@ struct ProgramEditView: View {
             .scrollContentBackground(.hidden)
             .background(RuutineColor.background)
             .navigationBarTitleDisplayMode(.inline)
+            .ruutineNavigationChrome()
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("EDIT PROGRAM")
                         .font(.bebas(22))
                         .tracking(1)
                 }
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     RuutineNavButton(kind: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    RuutineNavButton(kind: .save, isDisabled: isSaving) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    RuutineNavButton(kind: .save, isDisabled: isSaving, isLoading: isSaving) {
                         Task { await saveManual() }
                     }
                 }
@@ -207,9 +208,12 @@ struct ProgramEditView: View {
                     .background(RuutineColor.background)
                     .navigationTitle("Atlas Edit")
                     .navigationBarTitleDisplayMode(.inline)
+                    .ruutineNavigationChrome()
                     .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Close") { showAtlasEdit = false }
+                        ToolbarItem(placement: .topBarLeading) {
+                            RuutinePillButton(title: "Close", style: .secondary) {
+                                showAtlasEdit = false
+                            }
                         }
                     }
                 }

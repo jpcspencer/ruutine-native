@@ -69,6 +69,8 @@ struct ExercisePickerView: View {
             }
             .background(RuutineColor.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(true)
+            .ruutineNavigationChrome()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     RuutineNavButton(kind: .back) {
