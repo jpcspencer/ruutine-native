@@ -8,10 +8,40 @@
 
 /* Begin PBXBuildFile section */
 		556942E32FD7088B00A6B496 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 556942612FD4176300A6B496 /* Supabase */; };
+		557508862FDEF91B009122B9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 557508852FDEF91B009122B9 /* WidgetKit.framework */; };
+		557508882FDEF91B009122B9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 557508872FDEF91B009122B9 /* SwiftUI.framework */; };
+		557508972FDEF91C009122B9 /* RuutineLiveActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 557508832FDEF91B009122B9 /* RuutineLiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		557508952FDEF91C009122B9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 556942462FD4176200A6B496 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 557508822FDEF91B009122B9;
+			remoteInfo = RuutineLiveActivityExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		5575089C2FDEF91C009122B9 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				557508972FDEF91C009122B9 /* RuutineLiveActivityExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		5569424E2FD4176200A6B496 /* Ruutine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ruutine.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		557508832FDEF91B009122B9 /* RuutineLiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RuutineLiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		557508852FDEF91B009122B9 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		557508872FDEF91B009122B9 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -22,6 +52,13 @@
 			);
 			target = 5569424D2FD4176200A6B496 /* Ruutine */;
 		};
+		5575089B2FDEF91C009122B9 /* Exceptions for "RuutineLiveActivity" folder in "RuutineLiveActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 557508822FDEF91B009122B9 /* RuutineLiveActivityExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -31,6 +68,14 @@
 				556942F12FD9000000A6B496 /* Exceptions for "Ruutine" folder in "Ruutine" target */,
 			);
 			path = Ruutine;
+			sourceTree = "<group>";
+		};
+		557508892FDEF91B009122B9 /* RuutineLiveActivity */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5575089B2FDEF91C009122B9 /* Exceptions for "RuutineLiveActivity" folder in "RuutineLiveActivityExtension" target */,
+			);
+			path = RuutineLiveActivity;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -44,6 +89,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		557508802FDEF91B009122B9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				557508882FDEF91B009122B9 /* SwiftUI.framework in Frameworks */,
+				557508862FDEF91B009122B9 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -51,6 +105,8 @@
 			isa = PBXGroup;
 			children = (
 				556942502FD4176200A6B496 /* Ruutine */,
+				557508892FDEF91B009122B9 /* RuutineLiveActivity */,
+				557508842FDEF91B009122B9 /* Frameworks */,
 				5569424F2FD4176200A6B496 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -59,8 +115,18 @@
 			isa = PBXGroup;
 			children = (
 				5569424E2FD4176200A6B496 /* Ruutine.app */,
+				557508832FDEF91B009122B9 /* RuutineLiveActivityExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		557508842FDEF91B009122B9 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				557508852FDEF91B009122B9 /* WidgetKit.framework */,
+				557508872FDEF91B009122B9 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -73,10 +139,12 @@
 				5569424A2FD4176200A6B496 /* Sources */,
 				5569424B2FD4176200A6B496 /* Frameworks */,
 				5569424C2FD4176200A6B496 /* Resources */,
+				5575089C2FDEF91C009122B9 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				557508962FDEF91C009122B9 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				556942502FD4176200A6B496 /* Ruutine */,
@@ -89,6 +157,28 @@
 			productReference = 5569424E2FD4176200A6B496 /* Ruutine.app */;
 			productType = "com.apple.product-type.application";
 		};
+		557508822FDEF91B009122B9 /* RuutineLiveActivityExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 557508982FDEF91C009122B9 /* Build configuration list for PBXNativeTarget "RuutineLiveActivityExtension" */;
+			buildPhases = (
+				5575087F2FDEF91B009122B9 /* Sources */,
+				557508802FDEF91B009122B9 /* Frameworks */,
+				557508812FDEF91B009122B9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				557508892FDEF91B009122B9 /* RuutineLiveActivity */,
+			);
+			name = RuutineLiveActivityExtension;
+			packageProductDependencies = (
+			);
+			productName = RuutineLiveActivityExtension;
+			productReference = 557508832FDEF91B009122B9 /* RuutineLiveActivityExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -100,6 +190,9 @@
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					5569424D2FD4176200A6B496 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					557508822FDEF91B009122B9 = {
 						CreatedOnToolsVersion = 26.5;
 					};
 				};
@@ -122,12 +215,20 @@
 			projectRoot = "";
 			targets = (
 				5569424D2FD4176200A6B496 /* Ruutine */,
+				557508822FDEF91B009122B9 /* RuutineLiveActivityExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		5569424C2FD4176200A6B496 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		557508812FDEF91B009122B9 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -144,7 +245,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5575087F2FDEF91B009122B9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		557508962FDEF91C009122B9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 557508822FDEF91B009122B9 /* RuutineLiveActivityExtension */;
+			targetProxy = 557508952FDEF91C009122B9 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		556942572FD4176300A6B496 /* Debug */ = {
@@ -279,6 +395,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Ruutine/Info.plist;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Ruutine uses your photo library to attach a workout photo.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -312,6 +430,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Ruutine/Info.plist;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Ruutine uses your photo library to attach a workout photo.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -327,6 +447,68 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		557508992FDEF91C009122B9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = H9SLM96FW7;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RuutineLiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RuutineLiveActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jsvglobal.ruutine.Ruutine.RuutineLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5575089A2FDEF91C009122B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = H9SLM96FW7;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RuutineLiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RuutineLiveActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jsvglobal.ruutine.Ruutine.RuutineLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -351,6 +533,15 @@
 			buildConfigurations = (
 				5569425A2FD4176300A6B496 /* Debug */,
 				5569425B2FD4176300A6B496 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		557508982FDEF91C009122B9 /* Build configuration list for PBXNativeTarget "RuutineLiveActivityExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				557508992FDEF91C009122B9 /* Debug */,
+				5575089A2FDEF91C009122B9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
