@@ -23,7 +23,9 @@ struct RuutineNavButton: View {
 
     var body: some View {
         Button {
-            if usesLightImpact { Haptics.impact(.light) }
+            if !isDisabled && !isLoading {
+                Haptics.impact(.light)
+            }
             action()
         } label: {
             label
@@ -31,15 +33,6 @@ struct RuutineNavButton: View {
         .buttonStyle(.plain)
         .disabled(isDisabled || isLoading)
         .fixedSize(horizontal: true, vertical: false)
-    }
-
-    private var usesLightImpact: Bool {
-        switch kind {
-        case .save, .confirm, .finish:
-            return true
-        default:
-            return false
-        }
     }
 
     @ViewBuilder

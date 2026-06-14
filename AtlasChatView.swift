@@ -356,6 +356,7 @@ struct AtlasChatView: View {
     private func sendTapped() {
         let text = inputText
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        Haptics.impact(.light)
         inputText = ""
         Task {
             await atlasService.sendMessage(text)

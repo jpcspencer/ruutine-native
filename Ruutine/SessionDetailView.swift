@@ -252,6 +252,7 @@ struct SessionDetailView: View {
 
     private var addExerciseButton: some View {
         Button {
+            Haptics.impact(.light)
             showExercisePicker = true
         } label: {
             Text("Add Exercise")

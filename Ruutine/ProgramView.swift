@@ -131,6 +131,7 @@ struct ProgramView: View {
                 .minimumScaleFactor(0.75)
 
             Button {
+                Haptics.impact(.light)
                 renameInput = viewModel.renameFieldValue
                 showRenameDialog = true
             } label: {
@@ -183,6 +184,7 @@ struct ProgramView: View {
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
                 Button {
+                    Haptics.selection()
                     withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
                         toggleExpanded(day.day)
                     }
@@ -216,7 +218,7 @@ struct ProgramView: View {
                 .buttonStyle(.plain)
 
                 Button {
-                    Haptics.impact(.light)
+                    Haptics.impact(.medium)
                     startDay(day)
                 } label: {
                     Text("Start")
@@ -290,6 +292,7 @@ struct ProgramView: View {
     private var bottomActions: some View {
         HStack(spacing: 12) {
             Button {
+                Haptics.impact(.light)
                 showEditProgram = true
             } label: {
                 actionLabel(icon: "pencil", title: "Edit Program")
@@ -297,6 +300,7 @@ struct ProgramView: View {
             .buttonStyle(.plain)
 
             Button {
+                Haptics.impact(.medium)
                 showReplaceProgramConfirm = true
             } label: {
                 actionLabel(icon: "sparkles", title: "New Program")
@@ -337,6 +341,7 @@ struct ProgramView: View {
                 .padding(.horizontal, 32)
 
             Button {
+                Haptics.impact(.medium)
                 showProgramBuild = true
             } label: {
                 Text("Generate Program")

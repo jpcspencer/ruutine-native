@@ -44,6 +44,7 @@ struct LoginView: View {
                     HStack {
                         Spacer()
                         Button("Forgot Password?") {
+                            Haptics.impact(.light)
                             print("Forgot Password tapped")
                         }
                         .font(.system(size: 14))
@@ -51,6 +52,7 @@ struct LoginView: View {
                     }
 
                     Button {
+                        Haptics.impact(.light)
                         signIn()
                     } label: {
                         Group {

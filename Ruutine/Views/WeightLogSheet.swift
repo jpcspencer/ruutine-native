@@ -51,6 +51,7 @@ struct WeightLogSheet: View {
                 }
 
                 Button {
+                    Haptics.impact(.light)
                     Task { await save() }
                 } label: {
                     Group {

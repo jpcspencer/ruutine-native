@@ -200,6 +200,7 @@ struct ProfileEditView: View {
         ProfileChipFlowLayout(spacing: 8) {
             ForEach(options, id: \.self) { option in
                 Button {
+                    Haptics.selection()
                     onSelect(option)
                 } label: {
                     Text(label(option))
@@ -221,6 +222,7 @@ struct ProfileEditView: View {
 
     private func dayCountChip(_ count: Int) -> some View {
         Button {
+            Haptics.selection()
             draft.daysPerWeek = count
             if draft.trainingDays.count > count {
                 draft.trainingDays = Array(draft.trainingDays.prefix(count))
@@ -245,6 +247,7 @@ struct ProfileEditView: View {
         let isDisabled = !isSelected && draft.trainingDays.count >= draft.daysPerWeek
 
         return Button {
+            Haptics.selection()
             toggleTrainingDay(day)
         } label: {
             Text(label)
@@ -265,7 +268,10 @@ struct ProfileEditView: View {
     }
 
     private func unitChip(_ title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            Haptics.selection()
+            action()
+        } label: {
             Text(title)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(isActive ? RuutineColor.accentForeground : RuutineColor.foreground)

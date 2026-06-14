@@ -20,7 +20,10 @@ struct AtlasFloatingButton: View {
   let action: () -> Void
 
   var body: some View {
-    Button(action: action) {
+    Button {
+      Haptics.impact(.light)
+      action()
+    } label: {
       Image(systemName: "bubble.left.and.bubble.right.fill")
         .font(.system(size: 22, weight: .semibold))
         .foregroundColor(RuutineColor.accentForeground)

@@ -58,6 +58,7 @@ struct HomeView: View {
 
     private var atlasCard: some View {
         Button {
+            Haptics.impact(.light)
             showAtlasChat = true
         } label: {
             VStack(alignment: .leading, spacing: 4) {
@@ -107,6 +108,7 @@ struct HomeView: View {
 
                 if !session.completedToday {
                     Button {
+                        Haptics.impact(.medium)
                         print("Start Session tapped")
                     } label: {
                         Text("Start Session")
@@ -147,6 +149,7 @@ struct HomeView: View {
                 statCardContent(value: "\(viewModel.totalSessions)", label: "Sessions")
                     .ruuCard(padding: 12)
             }
+            .simultaneousGesture(TapGesture().onEnded { Haptics.impact(.light) })
             .buttonStyle(.plain)
             statCard(value: "\(viewModel.volumeDisplay)", label: "Vol (\(viewModel.volumeLabel))")
         }
@@ -253,6 +256,7 @@ struct HomeView: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
+        .simultaneousGesture(TapGesture().onEnded { Haptics.impact(.light) })
         .ruuCard(padding: 14)
     }
 

@@ -33,6 +33,7 @@ struct WelcomeView: View {
 
                     VStack(spacing: 12) {
                         Button {
+                            Haptics.impact(.light)
                             path.append(AuthRoute.login)
                         } label: {
                             Text("Sign In")
@@ -46,6 +47,7 @@ struct WelcomeView: View {
                         .buttonStyle(.plain)
 
                         Button {
+                            Haptics.impact(.light)
                             path.append(AuthRoute.signup)
                         } label: {
                             Text("Create Account")

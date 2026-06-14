@@ -224,6 +224,7 @@ struct OnboardingView: View {
             } else {
                 HStack(spacing: 10) {
                     Button {
+                        Haptics.impact(.light)
                         showSignOutConfirm = true
                     } label: {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -243,6 +244,7 @@ struct OnboardingView: View {
                 Spacer(minLength: 0)
 
                 Button("Later") {
+                    Haptics.impact(.light)
                     showLaterConfirm = true
                 }
                 .font(.bebas(20))
@@ -344,6 +346,7 @@ struct OnboardingView: View {
             }
 
             Button {
+                Haptics.impact(.light)
                 Task { await service.submitMeasurements() }
             } label: {
                 Text("Continue")
@@ -358,6 +361,7 @@ struct OnboardingView: View {
             .disabled(!service.canSubmitMeasurements || service.isTyping || service.isGenerating)
 
             Button {
+                Haptics.impact(.light)
                 Task { await service.skipMeasurements() }
             } label: {
                 Text("I'll skip this")
@@ -571,6 +575,7 @@ struct OnboardingView: View {
     private func sendTapped() {
         let text = inputText
         guard canSend else { return }
+        Haptics.impact(.light)
         inputText = ""
         Task {
             await service.sendMessage(text)

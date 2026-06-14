@@ -67,6 +67,7 @@ struct SignupView: View {
                     }
 
                     Button {
+                        Haptics.impact(.light)
                         signUp()
                     } label: {
                         Group {
@@ -94,6 +95,7 @@ struct SignupView: View {
                     }
 
                     Button {
+                        Haptics.impact(.light)
                         dismiss()
                     } label: {
                         Text("Already have an account? Sign in")

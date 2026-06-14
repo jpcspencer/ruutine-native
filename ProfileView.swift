@@ -147,6 +147,7 @@ struct ProfileView: View {
                 Spacer()
 
                 Button("Edit") {
+                    Haptics.impact(.light)
                     showEditProfile = true
                 }
                 .buttonStyle(.plain)
@@ -202,7 +203,10 @@ struct ProfileView: View {
     }
 
     private func unitPill(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            Haptics.selection()
+            action()
+        } label: {
             Text(title)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(isActive ? RuutineColor.accentForeground : RuutineColor.foreground)
@@ -229,6 +233,7 @@ struct ProfileView: View {
                 Spacer()
 
                 Button {
+                    Haptics.impact(.light)
                     showWeightLogSheet = true
                 } label: {
                     Image(systemName: "plus")
@@ -515,6 +520,7 @@ struct ProfileView: View {
                 .tracking(1.2)
 
             Button {
+                Haptics.impact(.light)
                 showDeleteConfirm = true
             } label: {
                 Text("Delete Account")
@@ -533,6 +539,7 @@ struct ProfileView: View {
 
     private var signOutButton: some View {
         Button {
+            Haptics.impact(.light)
             guard !isSigningOut else { return }
             isSigningOut = true
             Task {

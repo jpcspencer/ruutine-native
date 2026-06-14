@@ -74,6 +74,7 @@ struct HistoryView: View {
             }
             RuutineToolbarItem(placement: .topBarTrailing) {
                 Button {
+                    Haptics.impact(.light)
                     showCalendar = true
                 } label: {
                     Image(systemName: "calendar")
@@ -218,6 +219,7 @@ struct HistoryView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .onTapGesture {
+            Haptics.impact(.light)
             selectedSession = session
         }
     }

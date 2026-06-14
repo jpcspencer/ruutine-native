@@ -201,6 +201,7 @@ struct WorkoutRecapView: View {
 
     private var atlasCard: some View {
         Button {
+            Haptics.impact(.light)
             showAtlasChat = true
         } label: {
             VStack(alignment: .leading, spacing: 8) {
@@ -270,7 +271,10 @@ struct WorkoutRecapView: View {
     }
 
     private var doneButton: some View {
-        Button(action: onDone) {
+        Button {
+            Haptics.impact(.light)
+            onDone()
+        } label: {
             Text("Done")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(RuutineColor.accentForeground)

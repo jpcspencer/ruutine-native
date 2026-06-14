@@ -140,6 +140,9 @@ struct MainTabView: View {
 
     private func tabItem(tab: Tab, icon: String, label: String) -> some View {
         Button {
+            if selectedTab != tab {
+                Haptics.selection()
+            }
             if tab == .home {
                 homePath = NavigationPath()
             }
@@ -159,6 +162,7 @@ struct MainTabView: View {
 
     private var centerButton: some View {
         Button {
+            Haptics.impact(.medium)
             pendingExercises = nil
             showNewWorkout = true
         } label: {

@@ -134,6 +134,7 @@ struct NewWorkoutView: View {
 
     private func templateCard(_ template: WorkoutTemplate) -> some View {
         Button {
+            Haptics.impact(.medium)
             startWorkout(exercises: template.exercises)
         } label: {
             VStack(alignment: .leading, spacing: 6) {
@@ -176,7 +177,7 @@ struct NewWorkoutView: View {
 
     private var startButton: some View {
         Button {
-            Haptics.impact(.light)
+            Haptics.impact(.medium)
             startWorkout(exercises: [])
         } label: {
             Text("Start Workout")

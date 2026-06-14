@@ -115,6 +115,7 @@ struct GlossaryView: View {
         Menu {
             ForEach(MuscleCategory.allCases, id: \.self) { category in
                 Button(category.rawValue) {
+                    Haptics.selection()
                     selectedCategory = category
                 }
             }
@@ -137,6 +138,7 @@ struct GlossaryView: View {
 
     private var addCustomButton: some View {
         Button {
+            Haptics.impact(.light)
             showAddCustom = true
         } label: {
             Text("+ Add custom exercise")

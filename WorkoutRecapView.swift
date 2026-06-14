@@ -4,12 +4,14 @@ struct WorkoutRecapView: View {
     @EnvironmentObject private var themeManager: ThemeManager
 
     let data: WorkoutRecapData
+    var saveError: String?
     let onDone: () -> Void
 
     @EnvironmentObject private var authVM: AuthViewModel
     @StateObject private var atlasService = AtlasService()
     @State private var showAtlasChat = false
-    @State private var atlasMessage = "..."
+    @State private var atlasState: AtlasRecapState = .loading
+    @State private var messageVisible = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,6 +19,10 @@ struct WorkoutRecapView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
+                    if let saveError, !saveError.isEmpty {
+                        saveErrorBanner(saveError)
+                    }
+
                     summaryCard
                     if data.note != nil || data.photoData != nil {
                         notePhotoCard
@@ -33,8 +39,8 @@ struct WorkoutRecapView: View {
             doneButton
         }
         .background(RuutineColor.background.ignoresSafeArea())
-        .task {
-            await fetchAtlasMessage()
+        .task(id: data.id) {
+            await loadAtlasMessage()
         }
         .sheet(isPresented: $showAtlasChat) {
             AtlasChatView(atlasService: atlasService)
@@ -77,6 +83,20 @@ struct WorkoutRecapView: View {
             .padding(.horizontal, 16)
         }
         .padding(.bottom, 8)
+    }
+
+    private func saveErrorBanner(_ message: String) -> some View {
+        Text("Couldn't save workout: \(message)")
+            .font(.system(size: 13))
+            .foregroundColor(RuutineColor.destructive)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(RuutineColor.destructive.opacity(0.12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(RuutineColor.destructive.opacity(0.35), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var notePhotoCard: some View {
@@ -181,6 +201,7 @@ struct WorkoutRecapView: View {
 
     private var atlasCard: some View {
         Button {
+            Haptics.impact(.light)
             showAtlasChat = true
         } label: {
             VStack(alignment: .leading, spacing: 8) {
@@ -189,11 +210,7 @@ struct WorkoutRecapView: View {
                     .foregroundColor(RuutineColor.muted)
                     .tracking(1)
 
-                Text(atlasMessage)
-                    .font(.system(size: 14))
-                    .italic()
-                    .foregroundColor(RuutineColor.foreground)
-                    .fixedSize(horizontal: false, vertical: true)
+                atlasMessageContent
 
                 Text("Tap to chat with Atlas →")
                     .font(.system(size: 12))
@@ -209,6 +226,29 @@ struct WorkoutRecapView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var atlasMessageContent: some View {
+        switch atlasState {
+        case .loading:
+            RecapAtlasShimmer()
+                .frame(minHeight: 44)
+
+        case .loaded(let message):
+            Text(message)
+                .font(.system(size: 14))
+                .italic()
+                .foregroundColor(RuutineColor.foreground)
+                .fixedSize(horizontal: false, vertical: true)
+                .opacity(messageVisible ? 1 : 0)
+                .animation(.easeIn(duration: 0.35), value: messageVisible)
+
+        case .failed:
+            Text("Couldn't load coach note")
+                .font(.system(size: 13))
+                .foregroundColor(RuutineColor.muted)
+        }
     }
 
     private var musclesCard: some View {
@@ -231,7 +271,10 @@ struct WorkoutRecapView: View {
     }
 
     private var doneButton: some View {
-        Button(action: onDone) {
+        Button {
+            Haptics.impact(.light)
+            onDone()
+        } label: {
             Text("Done")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(RuutineColor.accentForeground)
@@ -260,47 +303,28 @@ struct WorkoutRecapView: View {
         return String(format: "%.1f", value)
     }
 
-    private func fetchAtlasMessage() async {
-        guard let url = URL(string: "https://www.ruutine.app/api/sessions/recap-message") else {
-            atlasMessage = fallbackMessage
-            return
-        }
+    private func loadAtlasMessage() async {
+        atlasState = .loading
+        messageVisible = false
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let result = await RecapMessageService.fetchMessage(for: data)
 
-        let body: [String: Any] = [
-            "profileId": data.profileId.uuidString,
-            "sessionName": data.sessionName,
-            "totalTimeSeconds": data.durationSeconds,
-            "totalSets": data.totalSets,
-            "totalVolumeKg": data.totalVolumeKg,
-        ]
-
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-            let (responseData, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-                atlasMessage = fallbackMessage
-                return
+        switch result {
+        case .success(let message):
+            atlasState = .loaded(message)
+            withAnimation(.easeIn(duration: 0.35)) {
+                messageVisible = true
             }
-
-            if let json = try JSONSerialization.jsonObject(with: responseData) as? [String: Any],
-               let message = json["message"] as? String,
-               !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                atlasMessage = message
-            } else {
-                atlasMessage = fallbackMessage
-            }
-        } catch {
-            atlasMessage = fallbackMessage
+        case .failure:
+            atlasState = .failed
         }
     }
+}
 
-    private var fallbackMessage: String {
-        "Great work today. Keep showing up."
-    }
+private enum AtlasRecapState: Equatable {
+    case loading
+    case loaded(String)
+    case failed
 }
 
 #Preview {

@@ -19,7 +19,9 @@ struct RuutinePillButton: View {
 
     var body: some View {
         Button {
-            if style == .primary { Haptics.impact(.light) }
+            if !isDisabled && !isLoading {
+                Haptics.impact(.light)
+            }
             action()
         } label: {
             label

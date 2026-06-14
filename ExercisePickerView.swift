@@ -111,6 +111,7 @@ struct ExercisePickerView: View {
                 .foregroundColor(RuutineColor.muted)
 
             Button {
+                Haptics.impact(.light)
                 Task { await createAndSelect() }
             } label: {
                 HStack(spacing: 8) {
