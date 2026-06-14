@@ -150,81 +150,15 @@ struct ProgramExercise: Codable {
     }
 
     var prescriptionLine: String {
-        let scheme = formattedRepScheme
+        let setsLabel = sets.map(String.init) ?? "—"
+        let repsLabel = reps ?? "—"
         let restLabel: String
         if let rest, !rest.isEmpty {
             restLabel = rest.lowercased().contains("rest") ? rest : "\(rest) rest"
         } else {
             restLabel = "— rest"
         }
-        return "\(scheme) · \(restLabel)"
-    }
-
-    /// Rep target for each set, expanded to match `sets` (or inferred count).
-    var perSetReps: [String] {
-        let setCount = resolvedSetCount
-        let tokens = Self.parseRepTokens(from: reps)
-
-        guard !tokens.isEmpty else {
-            return Array(repeating: "—", count: setCount)
-        }
-
-        if tokens.count == 1 {
-            return Array(repeating: tokens[0], count: setCount)
-        }
-
-        if tokens.count >= setCount {
-            return Array(tokens.prefix(setCount))
-        }
-
-        var expanded = tokens
-        let filler = tokens.last ?? "—"
-        while expanded.count < setCount {
-            expanded.append(filler)
-        }
-        return expanded
-    }
-
-    var formattedRepScheme: String {
-        let perSet = perSetReps
-        guard !perSet.isEmpty else { return "—" }
-
-        let meaningful = perSet.filter { $0 != "—" }
-        guard !meaningful.isEmpty else { return "—" }
-
-        if perSet.count == 1 {
-            return perSet[0]
-        }
-
-        if perSet.allSatisfy({ $0 == perSet[0] }) {
-            return "\(perSet.count) × \(perSet[0])"
-        }
-
-        return perSet.joined(separator: " / ")
-    }
-
-    private var resolvedSetCount: Int {
-        if let sets, sets > 0 { return sets }
-        let tokenCount = Self.parseRepTokens(from: reps).count
-        return max(tokenCount, 1)
-    }
-
-    private static func parseRepTokens(from reps: String?) -> [String] {
-        guard let reps = reps?.trimmingCharacters(in: .whitespacesAndNewlines), !reps.isEmpty else {
-            return []
-        }
-
-        let separators = CharacterSet(charactersIn: ",/;|")
-        let split = reps
-            .components(separatedBy: separators)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-
-        if split.count > 1 {
-            return split
-        }
-
-        return [reps]
+        return "\(setsLabel)×\(repsLabel) · \(restLabel)"
     }
 }
 

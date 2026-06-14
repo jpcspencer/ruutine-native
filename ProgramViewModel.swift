@@ -134,13 +134,10 @@ final class ProgramViewModel: ObservableObject {
 
     func exercisesForDay(_ day: ProgramDay) -> [WorkoutExercise] {
         (day.exercises ?? []).map { exercise in
-            let targetSets = exercise.perSetReps.map { repTarget in
-                WorkoutSet(weight: "", reps: repTarget, isConfirmed: false)
-            }
-            return WorkoutExercise(
+            WorkoutExercise(
                 name: exercise.name,
                 primaryMuscle: ExerciseMuscleMap.primaryMuscle(for: exercise.name),
-                sets: targetSets.isEmpty ? [WorkoutSet()] : targetSets
+                sets: [WorkoutSet()]
             )
         }
     }

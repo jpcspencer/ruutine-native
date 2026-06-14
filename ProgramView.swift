@@ -103,8 +103,8 @@ struct ProgramView: View {
                     .padding(.horizontal, 16)
 
                 VStack(spacing: 12) {
-                    ForEach(Array(viewModel.days.enumerated()), id: \.element.day) { index, day in
-                        dayCard(day, dayNumber: index + 1)
+                    ForEach(viewModel.days, id: \.day) { day in
+                        dayCard(day)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -173,7 +173,7 @@ struct ProgramView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func dayCard(_ day: ProgramDay, dayNumber: Int) -> some View {
+    private func dayCard(_ day: ProgramDay) -> some View {
         let isExpanded = expandedDays.contains(day.day)
         let exerciseCount = day.exercises?.count ?? 0
 
@@ -186,13 +186,8 @@ struct ProgramView: View {
                 } label: {
                     HStack(alignment: .center, spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("DAY \(dayNumber)")
-                                .font(.bebas(22))
-                                .foregroundColor(RuutineColor.accent)
-                                .tracking(1)
-
                             Text(day.name)
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(RuutineColor.foreground)
                                 .multilineTextAlignment(.leading)
 
