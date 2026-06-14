@@ -59,27 +59,20 @@ struct HistoryView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .ruutineNavigationChrome()
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
+            RuutineToolbarItem(placement: .topBarLeading) {
+                RuutineNavButton(kind: .home) {
                     dismiss()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("Home")
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .foregroundColor(RuutineColor.foreground)
                 }
             }
-            ToolbarItem(placement: .principal) {
+            RuutineToolbarItem(placement: .principal) {
                 Text("SESSION HISTORY")
                     .font(.bebas(28))
                     .foregroundColor(RuutineColor.foreground)
                     .tracking(1)
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            RuutineToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showCalendar = true
                 } label: {

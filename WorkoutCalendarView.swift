@@ -24,13 +24,11 @@ struct WorkoutCalendarView: View {
             }
             .padding(20)
             .background(RuutineColor.background.ignoresSafeArea())
+            .ruutineNavigationChrome()
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
+                RuutineToolbarItem(placement: .topBarTrailing) {
+                    RuutineNavButton(kind: .close) {
                         dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .foregroundColor(RuutineColor.muted)
                     }
                 }
             }

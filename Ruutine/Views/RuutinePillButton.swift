@@ -79,6 +79,21 @@ struct RuutinePillButton: View {
     }
 }
 
+/// Toolbar item without the iOS 26 Liquid Glass shared background bubble.
+struct RuutineToolbarItem<Content: View>: ToolbarContent {
+    let placement: ToolbarItemPlacement
+    @ViewBuilder let content: () -> Content
+
+    var body: some ToolbarContent {
+        if #available(iOS 26.0, *) {
+            ToolbarItem(placement: placement, content: content)
+                .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(placement: placement, content: content)
+        }
+    }
+}
+
 extension View {
     /// Themed navigation bar — accent tint, no system blue; opaque background.
     func ruutineNavigationChrome() -> some View {

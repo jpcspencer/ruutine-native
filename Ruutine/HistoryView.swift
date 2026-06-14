@@ -61,18 +61,18 @@ struct HistoryView: View {
         .navigationBarBackButtonHidden(true)
         .ruutineNavigationChrome()
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
+            RuutineToolbarItem(placement: .topBarLeading) {
                 RuutineNavButton(kind: .home) {
                     dismiss()
                 }
             }
-            ToolbarItem(placement: .principal) {
+            RuutineToolbarItem(placement: .principal) {
                 Text("SESSION HISTORY")
                     .font(.bebas(28))
                     .foregroundColor(RuutineColor.foreground)
                     .tracking(1)
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            RuutineToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showCalendar = true
                 } label: {

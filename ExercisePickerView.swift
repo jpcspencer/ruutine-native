@@ -73,12 +73,12 @@ struct ExercisePickerView: View {
             .navigationBarBackButtonHidden(true)
             .ruutineNavigationChrome()
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                RuutineToolbarItem(placement: .topBarLeading) {
                     RuutineNavButton(kind: .back) {
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .principal) {
+                RuutineToolbarItem(placement: .principal) {
                     Text("ADD EXERCISE")
                         .font(.bebas(24))
                         .foregroundColor(RuutineColor.foreground)

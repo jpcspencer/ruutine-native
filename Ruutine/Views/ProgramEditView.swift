@@ -144,15 +144,15 @@ struct ProgramEditView: View {
             .navigationBarTitleDisplayMode(.inline)
             .ruutineNavigationChrome()
             .toolbar {
-                ToolbarItem(placement: .principal) {
+                RuutineToolbarItem(placement: .principal) {
                     Text("EDIT PROGRAM")
                         .font(.bebas(22))
                         .tracking(1)
                 }
-                ToolbarItem(placement: .topBarLeading) {
+                RuutineToolbarItem(placement: .topBarLeading) {
                     RuutineNavButton(kind: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                RuutineToolbarItem(placement: .topBarTrailing) {
                     RuutineNavButton(kind: .save, isDisabled: isSaving, isLoading: isSaving) {
                         Task { await saveManual() }
                     }
@@ -213,7 +213,7 @@ struct ProgramEditView: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .ruutineNavigationChrome()
                     .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
+                        RuutineToolbarItem(placement: .topBarLeading) {
                             RuutinePillButton(title: "Close", style: .secondary) {
                                 showAtlasEdit = false
                             }

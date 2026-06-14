@@ -26,7 +26,7 @@ struct WorkoutCalendarView: View {
             .background(RuutineColor.background.ignoresSafeArea())
             .ruutineNavigationChrome()
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                RuutineToolbarItem(placement: .topBarTrailing) {
                     RuutineNavButton(kind: .close) {
                         dismiss()
                     }

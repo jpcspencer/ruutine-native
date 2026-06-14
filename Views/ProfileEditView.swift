@@ -107,22 +107,24 @@ struct ProfileEditView: View {
             }
             .background(RuutineColor.background)
             .navigationBarTitleDisplayMode(.inline)
+            .ruutineNavigationChrome()
             .toolbar {
-                ToolbarItem(placement: .principal) {
+                RuutineToolbarItem(placement: .principal) {
                     Text("EDIT PROFILE")
                         .font(.bebas(22))
                         .tracking(1)
                 }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(RuutineColor.muted)
+                RuutineToolbarItem(placement: .topBarLeading) {
+                    RuutineNavButton(kind: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                RuutineToolbarItem(placement: .topBarTrailing) {
+                    RuutineNavButton(
+                        kind: .save,
+                        isDisabled: isSaving || draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                        isLoading: isSaving
+                    ) {
                         Task { await save() }
                     }
-                    .disabled(isSaving || draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .foregroundColor(RuutineColor.accent)
                 }
             }
         }

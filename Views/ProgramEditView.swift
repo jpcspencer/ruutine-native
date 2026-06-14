@@ -142,22 +142,20 @@ struct ProgramEditView: View {
             .scrollContentBackground(.hidden)
             .background(RuutineColor.background)
             .navigationBarTitleDisplayMode(.inline)
+            .ruutineNavigationChrome()
             .toolbar {
-                ToolbarItem(placement: .principal) {
+                RuutineToolbarItem(placement: .principal) {
                     Text("EDIT PROGRAM")
                         .font(.bebas(22))
                         .tracking(1)
                 }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(RuutineColor.muted)
+                RuutineToolbarItem(placement: .topBarLeading) {
+                    RuutineNavButton(kind: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                RuutineToolbarItem(placement: .topBarTrailing) {
+                    RuutineNavButton(kind: .save, isDisabled: isSaving, isLoading: isSaving) {
                         Task { await saveManual() }
                     }
-                    .disabled(isSaving)
-                    .foregroundColor(RuutineColor.accent)
                 }
             }
             .alert("Couldn't Save", isPresented: Binding(
@@ -167,6 +165,9 @@ struct ProgramEditView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(errorMessage ?? "")
+            }
+            .onChange(of: errorMessage) { _, error in
+                if error != nil { Haptics.notify(.error) }
             }
             .sheet(isPresented: $showAtlasEdit) {
                 NavigationStack {
@@ -210,9 +211,12 @@ struct ProgramEditView: View {
                     .background(RuutineColor.background)
                     .navigationTitle("Atlas Edit")
                     .navigationBarTitleDisplayMode(.inline)
+                    .ruutineNavigationChrome()
                     .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Close") { showAtlasEdit = false }
+                        RuutineToolbarItem(placement: .topBarLeading) {
+                            RuutinePillButton(title: "Close", style: .secondary) {
+                                showAtlasEdit = false
+                            }
                         }
                     }
                 }

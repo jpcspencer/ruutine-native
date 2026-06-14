@@ -153,16 +153,16 @@ struct WorkoutSettingsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .ruutineNavigationChrome()
             .toolbar {
-                ToolbarItem(placement: .principal) {
+                RuutineToolbarItem(placement: .principal) {
                     Text("WORKOUT SETTINGS")
                         .font(.bebas(22))
                         .foregroundColor(RuutineColor.foreground)
                         .tracking(1)
                 }
-                ToolbarItem(placement: .topBarLeading) {
+                RuutineToolbarItem(placement: .topBarLeading) {
                     RuutineNavButton(kind: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                RuutineToolbarItem(placement: .topBarTrailing) {
                     RuutineNavButton(kind: .confirm(text: "Done")) {
                         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                         onSave(
