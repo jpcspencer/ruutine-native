@@ -60,6 +60,42 @@ struct WorkoutRecapData: Identifiable, Equatable {
     var volumeFormatted: String {
         "\(Int(totalVolumeKg.rounded())) kg"
     }
+
+    static func fromCompletion(
+        profileId: UUID,
+        sessionName: String,
+        durationSeconds: Int,
+        exercises: [CompletedExercisePayload],
+        totalVolumeKg: Double,
+        totalSets: Int,
+        note: String? = nil,
+        photoData: Data? = nil,
+        sessionId: UUID = UUID()
+    ) -> WorkoutRecapData {
+        let recapExercises = exercises.map { exercise in
+            RecapExercise(
+                name: exercise.name,
+                primaryMuscle: exercise.primaryMuscle,
+                sets: exercise.sets.map {
+                    RecapSet(setNumber: $0.setNumber, weightKg: $0.weightKg, reps: $0.reps)
+                }
+            )
+        }
+
+        let trimmedNote = note?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return WorkoutRecapData(
+            id: sessionId,
+            sessionName: sessionName.trimmingCharacters(in: .whitespacesAndNewlines),
+            durationSeconds: durationSeconds,
+            totalSets: totalSets,
+            totalVolumeKg: totalVolumeKg,
+            exercises: recapExercises,
+            profileId: profileId,
+            note: trimmedNote?.isEmpty == false ? trimmedNote : nil,
+            photoData: photoData
+        )
+    }
 }
 
 struct CompletedExercisePayload {

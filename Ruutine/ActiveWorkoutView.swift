@@ -8,6 +8,7 @@ struct ActiveWorkoutView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @StateObject private var viewModel: ActiveWorkoutViewModel
     @State private var recapData: WorkoutRecapData?
+    @State private var recapSaveError: String?
     @State private var isSaving = false
     @State private var saveError: String?
     @State private var showExercisePicker = false
@@ -51,8 +52,9 @@ struct ActiveWorkoutView: View {
             await viewModel.loadPreviousSets(userId: userId)
         }
         .fullScreenCover(item: $recapData) { data in
-            WorkoutRecapView(data: data) {
+            WorkoutRecapView(data: data, saveError: recapSaveError) {
                 recapData = nil
+                recapSaveError = nil
                 onWorkoutComplete?()
                 dismiss()
             }
@@ -505,25 +507,40 @@ struct ActiveWorkoutView: View {
               let payload = viewModel.buildCompletionPayload()
         else { return }
 
-        isSaving = true
+        let workoutName = viewModel.workoutName
+        let workoutNote = viewModel.workoutNote
+        let workoutPhotoData = viewModel.workoutPhotoData
+
+        let recap = WorkoutRecapData.fromCompletion(
+            profileId: userId,
+            sessionName: workoutName,
+            durationSeconds: payload.durationSeconds,
+            exercises: payload.exercises,
+            totalVolumeKg: payload.totalVolume,
+            totalSets: payload.totalSets,
+            note: workoutNote,
+            photoData: workoutPhotoData
+        )
+
+        recapSaveError = nil
+        recapData = recap
+        viewModel.finishWorkout()
+
         Task {
             do {
-                let recap = try await WorkoutSessionService.saveCompletedWorkout(
+                _ = try await WorkoutSessionService.saveCompletedWorkout(
                     userId: userId,
                     profileId: userId,
-                    sessionName: viewModel.workoutName,
+                    sessionName: workoutName,
                     durationSeconds: payload.durationSeconds,
                     exercises: payload.exercises,
-                    notes: viewModel.workoutNote,
-                    photoData: viewModel.workoutPhotoData
+                    notes: workoutNote,
+                    photoData: workoutPhotoData
                 )
-                viewModel.finishWorkout()
-                recapData = recap
             } catch {
                 print("[ActiveWorkoutView] Finish Session save failed: \(error)")
-                saveError = WorkoutSessionService.userFacingMessage(for: error)
+                recapSaveError = WorkoutSessionService.userFacingMessage(for: error)
             }
-            isSaving = false
         }
     }
 }
