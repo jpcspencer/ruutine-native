@@ -16,6 +16,7 @@ struct ProfileView: View {
     @State private var isSigningOut = false
     @State private var showEditProfile = false
     @State private var showWeightLogSheet = false
+    @State private var defaultRestSeconds = RestDurationPreferences.defaultSeconds
 
     var body: some View {
         ZStack {
@@ -43,6 +44,7 @@ struct ProfileView: View {
                         profileCard(profile)
                         weightHistorySection
                         themeSection
+                        restDurationSection
                         dangerZone
                         signOutButton
                     }
@@ -61,6 +63,7 @@ struct ProfileView: View {
             }
         }
         .task(id: authVM.session?.user.id) {
+            defaultRestSeconds = RestDurationPreferences.defaultSeconds
             reload()
         }
         .onChange(of: selectedPhoto) { _, item in
@@ -363,6 +366,39 @@ struct ProfileView: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
                             .background(RuutineColor.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(isActive ? RuutineColor.accent : RuutineColor.border, lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private var restDurationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("DEFAULT REST")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(RuutineColor.muted)
+                .tracking(1.2)
+
+            HStack(spacing: 8) {
+                ForEach(RestDurationPreferences.presets, id: \.self) { seconds in
+                    let isActive = defaultRestSeconds == seconds
+                    Button {
+                        Haptics.selection()
+                        RestDurationPreferences.defaultSeconds = seconds
+                        defaultRestSeconds = seconds
+                    } label: {
+                        Text(RestDurationPreferences.formatted(seconds))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(isActive ? RuutineColor.accentForeground : RuutineColor.foreground)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(isActive ? RuutineColor.accent : RuutineColor.surface)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(isActive ? RuutineColor.accent : RuutineColor.border, lineWidth: 1)

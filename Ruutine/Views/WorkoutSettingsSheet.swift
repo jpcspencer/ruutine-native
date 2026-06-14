@@ -10,20 +10,23 @@ struct WorkoutSettingsSheet: View {
     @State private var startTime: Date
     @State private var photoItem: PhotosPickerItem?
     @State private var photoData: Data?
+    @State private var restDurationSeconds: Int
 
-    let onSave: (String, String, Date, Data?) -> Void
+    let onSave: (String, String, Date, Data?, Int) -> Void
 
     init(
         workoutName: String,
         note: String,
         startedAt: Date,
         photoData: Data?,
-        onSave: @escaping (String, String, Date, Data?) -> Void
+        restDurationSeconds: Int,
+        onSave: @escaping (String, String, Date, Data?, Int) -> Void
     ) {
         _name = State(initialValue: workoutName)
         _note = State(initialValue: note)
         _startTime = State(initialValue: startedAt)
         _photoData = State(initialValue: photoData)
+        _restDurationSeconds = State(initialValue: restDurationSeconds)
         self.onSave = onSave
     }
 
@@ -76,6 +79,31 @@ struct WorkoutSettingsSheet: View {
                             .background(RuutineColor.surface)
                             .overlay(fieldBorder)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    fieldSection(title: "DEFAULT REST") {
+                        HStack(spacing: 8) {
+                            ForEach(RestDurationPreferences.presets, id: \.self) { seconds in
+                                let isSelected = restDurationSeconds == seconds
+                                Button {
+                                    Haptics.selection()
+                                    restDurationSeconds = seconds
+                                } label: {
+                                    Text(RestDurationPreferences.formatted(seconds))
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(isSelected ? RuutineColor.accentForeground : RuutineColor.foreground)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 10)
+                                        .background(isSelected ? RuutineColor.accent : RuutineColor.surface)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(isSelected ? RuutineColor.accent : RuutineColor.border, lineWidth: 1)
+                                        )
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
                     }
 
                     fieldSection(title: "WORKOUT PHOTO") {
@@ -141,7 +169,8 @@ struct WorkoutSettingsSheet: View {
                             trimmed.isEmpty ? ActiveWorkoutViewModel.defaultWorkoutName() : trimmed,
                             note,
                             startTime,
-                            photoData
+                            photoData,
+                            restDurationSeconds
                         )
                         dismiss()
                     }

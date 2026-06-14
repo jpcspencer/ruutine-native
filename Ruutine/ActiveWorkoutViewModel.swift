@@ -40,6 +40,7 @@ struct ActiveWorkoutState: Codable {
     var exercises: [WorkoutExercise]
     var startedAt: Date
     var restSecondsRemaining: Int?
+    var defaultRestSeconds: Int?
     var workoutNote: String?
     var workoutPhotoJPEGBase64: String?
 }
@@ -52,6 +53,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
     @Published var workoutPhotoData: Data?
     @Published var elapsedSeconds = 0
     @Published var restSecondsRemaining: Int?
+    @Published private(set) var sessionDefaultRestSeconds: Int = RestDurationPreferences.defaultSeconds
     @Published var previousSetsByExercise: [String: [PreviousSetRecord]] = [:]
     @Published private(set) var hasConfirmedSet = false
 
@@ -66,6 +68,9 @@ final class ActiveWorkoutViewModel: ObservableObject {
     }
 
     init(initialExercises: [WorkoutExercise]? = nil, workoutName initialWorkoutName: String? = nil) {
+        let globalDefault = RestDurationPreferences.defaultSeconds
+        sessionDefaultRestSeconds = globalDefault
+
         if let initialExercises {
             workoutName = initialWorkoutName ?? Self.defaultWorkoutName()
             exercises = initialExercises
@@ -79,6 +84,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
             exercises = saved.exercises
             startedAt = saved.startedAt
             restSecondsRemaining = saved.restSecondsRemaining
+            sessionDefaultRestSeconds = saved.defaultRestSeconds ?? globalDefault
             workoutNote = saved.workoutNote ?? ""
             if let base64 = saved.workoutPhotoJPEGBase64 {
                 workoutPhotoData = Data(base64Encoded: base64)
@@ -113,8 +119,47 @@ final class ActiveWorkoutViewModel: ObservableObject {
             persist()
             syncLiveActivity()
         } else {
-            beginRest(seconds: 90)
+            beginRest(seconds: sessionDefaultRestSeconds)
         }
+    }
+
+    func adjustActiveRest(by delta: Int) {
+        guard restSecondsRemaining != nil else { return }
+
+        let updatedDefault = max(RestDurationPreferences.minimumSeconds, sessionDefaultRestSeconds + delta)
+        applySessionDefaultRestSeconds(updatedDefault)
+
+        let updatedRemaining = max(0, (restSecondsRemaining ?? 0) + delta)
+        if updatedRemaining == 0 {
+            completeRestTimer()
+        } else {
+            restSecondsRemaining = updatedRemaining
+            rescheduleRestEndNotification()
+            persist()
+            syncLiveActivity()
+        }
+    }
+
+    func applyRestPreset(_ seconds: Int) {
+        applySessionDefaultRestSeconds(seconds)
+
+        if restSecondsRemaining != nil {
+            restSecondsRemaining = seconds
+            rescheduleRestEndNotification()
+        }
+
+        persist()
+        syncLiveActivity()
+    }
+
+    func setSessionDefaultRestSeconds(_ seconds: Int) {
+        applySessionDefaultRestSeconds(seconds)
+        persist()
+    }
+
+    private func applySessionDefaultRestSeconds(_ seconds: Int) {
+        sessionDefaultRestSeconds = seconds
+        RestDurationPreferences.defaultSeconds = seconds
     }
 
     func removeExercise(_ exercise: WorkoutExercise) {
@@ -390,9 +435,22 @@ final class ActiveWorkoutViewModel: ObservableObject {
     private func beginRest(seconds: Int) {
         restSecondsRemaining = seconds
         startRestTimer()
+        rescheduleRestEndNotification()
+        persist()
+        syncLiveActivity()
+    }
+
+    private func rescheduleRestEndNotification() {
+        guard let remaining = restSecondsRemaining else { return }
         RestTimerNotificationManager.scheduleRestEnd(
-            at: Date().addingTimeInterval(TimeInterval(seconds))
+            at: Date().addingTimeInterval(TimeInterval(remaining))
         )
+    }
+
+    private func completeRestTimer() {
+        stopRestTimer()
+        SoundFX.restEnd()
+        Haptics.notify(.success)
         persist()
         syncLiveActivity()
     }
@@ -411,11 +469,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
                 guard let self else { return }
                 guard let remaining = self.restSecondsRemaining else { return }
                 if remaining <= 1 {
-                    self.stopRestTimer()
-                    SoundFX.restEnd()
-                    Haptics.notify(.success)
-                    self.persist()
-                    self.syncLiveActivity()
+                    self.completeRestTimer()
                 } else {
                     self.restSecondsRemaining = remaining - 1
                     self.persist()
@@ -436,6 +490,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
             exercises: exercises,
             startedAt: startedAt,
             restSecondsRemaining: restSecondsRemaining,
+            defaultRestSeconds: sessionDefaultRestSeconds,
             workoutNote: workoutNote.isEmpty ? nil : workoutNote,
             workoutPhotoJPEGBase64: workoutPhotoData?.base64EncodedString()
         )

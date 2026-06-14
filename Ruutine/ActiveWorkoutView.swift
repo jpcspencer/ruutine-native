@@ -14,6 +14,7 @@ struct ActiveWorkoutView: View {
     @State private var showExercisePicker = false
     @State private var showCancelConfirmation = false
     @State private var showWorkoutSettings = false
+    @State private var showRestPresets = false
     @State private var draggedExerciseID: UUID?
     @FocusState private var focusedField: WorkoutFieldFocus?
 
@@ -64,14 +65,16 @@ struct ActiveWorkoutView: View {
                 workoutName: viewModel.workoutName,
                 note: viewModel.workoutNote,
                 startedAt: viewModel.startedAt,
-                photoData: viewModel.workoutPhotoData
-            ) { name, note, startTime, photoData in
+                photoData: viewModel.workoutPhotoData,
+                restDurationSeconds: viewModel.sessionDefaultRestSeconds
+            ) { name, note, startTime, photoData, restSeconds in
                 viewModel.applySettings(
                     name: name,
                     note: note,
                     startTime: startTime,
                     photoData: photoData
                 )
+                viewModel.setSessionDefaultRestSeconds(restSeconds)
             }
         }
         .sheet(isPresented: $showExercisePicker) {
@@ -99,6 +102,19 @@ struct ActiveWorkoutView: View {
         }
         .onChange(of: saveError) { _, error in
             if error != nil { Haptics.notify(.error) }
+        }
+        .confirmationDialog(
+            "Rest duration",
+            isPresented: $showRestPresets,
+            titleVisibility: .visible
+        ) {
+            ForEach(RestDurationPreferences.presets, id: \.self) { seconds in
+                Button(RestDurationPreferences.formatted(seconds)) {
+                    Haptics.selection()
+                    viewModel.applyRestPreset(seconds)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
         }
     }
 
@@ -410,31 +426,87 @@ struct ActiveWorkoutView: View {
     }
 
     private var restButton: some View {
-        Button {
-            viewModel.toggleRestTimer()
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "clock")
-                    .font(.system(size: 14))
+        Group {
+            if viewModel.restSecondsRemaining != nil {
+                HStack(spacing: 6) {
+                    restAdjustButton("-15") {
+                        Haptics.impact(.light)
+                        viewModel.adjustActiveRest(by: -15)
+                    }
 
-                if viewModel.restSecondsRemaining != nil {
-                    Text(viewModel.restFormatted)
-                        .font(.system(size: 14, weight: .semibold))
-                        .monospacedDigit()
-                } else {
-                    Text("Rest")
-                        .font(.system(size: 14, weight: .medium))
+                    Button {
+                        showRestPresets = true
+                    } label: {
+                        Text(viewModel.restFormatted)
+                            .font(.system(size: 14, weight: .semibold))
+                            .monospacedDigit()
+                            .foregroundColor(RuutineColor.accent)
+                            .frame(minWidth: 44)
+                    }
+                    .buttonStyle(.plain)
+
+                    restAdjustButton("+15") {
+                        Haptics.impact(.light)
+                        viewModel.adjustActiveRest(by: 15)
+                    }
+
+                    Button {
+                        viewModel.toggleRestTimer()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(RuutineColor.muted)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Stop rest timer")
                 }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(RuutineColor.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                Button {
+                    viewModel.toggleRestTimer()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 14))
+
+                        Text("Rest")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundColor(RuutineColor.muted)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(RuutineColor.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(RuutineColor.border, lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
             }
-            .foregroundColor(viewModel.restSecondsRemaining != nil ? RuutineColor.accent : RuutineColor.muted)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(RuutineColor.surface)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(RuutineColor.border, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
+    private func restAdjustButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(RuutineColor.foreground)
+                .frame(width: 36, height: 28)
+                .background(RuutineColor.background)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
     }
