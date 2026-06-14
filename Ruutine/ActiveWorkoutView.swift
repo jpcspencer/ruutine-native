@@ -94,6 +94,12 @@ struct ActiveWorkoutView: View {
         } message: {
             Text(saveError ?? "")
         }
+        .onChange(of: recapSaveError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
+        .onChange(of: saveError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
     }
 
     private var header: some View {
@@ -226,6 +232,7 @@ struct ActiveWorkoutView: View {
             }
 
             Button {
+                Haptics.impact(.light)
                 viewModel.addSet(to: exercise.id)
             } label: {
                 Text("+ Add Set")
@@ -360,6 +367,7 @@ struct ActiveWorkoutView: View {
     private var bottomBar: some View {
         VStack(spacing: 8) {
             Button {
+                Haptics.impact(.light)
                 showExercisePicker = true
             } label: {
                 Text("Add Exercise")
@@ -524,6 +532,8 @@ struct ActiveWorkoutView: View {
 
         recapSaveError = nil
         recapData = recap
+        Haptics.notify(.success)
+        SoundFX.workoutComplete()
         viewModel.finishWorkout()
 
         Task {

@@ -82,6 +82,9 @@ struct ProgramView: View {
         } message: {
             Text(programError ?? "")
         }
+        .onChange(of: programError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
         .fullScreenCover(isPresented: $showProgramBuild) {
             OnboardingView(flow: .programBuild) {
                 guard let userId = authVM.session?.user.id else { return }
@@ -213,6 +216,7 @@ struct ProgramView: View {
                 .buttonStyle(.plain)
 
                 Button {
+                    Haptics.impact(.light)
                     startDay(day)
                 } label: {
                     Text("Start")

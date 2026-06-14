@@ -86,6 +86,9 @@ struct MainTabView: View {
                 showActiveWorkout = true
             }
         }
+        .onChange(of: showActiveWorkout) { _, isShowing in
+            if isShowing { Haptics.impact(.medium) }
+        }
         .fullScreenCover(isPresented: $showActiveWorkout, onDismiss: {
             pendingExercises = nil
             pendingWorkoutName = nil

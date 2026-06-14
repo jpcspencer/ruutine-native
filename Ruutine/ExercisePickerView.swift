@@ -54,6 +54,7 @@ struct ExercisePickerView: View {
                         LazyVStack(spacing: 10) {
                             ForEach(filteredExercises) { exercise in
                                 Button {
+                                    Haptics.impact(.light)
                                     onSelect(exercise)
                                     dismiss()
                                 } label: {
@@ -94,6 +95,9 @@ struct ExercisePickerView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(createError ?? "")
+            }
+            .onChange(of: createError) { _, error in
+                if error != nil { Haptics.notify(.error) }
             }
         }
     }

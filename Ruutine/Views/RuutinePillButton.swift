@@ -18,7 +18,10 @@ struct RuutinePillButton: View {
     private let cornerRadius: CGFloat = 10
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            if style == .primary { Haptics.impact(.light) }
+            action()
+        } label: {
             label
         }
         .buttonStyle(.plain)

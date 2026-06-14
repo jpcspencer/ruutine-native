@@ -54,6 +54,7 @@ struct ExercisePickerView: View {
                         LazyVStack(spacing: 10) {
                             ForEach(filteredExercises) { exercise in
                                 Button {
+                                    Haptics.impact(.light)
                                     onSelect(exercise)
                                     dismiss()
                                 } label: {
@@ -69,18 +70,12 @@ struct ExercisePickerView: View {
             }
             .background(RuutineColor.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(true)
+            .ruutineNavigationChrome()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button {
+                    RuutineNavButton(kind: .back) {
                         dismiss()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("Back")
-                                .font(.system(size: 15, weight: .medium))
-                        }
-                        .foregroundColor(RuutineColor.foreground)
                     }
                 }
                 ToolbarItem(placement: .principal) {
@@ -100,6 +95,9 @@ struct ExercisePickerView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(createError ?? "")
+            }
+            .onChange(of: createError) { _, error in
+                if error != nil { Haptics.notify(.error) }
             }
         }
     }

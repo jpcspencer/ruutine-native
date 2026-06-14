@@ -10,6 +10,9 @@ struct AtlasChatView: View {
     @State private var inputText = ""
     @State private var showClearConfirmation = false
     @State private var clearErrorMessage: String?
+    @State private var isScrolledNearTop = false
+    @State private var showScrollUpHint = false
+    @State private var scrollUpPulse = false
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
@@ -20,6 +23,10 @@ struct AtlasChatView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 12) {
+                            Color.clear
+                                .frame(height: 1)
+                                .id("chat-top")
+
                             if atlasService.isLoadingHistory, atlasService.messages.isEmpty {
                                 ProgressView()
                                     .tint(RuutineColor.accent)
@@ -35,15 +42,38 @@ struct AtlasChatView: View {
                                 typingIndicator
                                     .id("typing")
                             }
+
+                            Color.clear
+                                .frame(height: 1)
+                                .id("chat-bottom")
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
                     }
+                    .onScrollGeometryChange(for: Bool.self) { geometry in
+                        geometry.contentOffset.y <= 16
+                    } action: { _, nearTop in
+                        isScrolledNearTop = nearTop
+                        refreshScrollUpHint()
+                    }
+                    .overlay(alignment: .top) {
+                        scrollUpHint(proxy: proxy)
+                    }
+                    .onChange(of: atlasService.isLoadingHistory) { _, isLoading in
+                        guard !isLoading else { return }
+                        openAtBottom(proxy: proxy)
+                    }
                     .onChange(of: atlasService.messages.count) { _, _ in
-                        scrollToBottom(proxy: proxy)
+                        if !atlasService.isLoadingHistory {
+                            scrollToBottom(proxy: proxy, animated: true)
+                            refreshScrollUpHint()
+                        }
                     }
                     .onChange(of: atlasService.isTyping) { _, _ in
-                        scrollToBottom(proxy: proxy)
+                        scrollToBottom(proxy: proxy, animated: true)
+                    }
+                    .onAppear {
+                        refreshScrollUpHint()
                     }
                 }
 
@@ -60,6 +90,53 @@ struct AtlasChatView: View {
                 atlasService.setProfileId(userId)
                 await atlasService.loadHistory()
             }
+        }
+        .onChange(of: clearErrorMessage) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
+    }
+
+    @ViewBuilder
+    private func scrollUpHint(proxy: ScrollViewProxy) -> some View {
+        if showScrollUpHint {
+            Button {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    proxy.scrollTo("chat-top", anchor: .top)
+                }
+            } label: {
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(RuutineColor.accent)
+                    .frame(width: 34, height: 34)
+                    .background(RuutineColor.surface.opacity(0.94))
+                    .overlay(
+                        Circle()
+                            .stroke(RuutineColor.border, lineWidth: 1)
+                    )
+                    .clipShape(Circle())
+                    .opacity(scrollUpPulse ? 1 : 0.42)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 10)
+            .accessibilityLabel("Earlier conversation above")
+            .onAppear {
+                scrollUpPulse = false
+                withAnimation(.easeInOut(duration: 0.95).repeatForever(autoreverses: true)) {
+                    scrollUpPulse = true
+                }
+            }
+        }
+    }
+
+    private func refreshScrollUpHint() {
+        showScrollUpHint = atlasService.shouldShowScrollUpHint && !isScrolledNearTop
+    }
+
+    private func openAtBottom(proxy: ScrollViewProxy) {
+        scrollToBottom(proxy: proxy, animated: false)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            scrollToBottom(proxy: proxy, animated: false)
+            refreshScrollUpHint()
         }
     }
 
@@ -84,15 +161,11 @@ struct AtlasChatView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Clear chat")
 
-            Button {
+            RuutineNavButton(kind: .close) {
                 dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(RuutineColor.muted)
-                    .frame(width: 36, height: 36)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Close chat")
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)
@@ -187,6 +260,8 @@ struct AtlasChatView: View {
         do {
             try await atlasService.clearChat()
             showClearConfirmation = false
+            isScrolledNearTop = false
+            refreshScrollUpHint()
         } catch {
             clearErrorMessage = "Couldn't clear chat. \(error.localizedDescription)"
         }
@@ -287,13 +362,23 @@ struct AtlasChatView: View {
         }
     }
 
-    private func scrollToBottom(proxy: ScrollViewProxy) {
-        withAnimation(.easeOut(duration: 0.2)) {
+    private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool) {
+        let scroll = {
             if atlasService.isTyping {
                 proxy.scrollTo("typing", anchor: .bottom)
             } else if let last = atlasService.messages.last?.id {
                 proxy.scrollTo(last, anchor: .bottom)
+            } else {
+                proxy.scrollTo("chat-bottom", anchor: .bottom)
             }
+        }
+
+        if animated {
+            withAnimation(.easeOut(duration: 0.2)) {
+                scroll()
+            }
+        } else {
+            scroll()
         }
     }
 }

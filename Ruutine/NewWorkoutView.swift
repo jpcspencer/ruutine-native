@@ -176,6 +176,7 @@ struct NewWorkoutView: View {
 
     private var startButton: some View {
         Button {
+            Haptics.impact(.light)
             startWorkout(exercises: [])
         } label: {
             Text("Start Workout")

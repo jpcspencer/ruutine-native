@@ -171,6 +171,12 @@ struct OnboardingView: View {
         } message: {
             Text(configureError ?? "")
         }
+        .onChange(of: skipError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
+        .onChange(of: configureError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
     }
 
     private var showsProgramBuildingLoader: Bool {
@@ -258,14 +264,9 @@ struct OnboardingView: View {
 
     private var backControl: some View {
         HStack {
-            Button {
+            RuutineNavButton(kind: .back) {
                 service.goBack()
-            } label: {
-                Text("← Back")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(RuutineColor.muted)
             }
-            .buttonStyle(.plain)
             Spacer()
         }
         .padding(.horizontal, 16)
@@ -277,6 +278,7 @@ struct OnboardingView: View {
         FlowLayout(spacing: 8) {
             ForEach(service.quickReplyChips, id: \.self) { label in
                 Button {
+                    Haptics.selection()
                     Task { await service.selectChip(label) }
                 } label: {
                     Text(label)
@@ -324,6 +326,7 @@ struct OnboardingView: View {
             }
             .pickerStyle(.segmented)
             .onChange(of: service.measurementsUseImperial) { _, _ in
+                Haptics.selection()
                 service.syncMeasurementsUnitPreference()
             }
 

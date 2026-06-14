@@ -350,6 +350,7 @@ struct ProfileView: View {
                 ForEach(AppTheme.allCases) { theme in
                     let isActive = themeManager.current == theme
                     Button {
+                        Haptics.selection()
                         themeManager.setTheme(theme)
                         guard let userId = authVM.session?.user.id else { return }
                         Task {

@@ -111,30 +111,34 @@ struct SessionDetailView: View {
             }
             .environmentObject(themeManager)
         }
+        .onChange(of: saveError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
     }
 
     private var topBar: some View {
-        HStack(spacing: 12) {
-            Button("Done") {
+        HStack(spacing: 10) {
+            RuutinePillButton(title: "Done", style: .tertiary) {
                 dismiss()
             }
-            .font(.system(size: 16, weight: .medium))
-            .foregroundColor(RuutineColor.muted)
-            .buttonStyle(.plain)
 
             Spacer()
 
             if isEditing {
-                borderedToolbarButton("Cancel") {
+                RuutinePillButton(title: "Cancel", style: .secondary) {
                     cancelEditing()
                 }
 
-                accentToolbarButton(isSaving ? "Saving…" : "Save") {
+                RuutinePillButton(
+                    title: isSaving ? "Saving…" : "Save",
+                    style: .primary,
+                    isLoading: isSaving,
+                    isDisabled: isSaving
+                ) {
                     Task { await saveEdits() }
                 }
-                .disabled(isSaving)
             } else {
-                borderedToolbarButton("Edit") {
+                RuutinePillButton(title: "Edit", style: .secondary) {
                     beginEditing()
                 }
             }
@@ -391,36 +395,6 @@ struct SessionDetailView: View {
             .font(.system(size: 11, weight: .semibold))
             .foregroundColor(RuutineColor.muted)
             .tracking(1.2)
-    }
-
-    private func borderedToolbarButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(RuutineColor.foreground)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(RuutineColor.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(RuutineColor.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func accentToolbarButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(RuutineColor.accentForeground)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(RuutineColor.accent)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .buttonStyle(.plain)
     }
 
     private func weightBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {

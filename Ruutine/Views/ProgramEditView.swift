@@ -166,6 +166,9 @@ struct ProgramEditView: View {
             } message: {
                 Text(errorMessage ?? "")
             }
+            .onChange(of: errorMessage) { _, error in
+                if error != nil { Haptics.notify(.error) }
+            }
             .sheet(isPresented: $showAtlasEdit) {
                 NavigationStack {
                     VStack(alignment: .leading, spacing: 16) {

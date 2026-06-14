@@ -79,7 +79,7 @@ struct SessionEditState {
             fromOffsets: IndexSet(integer: from),
             toOffset: to > from ? to + 1 : to
         )
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        Haptics.impact(.medium)
     }
 
     mutating func addSet(to exerciseID: UUID) {
@@ -144,6 +144,8 @@ struct SessionEditState {
             else { return }
 
             exercises[exerciseIndex].sets[setIndex].isConfirmed = true
+            Haptics.impact(.medium)
+            SoundFX.setComplete()
         }
     }
 

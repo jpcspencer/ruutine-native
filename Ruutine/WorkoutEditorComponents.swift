@@ -225,7 +225,10 @@ struct WorkoutExerciseEditorCard<SetRows: View>: View {
 
             setRows()
 
-            Button(action: onAddSet) {
+            Button(action: {
+                Haptics.impact(.light)
+                onAddSet()
+            }) {
                 Text("+ Add Set")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(RuutineColor.accent)

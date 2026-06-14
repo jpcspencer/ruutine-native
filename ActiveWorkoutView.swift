@@ -8,6 +8,7 @@ struct ActiveWorkoutView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @StateObject private var viewModel: ActiveWorkoutViewModel
     @State private var recapData: WorkoutRecapData?
+    @State private var recapSaveError: String?
     @State private var isSaving = false
     @State private var saveError: String?
     @State private var showExercisePicker = false
@@ -51,8 +52,9 @@ struct ActiveWorkoutView: View {
             await viewModel.loadPreviousSets(userId: userId)
         }
         .fullScreenCover(item: $recapData) { data in
-            WorkoutRecapView(data: data) {
+            WorkoutRecapView(data: data, saveError: recapSaveError) {
                 recapData = nil
+                recapSaveError = nil
                 onWorkoutComplete?()
                 dismiss()
             }
@@ -92,6 +94,12 @@ struct ActiveWorkoutView: View {
         } message: {
             Text(saveError ?? "")
         }
+        .onChange(of: recapSaveError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
+        .onChange(of: saveError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
     }
 
     private var header: some View {
@@ -114,21 +122,27 @@ struct ActiveWorkoutView: View {
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(RuutineColor.muted)
                 }
-                .padding(.horizontal, 48)
+                .padding(.horizontal, 96)
 
-                HStack {
-                    Spacer()
-                    Button {
+                HStack(alignment: .center) {
+                    RuutineNavButton(kind: .gear) {
                         showWorkoutSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 17))
-                            .foregroundColor(RuutineColor.muted)
-                            .frame(width: 36, height: 36)
+                    }
+                    .accessibilityLabel("Workout settings")
+
+                    Spacer(minLength: 0)
+
+                    if viewModel.hasConfirmedSet {
+                        RuutineNavButton(kind: .finish(isLoading: isSaving)) {
+                            finishSession()
+                        }
+                        .disabled(isSaving)
+                        .transition(.scale.combined(with: .opacity))
                     }
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 12)
+            .animation(.easeInOut(duration: 0.2), value: viewModel.hasConfirmedSet)
         }
         .padding(.bottom, 6)
     }
@@ -149,15 +163,7 @@ struct ActiveWorkoutView: View {
 
             Spacer()
 
-            HStack(spacing: 8) {
-                if viewModel.hasConfirmedSet {
-                    finishPillButton
-                        .transition(.scale.combined(with: .opacity))
-                }
-
-                restButton
-            }
-            .animation(.easeInOut(duration: 0.2), value: viewModel.hasConfirmedSet)
+            restButton
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -226,6 +232,7 @@ struct ActiveWorkoutView: View {
             }
 
             Button {
+                Haptics.impact(.light)
                 viewModel.addSet(to: exercise.id)
             } label: {
                 Text("+ Add Set")
@@ -360,6 +367,7 @@ struct ActiveWorkoutView: View {
     private var bottomBar: some View {
         VStack(spacing: 8) {
             Button {
+                Haptics.impact(.light)
                 showExercisePicker = true
             } label: {
                 Text("Add Exercise")
@@ -399,30 +407,6 @@ struct ActiveWorkoutView: View {
                         .frame(height: 1)
                 }
         )
-    }
-
-    private var finishPillButton: some View {
-        Button {
-            finishSession()
-        } label: {
-            Group {
-                if isSaving {
-                    ProgressView()
-                        .tint(RuutineColor.accentForeground)
-                        .scaleEffect(0.75)
-                } else {
-                    Text("Finish")
-                        .font(.system(size: 13, weight: .semibold))
-                }
-            }
-            .foregroundColor(RuutineColor.accentForeground)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(RuutineColor.accent)
-            .clipShape(Capsule())
-        }
-        .disabled(isSaving)
-        .buttonStyle(.plain)
     }
 
     private var restButton: some View {
@@ -531,25 +515,42 @@ struct ActiveWorkoutView: View {
               let payload = viewModel.buildCompletionPayload()
         else { return }
 
-        isSaving = true
+        let workoutName = viewModel.workoutName
+        let workoutNote = viewModel.workoutNote
+        let workoutPhotoData = viewModel.workoutPhotoData
+
+        let recap = WorkoutRecapData.fromCompletion(
+            profileId: userId,
+            sessionName: workoutName,
+            durationSeconds: payload.durationSeconds,
+            exercises: payload.exercises,
+            totalVolumeKg: payload.totalVolume,
+            totalSets: payload.totalSets,
+            note: workoutNote,
+            photoData: workoutPhotoData
+        )
+
+        recapSaveError = nil
+        recapData = recap
+        Haptics.notify(.success)
+        SoundFX.workoutComplete()
+        viewModel.finishWorkout()
+
         Task {
             do {
-                let recap = try await WorkoutSessionService.saveCompletedWorkout(
+                _ = try await WorkoutSessionService.saveCompletedWorkout(
                     userId: userId,
                     profileId: userId,
-                    sessionName: viewModel.workoutName,
+                    sessionName: workoutName,
                     durationSeconds: payload.durationSeconds,
                     exercises: payload.exercises,
-                    notes: viewModel.workoutNote,
-                    photoData: viewModel.workoutPhotoData
+                    notes: workoutNote,
+                    photoData: workoutPhotoData
                 )
-                viewModel.finishWorkout()
-                recapData = recap
             } catch {
                 print("[ActiveWorkoutView] Finish Session save failed: \(error)")
-                saveError = WorkoutSessionService.userFacingMessage(for: error)
+                recapSaveError = WorkoutSessionService.userFacingMessage(for: error)
             }
-            isSaving = false
         }
     }
 }

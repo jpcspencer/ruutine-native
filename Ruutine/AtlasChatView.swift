@@ -91,6 +91,9 @@ struct AtlasChatView: View {
                 await atlasService.loadHistory()
             }
         }
+        .onChange(of: clearErrorMessage) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
     }
 
     @ViewBuilder

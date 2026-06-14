@@ -1,7 +1,6 @@
 import Combine
 import Foundation
 import SwiftUI
-import UIKit
 
 struct WorkoutSet: Codable, Identifiable, Equatable {
     let id: UUID
@@ -135,7 +134,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
             fromOffsets: IndexSet(integer: from),
             toOffset: to > from ? to + 1 : to
         )
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        Haptics.impact(.medium)
         persist()
         syncLiveActivity()
     }
@@ -199,6 +198,8 @@ final class ActiveWorkoutViewModel: ObservableObject {
             else { return }
 
             exercises[exerciseIndex].sets[setIndex].isConfirmed = true
+            Haptics.impact(.medium)
+            SoundFX.setComplete()
         }
 
         refreshHasConfirmedSet()

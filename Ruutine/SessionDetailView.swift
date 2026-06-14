@@ -111,6 +111,9 @@ struct SessionDetailView: View {
             }
             .environmentObject(themeManager)
         }
+        .onChange(of: saveError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
     }
 
     private var topBar: some View {

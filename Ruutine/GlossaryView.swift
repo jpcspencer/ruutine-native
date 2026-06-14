@@ -72,6 +72,9 @@ struct GlossaryView: View {
         } message: {
             Text(customExerciseError ?? "")
         }
+        .onChange(of: customExerciseError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
     }
 
     private var header: some View {

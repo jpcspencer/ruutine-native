@@ -22,12 +22,24 @@ struct RuutineNavButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            if usesLightImpact { Haptics.impact(.light) }
+            action()
+        } label: {
             label
         }
         .buttonStyle(.plain)
         .disabled(isDisabled || isLoading)
         .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var usesLightImpact: Bool {
+        switch kind {
+        case .save, .confirm, .finish:
+            return true
+        default:
+            return false
+        }
     }
 
     @ViewBuilder

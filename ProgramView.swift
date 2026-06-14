@@ -82,6 +82,9 @@ struct ProgramView: View {
         } message: {
             Text(programError ?? "")
         }
+        .onChange(of: programError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
         .fullScreenCover(isPresented: $showProgramBuild) {
             OnboardingView(flow: .programBuild) {
                 guard let userId = authVM.session?.user.id else { return }
@@ -103,8 +106,8 @@ struct ProgramView: View {
                     .padding(.horizontal, 16)
 
                 VStack(spacing: 12) {
-                    ForEach(viewModel.days, id: \.day) { day in
-                        dayCard(day)
+                    ForEach(Array(viewModel.days.enumerated()), id: \.element.day) { index, day in
+                        dayCard(day, dayNumber: index + 1)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -173,7 +176,7 @@ struct ProgramView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func dayCard(_ day: ProgramDay) -> some View {
+    private func dayCard(_ day: ProgramDay, dayNumber: Int) -> some View {
         let isExpanded = expandedDays.contains(day.day)
         let exerciseCount = day.exercises?.count ?? 0
 
@@ -186,8 +189,13 @@ struct ProgramView: View {
                 } label: {
                     HStack(alignment: .center, spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
+                            Text("DAY \(dayNumber)")
+                                .font(.bebas(22))
+                                .foregroundColor(RuutineColor.accent)
+                                .tracking(1)
+
                             Text(day.name)
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(RuutineColor.foreground)
                                 .multilineTextAlignment(.leading)
 
@@ -208,6 +216,7 @@ struct ProgramView: View {
                 .buttonStyle(.plain)
 
                 Button {
+                    Haptics.impact(.light)
                     startDay(day)
                 } label: {
                     Text("Start")
