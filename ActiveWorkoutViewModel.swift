@@ -97,6 +97,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
         if restSecondsRemaining != nil {
             startRestTimer()
         }
+        syncLiveActivity(startIfNeeded: true)
     }
 
     deinit {
@@ -114,12 +115,14 @@ final class ActiveWorkoutViewModel: ObservableObject {
             startRestTimer()
         }
         persist()
+        syncLiveActivity()
     }
 
     func removeExercise(_ exercise: WorkoutExercise) {
         exercises.removeAll { $0.id == exercise.id }
         refreshHasConfirmedSet()
         persist()
+        syncLiveActivity()
     }
 
     func moveExercise(draggedID: UUID, before targetID: UUID) {
@@ -134,12 +137,14 @@ final class ActiveWorkoutViewModel: ObservableObject {
         )
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         persist()
+        syncLiveActivity()
     }
 
     func addSet(to exerciseID: UUID) {
         guard let index = exercises.firstIndex(where: { $0.id == exerciseID }) else { return }
         exercises[index].sets.append(WorkoutSet())
         persist()
+        syncLiveActivity()
     }
 
     func updateSet(
@@ -198,6 +203,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
 
         refreshHasConfirmedSet()
         persist()
+        syncLiveActivity()
     }
 
     func isSetConfirmed(exerciseID: UUID, setID: UUID) -> Bool {
@@ -226,6 +232,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
             WorkoutExercise(name: exercise.name, primaryMuscle: exercise.primaryMuscle)
         )
         persist()
+        syncLiveActivity(startIfNeeded: true)
     }
 
     func loadPreviousSets(userId: UUID) async {
@@ -269,6 +276,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
     }
 
     func cancelWorkout() {
+        endLiveActivity()
         clearPersistence()
     }
 
@@ -320,6 +328,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
     func finishWorkout() {
         elapsedTimer?.invalidate()
         restTimer?.invalidate()
+        endLiveActivity()
         clearPersistence()
     }
 
@@ -387,10 +396,12 @@ final class ActiveWorkoutViewModel: ObservableObject {
                     self.restSecondsRemaining = nil
                     self.restTimer?.invalidate()
                     self.restTimer = nil
+                    self.persist()
+                    self.syncLiveActivity()
                 } else {
                     self.restSecondsRemaining = remaining - 1
+                    self.persist()
                 }
-                self.persist()
             }
         }
     }
@@ -446,5 +457,91 @@ final class ActiveWorkoutViewModel: ObservableObject {
         formatter.dateFormat = "EEEE, MMM d"
         return formatter
     }()
+
+    // MARK: - Live Activity
+
+    private func syncLiveActivity(startIfNeeded: Bool = false) {
+        if #available(iOS 16.1, *) {
+            guard let state = makeLiveActivityContentState() else {
+                WorkoutLiveActivityManager.shared.end()
+                return
+            }
+            if startIfNeeded {
+                WorkoutLiveActivityManager.shared.start(workoutName: workoutName, state: state)
+            } else {
+                WorkoutLiveActivityManager.shared.update(state)
+            }
+        }
+    }
+
+    private func endLiveActivity() {
+        if #available(iOS 16.1, *) {
+            WorkoutLiveActivityManager.shared.end()
+        }
+    }
+
+    private func makeLiveActivityContentState() -> WorkoutActivityAttributes.ContentState? {
+        guard !exercises.isEmpty else { return nil }
+
+        let isResting = restSecondsRemaining != nil
+        let restEndDate = isResting
+            ? Date().addingTimeInterval(TimeInterval(restSecondsRemaining ?? 0))
+            : nil
+
+        for exercise in exercises {
+            for (setIndex, set) in exercise.sets.enumerated() where !set.isConfirmed {
+                return liveActivityContentState(
+                    for: exercise,
+                    setIndex: setIndex,
+                    isResting: isResting,
+                    restEndDate: restEndDate
+                )
+            }
+        }
+
+        if let lastExercise = exercises.last, !lastExercise.sets.isEmpty {
+            return liveActivityContentState(
+                for: lastExercise,
+                setIndex: lastExercise.sets.count - 1,
+                isResting: isResting,
+                restEndDate: restEndDate
+            )
+        }
+
+        return liveActivityContentState(
+            for: exercises[0],
+            setIndex: 0,
+            isResting: isResting,
+            restEndDate: restEndDate
+        )
+    }
+
+    private func liveActivityContentState(
+        for exercise: WorkoutExercise,
+        setIndex: Int,
+        isResting: Bool,
+        restEndDate: Date?
+    ) -> WorkoutActivityAttributes.ContentState {
+        let set = exercise.sets[setIndex]
+        let weightText = set.weight.isEmpty
+            ? placeholderWeight(for: exercise, setIndex: setIndex)
+            : set.weight
+        let repsText = set.reps.isEmpty
+            ? placeholderReps(for: exercise, setIndex: setIndex)
+            : set.reps
+
+        let weight = Double(weightText.trimmingCharacters(in: .whitespaces))
+        let targetReps = Int(repsText.trimmingCharacters(in: .whitespaces))
+
+        return WorkoutActivityAttributes.ContentState(
+            exerciseName: exercise.name,
+            currentSet: setIndex + 1,
+            totalSets: exercise.sets.count,
+            targetReps: targetReps,
+            weight: weight,
+            isResting: isResting,
+            restEndDate: isResting ? restEndDate : nil
+        )
+    }
 
 }
