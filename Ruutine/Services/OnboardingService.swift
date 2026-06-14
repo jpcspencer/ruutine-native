@@ -361,16 +361,21 @@ final class OnboardingService: ObservableObject {
 
         if flow == .programBuild {
             try await completeProgramBuild(userId: userId)
+            await persistOnboardingMessagesIfNeeded(userId: userId)
             return
         }
 
         if let token = accessToken, !token.isEmpty {
             let succeeded = await completeViaAPI(userId: userId, token: token)
-            if succeeded { return }
+            if succeeded {
+                await persistOnboardingMessagesIfNeeded(userId: userId)
+                return
+            }
             print("[OnboardingService] complete API failed — falling back to Supabase client")
         }
 
         try await completeViaSupabase(userId: userId)
+        await persistOnboardingMessagesIfNeeded(userId: userId)
     }
 
     private func completeProgramBuild(userId: UUID) async throws {
@@ -621,6 +626,13 @@ final class OnboardingService: ObservableObject {
 
     private func completeProfileOnlyViaSupabase(userId: UUID) async throws {
         try await insertProfile(userId: userId)
+    }
+
+    private func persistOnboardingMessagesIfNeeded(userId: UUID) async {
+        await CoachMessageService.persistOnboardingConversation(
+            profileId: userId,
+            messages: messages
+        )
     }
 
     private func insertProfile(userId: UUID) async throws {

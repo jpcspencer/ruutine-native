@@ -33,6 +33,29 @@ final class AtlasService: ObservableObject {
 
     static let defaultGreeting = "Hey, I'm Atlas. How can I help with your training today?"
 
+    /// Messages before the coach greeting / active thread — used for scroll-up hint.
+    var priorHistoryMessageCount: Int {
+        guard !messages.isEmpty else { return 0 }
+
+        if messages.count == 1,
+           messages[0].role == .assistant,
+           messages[0].content == Self.defaultGreeting {
+            return 0
+        }
+
+        if let last = messages.last,
+           last.role == .assistant,
+           last.content == Self.defaultGreeting {
+            return max(0, messages.count - 1)
+        }
+
+        return max(0, messages.count - 1)
+    }
+
+    var shouldShowScrollUpHint: Bool {
+        priorHistoryMessageCount > 0
+    }
+
     func setProfileId(_ profileId: UUID) {
         if self.profileId != profileId {
             self.profileId = profileId
