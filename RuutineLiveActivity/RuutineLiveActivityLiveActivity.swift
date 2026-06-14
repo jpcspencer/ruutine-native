@@ -72,9 +72,12 @@ extension RuutineLiveActivityAttributes.ContentState {
      }
 }
 
+#if swift(>=5.9)
+@available(iOS 17.0, *)
 #Preview("Notification", as: .content, using: RuutineLiveActivityAttributes.preview) {
    RuutineLiveActivityLiveActivity()
 } contentStates: {
     RuutineLiveActivityAttributes.ContentState.smiley
     RuutineLiveActivityAttributes.ContentState.starEyes
 }
+#endif

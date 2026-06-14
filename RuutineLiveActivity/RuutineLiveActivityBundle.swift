@@ -11,8 +11,6 @@ import SwiftUI
 @main
 struct RuutineLiveActivityBundle: WidgetBundle {
     var body: some Widget {
-        RuutineLiveActivity()
-        RuutineLiveActivityControl()
         RuutineLiveActivityLiveActivity()
     }
 }

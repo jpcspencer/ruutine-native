@@ -59,6 +59,13 @@
 			);
 			target = 557508822FDEF91B009122B9 /* RuutineLiveActivityExtension */;
 		};
+		557508A02FDF0D17009122B9 /* Exceptions for "Ruutine" folder in "RuutineLiveActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/WorkoutActivityAttributes.swift,
+			);
+			target = 557508822FDEF91B009122B9 /* RuutineLiveActivityExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -66,6 +73,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				556942F12FD9000000A6B496 /* Exceptions for "Ruutine" folder in "Ruutine" target */,
+				557508A02FDF0D17009122B9 /* Exceptions for "Ruutine" folder in "RuutineLiveActivityExtension" target */,
 			);
 			path = Ruutine;
 			sourceTree = "<group>";
