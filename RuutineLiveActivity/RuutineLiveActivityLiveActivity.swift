@@ -61,34 +61,44 @@ struct WorkoutLiveActivity: Widget {
 
 struct WorkoutLockScreenView: View {
     let context: ActivityViewContext<WorkoutActivityAttributes>
+
+    private var mutedText: Color { Color.ruutineFG.opacity(0.6) }
+
     var body: some View {
-        HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(context.attributes.workoutName.uppercased())
-                    .font(.caption2).foregroundStyle(Color.ruutineAccent)
-                Text(context.state.exerciseName)
-                    .font(.title3.bold()).foregroundStyle(Color.ruutineFG).lineLimit(1)
-                Text("Set \(context.state.currentSet) of \(context.state.totalSets)")
-                    .font(.subheadline).foregroundStyle(.secondary)
-            }
-            Spacer()
-            if context.state.isResting, let end = context.state.restEndDate, end > Date() {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("REST").font(.caption2).foregroundStyle(Color.ruutineAccent)
-                    Text(timerInterval: Date()...end, countsDown: true)
-                        .font(.system(size: 34, weight: .bold, design: .rounded).monospacedDigit())
-                        .foregroundStyle(Color.ruutineFG).frame(maxWidth: 120)
+        ZStack {
+            Color.ruutineBG
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(context.attributes.workoutName.uppercased())
+                        .font(.caption2).foregroundStyle(Color.ruutineAccent)
+                    Text(context.state.exerciseName)
+                        .font(.title3.bold()).foregroundStyle(Color.ruutineFG).lineLimit(1)
+                    Text("Set \(context.state.currentSet) of \(context.state.totalSets)")
+                        .font(.subheadline).foregroundStyle(mutedText)
                 }
-            } else {
-                WorkoutTargetView(state: context.state).foregroundStyle(Color.ruutineFG)
+                Spacer()
+                if context.state.isResting, let end = context.state.restEndDate, end > Date() {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("REST").font(.caption2).foregroundStyle(Color.ruutineAccent)
+                        Text(timerInterval: Date()...end, countsDown: true)
+                            .font(.system(size: 34, weight: .bold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(Color.ruutineFG).frame(maxWidth: 120)
+                    }
+                } else {
+                    WorkoutTargetView(state: context.state, mutedForeground: mutedText)
+                        .foregroundStyle(Color.ruutineFG)
+                }
             }
+            .padding()
         }
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
 struct WorkoutTargetView: View {
     let state: WorkoutActivityAttributes.ContentState
+    var mutedForeground: Color = .secondary
+
     var body: some View {
         VStack(alignment: .trailing, spacing: 2) {
             if let weight = state.weight {
@@ -96,7 +106,7 @@ struct WorkoutTargetView: View {
                     .font(.title3.bold())
             }
             if let reps = state.targetReps {
-                Text("\(reps) reps").font(.caption).foregroundStyle(.secondary)
+                Text("\(reps) reps").font(.caption).foregroundStyle(mutedForeground)
             }
         }
     }
@@ -108,6 +118,13 @@ struct WorkoutTargetView: View {
     WorkoutLiveActivity()
 } contentStates: {
     WorkoutActivityAttributes.ContentState(exerciseName: "Bench Press", currentSet: 2, totalSets: 4, targetReps: 8, weight: 100, isResting: false, restEndDate: nil)
+    WorkoutActivityAttributes.ContentState(exerciseName: "Bench Press", currentSet: 2, totalSets: 4, targetReps: 8, weight: 100, isResting: true, restEndDate: Date().addingTimeInterval(90))
+}
+
+@available(iOS 17.0, *)
+#Preview("Dynamic Island", as: .dynamicIsland(.expanded), using: WorkoutActivityAttributes(workoutName: "Afternoon Workout")) {
+    WorkoutLiveActivity()
+} contentStates: {
     WorkoutActivityAttributes.ContentState(exerciseName: "Bench Press", currentSet: 2, totalSets: 4, targetReps: 8, weight: 100, isResting: true, restEndDate: Date().addingTimeInterval(90))
 }
 #endif
