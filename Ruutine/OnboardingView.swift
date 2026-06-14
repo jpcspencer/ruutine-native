@@ -258,14 +258,9 @@ struct OnboardingView: View {
 
     private var backControl: some View {
         HStack {
-            Button {
+            RuutineNavButton(kind: .back) {
                 service.goBack()
-            } label: {
-                Text("← Back")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(RuutineColor.muted)
             }
-            .buttonStyle(.plain)
             Spacer()
         }
         .padding(.horizontal, 16)

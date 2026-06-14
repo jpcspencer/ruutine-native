@@ -26,11 +26,8 @@ struct WorkoutCalendarView: View {
             .background(RuutineColor.background.ignoresSafeArea())
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
+                    RuutineNavButton(kind: .close) {
                         dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .foregroundColor(RuutineColor.muted)
                     }
                 }
             }

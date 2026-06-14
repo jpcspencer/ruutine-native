@@ -33,15 +33,10 @@ struct SignupView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Button {
+                    RuutineNavButton(kind: .iconBack) {
                         dismiss()
-                    } label: {
-                        Image(systemName: "arrow.left")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(RuutineColor.foreground)
-                            .frame(width: 44, height: 44, alignment: .leading)
                     }
-                    .padding(.leading, -12)
+                    .padding(.leading, -8)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Create Account")

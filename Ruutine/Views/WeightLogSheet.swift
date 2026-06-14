@@ -82,8 +82,7 @@ struct WeightLogSheet: View {
                         .tracking(1)
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(RuutineColor.muted)
+                    RuutineNavButton(kind: .cancel) { dismiss() }
                 }
             }
         }

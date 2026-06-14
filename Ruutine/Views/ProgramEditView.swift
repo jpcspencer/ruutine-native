@@ -149,15 +149,12 @@ struct ProgramEditView: View {
                         .tracking(1)
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(RuutineColor.muted)
+                    RuutineNavButton(kind: .cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    RuutineNavButton(kind: .save, isDisabled: isSaving) {
                         Task { await saveManual() }
                     }
-                    .disabled(isSaving)
-                    .foregroundColor(RuutineColor.accent)
                 }
             }
             .alert("Couldn't Save", isPresented: Binding(

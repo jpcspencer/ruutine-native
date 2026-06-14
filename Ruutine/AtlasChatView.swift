@@ -84,15 +84,11 @@ struct AtlasChatView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Clear chat")
 
-            Button {
+            RuutineNavButton(kind: .close) {
                 dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(RuutineColor.muted)
-                    .frame(width: 36, height: 36)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Close chat")
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)

@@ -131,11 +131,10 @@ struct WorkoutSettingsSheet: View {
                         .tracking(1)
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(RuutineColor.muted)
+                    RuutineNavButton(kind: .cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
+                    RuutineNavButton(kind: .confirm(text: "Done")) {
                         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                         onSave(
                             trimmed.isEmpty ? ActiveWorkoutViewModel.defaultWorkoutName() : trimmed,
@@ -145,7 +144,6 @@ struct WorkoutSettingsSheet: View {
                         )
                         dismiss()
                     }
-                    .foregroundColor(RuutineColor.accent)
                 }
             }
         }

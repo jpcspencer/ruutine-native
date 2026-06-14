@@ -114,21 +114,27 @@ struct ActiveWorkoutView: View {
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(RuutineColor.muted)
                 }
-                .padding(.horizontal, 48)
+                .padding(.horizontal, 96)
 
-                HStack {
-                    Spacer()
-                    Button {
+                HStack(alignment: .center) {
+                    RuutineNavButton(kind: .gear) {
                         showWorkoutSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 17))
-                            .foregroundColor(RuutineColor.muted)
-                            .frame(width: 36, height: 36)
+                    }
+                    .accessibilityLabel("Workout settings")
+
+                    Spacer(minLength: 0)
+
+                    if viewModel.hasConfirmedSet {
+                        RuutineNavButton(kind: .finish(isLoading: isSaving)) {
+                            finishSession()
+                        }
+                        .disabled(isSaving)
+                        .transition(.scale.combined(with: .opacity))
                     }
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 12)
+            .animation(.easeInOut(duration: 0.2), value: viewModel.hasConfirmedSet)
         }
         .padding(.bottom, 6)
     }
@@ -149,15 +155,7 @@ struct ActiveWorkoutView: View {
 
             Spacer()
 
-            HStack(spacing: 8) {
-                if viewModel.hasConfirmedSet {
-                    finishPillButton
-                        .transition(.scale.combined(with: .opacity))
-                }
-
-                restButton
-            }
-            .animation(.easeInOut(duration: 0.2), value: viewModel.hasConfirmedSet)
+            restButton
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -399,30 +397,6 @@ struct ActiveWorkoutView: View {
                         .frame(height: 1)
                 }
         )
-    }
-
-    private var finishPillButton: some View {
-        Button {
-            finishSession()
-        } label: {
-            Group {
-                if isSaving {
-                    ProgressView()
-                        .tint(RuutineColor.accentForeground)
-                        .scaleEffect(0.75)
-                } else {
-                    Text("Finish")
-                        .font(.system(size: 13, weight: .semibold))
-                }
-            }
-            .foregroundColor(RuutineColor.accentForeground)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(RuutineColor.accent)
-            .clipShape(Capsule())
-        }
-        .disabled(isSaving)
-        .buttonStyle(.plain)
     }
 
     private var restButton: some View {

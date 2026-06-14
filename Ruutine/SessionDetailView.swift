@@ -115,12 +115,9 @@ struct SessionDetailView: View {
 
     private var topBar: some View {
         HStack(spacing: 12) {
-            Button("Done") {
+            RuutineNavButton(kind: .done) {
                 dismiss()
             }
-            .font(.system(size: 16, weight: .medium))
-            .foregroundColor(RuutineColor.muted)
-            .buttonStyle(.plain)
 
             Spacer()
 

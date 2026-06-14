@@ -102,13 +102,8 @@ struct NewWorkoutView: View {
 
             Spacer()
 
-            Button {
+            RuutineNavButton(kind: .close) {
                 dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(RuutineColor.muted)
-                    .frame(width: 44, height: 44)
             }
         }
         .padding(.horizontal, 16)

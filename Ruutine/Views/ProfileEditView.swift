@@ -114,15 +114,12 @@ struct ProfileEditView: View {
                         .tracking(1)
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(RuutineColor.muted)
+                    RuutineNavButton(kind: .cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    RuutineNavButton(kind: .save, isDisabled: isSaving || draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
                         Task { await save() }
                     }
-                    .disabled(isSaving || draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .foregroundColor(RuutineColor.accent)
                 }
             }
         }

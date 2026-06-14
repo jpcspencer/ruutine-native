@@ -61,16 +61,8 @@ struct HistoryView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
+                RuutineNavButton(kind: .home) {
                     dismiss()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("Home")
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .foregroundColor(RuutineColor.foreground)
                 }
             }
             ToolbarItem(placement: .principal) {

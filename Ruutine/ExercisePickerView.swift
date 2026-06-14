@@ -71,16 +71,8 @@ struct ExercisePickerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button {
+                    RuutineNavButton(kind: .back) {
                         dismiss()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("Back")
-                                .font(.system(size: 15, weight: .medium))
-                        }
-                        .foregroundColor(RuutineColor.foreground)
                     }
                 }
                 ToolbarItem(placement: .principal) {
