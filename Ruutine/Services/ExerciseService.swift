@@ -31,7 +31,7 @@ final class ExerciseService: ObservableObject {
         }
 
         do {
-            let custom = try await fetchCustomExercises(profileId: profileId)
+            let custom = try await fetchCustomExercises(userId: profileId)
             merged = Self.mergeCatalog(Exercise.all, with: custom)
             exercises = Self.sorted(merged)
         } catch {
@@ -52,10 +52,10 @@ final class ExerciseService: ObservableObject {
         defer { isSaving = false }
 
         let insert = CustomExerciseInsert(
-            userProfileId: profileId,
+            userId: profileId,
             name: trimmed,
-            primaryMuscle: "Custom",
-            secondaryMuscles: [],
+            muscleGroup: "Custom",
+            category: ExerciseCategory.barbell.rawValue,
             difficulty: "beginner"
         )
 
@@ -76,11 +76,11 @@ final class ExerciseService: ObservableObject {
         return exercise
     }
 
-    private func fetchCustomExercises(profileId: UUID) async throws -> [CustomExerciseRow] {
+    private func fetchCustomExercises(userId: UUID) async throws -> [CustomExerciseRow] {
         try await SupabaseClient.shared
             .from("user_custom_exercises")
             .select()
-            .eq("user_profile_id", value: profileId)
+            .eq("user_id", value: userId)
             .order("name", ascending: true)
             .execute()
             .value
@@ -104,40 +104,48 @@ final class ExerciseService: ObservableObject {
 }
 
 private struct CustomExerciseInsert: Encodable {
-    let userProfileId: UUID
+    let userId: UUID
     let name: String
-    let primaryMuscle: String
-    let secondaryMuscles: [String]
+    let muscleGroup: String
+    let category: String
     let difficulty: String
 
     enum CodingKeys: String, CodingKey {
-        case name, difficulty
-        case userProfileId = "user_profile_id"
-        case primaryMuscle = "primary_muscle"
-        case secondaryMuscles = "secondary_muscles"
+        case name, difficulty, category
+        case userId = "user_id"
+        case muscleGroup = "muscle_group"
     }
 }
 
 private struct CustomExerciseRow: Decodable {
     let id: UUID
     let name: String
-    let primaryMuscle: String
-    let secondaryMuscles: [String]
+    let muscleGroup: String
     let difficulty: String
+    let category: ExerciseCategory
 
     enum CodingKeys: String, CodingKey {
-        case id, name, difficulty
-        case primaryMuscle = "primary_muscle"
-        case secondaryMuscles = "secondary_muscles"
+        case id, name, difficulty, category
+        case muscleGroup = "muscle_group"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        muscleGroup = try container.decode(String.self, forKey: .muscleGroup)
+        difficulty = try container.decode(String.self, forKey: .difficulty)
+        category = try container.decodeIfPresent(ExerciseCategory.self, forKey: .category) ?? .barbell
     }
 
     func toExercise() -> Exercise {
         Exercise(
             id: "custom-\(id.uuidString)",
             name: name,
-            primaryMuscle: primaryMuscle,
-            secondaryMuscles: secondaryMuscles,
-            difficulty: difficulty.capitalized
+            primaryMuscle: muscleGroup,
+            secondaryMuscles: [],
+            difficulty: difficulty.capitalized,
+            category: category
         )
     }
 }

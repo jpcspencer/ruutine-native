@@ -77,7 +77,11 @@ struct WorkoutRecapData: Identifiable, Equatable {
                 name: exercise.name,
                 primaryMuscle: exercise.primaryMuscle,
                 sets: exercise.sets.map {
-                    RecapSet(setNumber: $0.setNumber, weightKg: $0.weightKg, reps: $0.reps)
+                    RecapSet(
+                        setNumber: $0.setNumber,
+                        weightKg: $0.weightKg ?? 0,
+                        reps: $0.reps ?? 0
+                    )
                 }
             )
         }
@@ -106,8 +110,10 @@ struct CompletedExercisePayload {
 
 struct CompletedSetPayload {
     let setNumber: Int
-    let weightKg: Double
-    let reps: Int
+    let weightKg: Double?
+    let reps: Int?
+    let durationSeconds: Int?
+    let distanceM: Double?
 }
 
 extension Notification.Name {

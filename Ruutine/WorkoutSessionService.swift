@@ -40,6 +40,8 @@ enum WorkoutSessionService {
         let weightKg: Double?
         let reps: Int?
         let completed: Bool
+        let durationSeconds: Int?
+        let distanceM: Double?
 
         enum CodingKeys: String, CodingKey {
             case userId = "user_id"
@@ -49,6 +51,8 @@ enum WorkoutSessionService {
             case weightKg = "weight_kg"
             case reps
             case completed
+            case durationSeconds = "duration_seconds"
+            case distanceM = "distance_m"
         }
     }
 
@@ -112,7 +116,9 @@ enum WorkoutSessionService {
                     setNumber: setIndex + 1,
                     weightKg: set.weightKg,
                     reps: set.reps,
-                    completed: true
+                    completed: true,
+                    durationSeconds: set.durationSeconds,
+                    distanceM: set.distanceM
                 )
                 do {
                     try await SupabaseClient.shared
@@ -124,10 +130,16 @@ enum WorkoutSessionService {
                     throw error
                 }
 
-                totalVolume += set.weightKg * Double(set.reps)
+                if let weightKg = set.weightKg, let reps = set.reps {
+                    totalVolume += weightKg * Double(reps)
+                }
                 totalSets += 1
                 recapSets.append(
-                    RecapSet(setNumber: setIndex + 1, weightKg: set.weightKg, reps: set.reps)
+                    RecapSet(
+                        setNumber: setIndex + 1,
+                        weightKg: set.weightKg ?? 0,
+                        reps: set.reps ?? 0
+                    )
                 )
             }
             if !recapSets.isEmpty {

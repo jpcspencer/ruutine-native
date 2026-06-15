@@ -196,7 +196,9 @@ final class HistoryViewModel: ObservableObject {
                     reps: reps,
                     set_number: setNumber,
                     exercise_name: exercise.name,
-                    completed: set.isConfirmed
+                    completed: set.isConfirmed,
+                    duration_seconds: nil,
+                    distance_m: nil
                 )
 
                 if draft.originalLogIds.contains(set.id) {
@@ -214,7 +216,9 @@ final class HistoryViewModel: ObservableObject {
                         setNumber: setNumber,
                         weightKg: weightKg,
                         reps: reps,
-                        completed: set.isConfirmed
+                        completed: set.isConfirmed,
+                        durationSeconds: nil,
+                        distanceM: nil
                     )
                     try await SupabaseClient.shared
                         .from("exercise_logs")
@@ -264,4 +268,6 @@ private struct ExerciseLogSavePayload: Encodable {
     let set_number: Int
     let exercise_name: String
     let completed: Bool
+    let duration_seconds: Int?
+    let distance_m: Double?
 }

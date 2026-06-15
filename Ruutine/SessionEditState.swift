@@ -267,7 +267,9 @@ enum SessionLogConverter {
                         weightKg: HistoryFormatting.parseWeight(set.weight, isImperial: isImperial),
                         reps: HistoryFormatting.parseReps(set.reps),
                         setNumber: index + 1,
-                        completed: set.isConfirmed
+                        completed: set.isConfirmed,
+                        durationSeconds: nil,
+                        distanceM: nil
                     )
                 )
             }

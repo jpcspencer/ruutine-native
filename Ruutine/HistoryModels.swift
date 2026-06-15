@@ -8,6 +8,8 @@ struct ExerciseLogDetail: Codable, Identifiable {
     let reps: Int?
     let setNumber: Int?
     let completed: Bool?
+    let durationSeconds: Int?
+    let distanceM: Double?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -17,6 +19,8 @@ struct ExerciseLogDetail: Codable, Identifiable {
         case reps
         case setNumber = "set_number"
         case completed
+        case durationSeconds = "duration_seconds"
+        case distanceM = "distance_m"
     }
 }
 

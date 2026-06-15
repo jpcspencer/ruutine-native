@@ -6,12 +6,23 @@ struct WorkoutSet: Codable, Identifiable, Equatable {
     let id: UUID
     var weight: String
     var reps: String
+    var durationSeconds: Int?
+    var distanceM: Double?
     var isConfirmed: Bool
 
-    init(id: UUID = UUID(), weight: String = "", reps: String = "", isConfirmed: Bool = false) {
+    init(
+        id: UUID = UUID(),
+        weight: String = "",
+        reps: String = "",
+        durationSeconds: Int? = nil,
+        distanceM: Double? = nil,
+        isConfirmed: Bool = false
+    ) {
         self.id = id
         self.weight = weight
         self.reps = reps
+        self.durationSeconds = durationSeconds
+        self.distanceM = distanceM
         self.isConfirmed = isConfirmed
     }
 }
@@ -20,18 +31,43 @@ struct WorkoutExercise: Codable, Identifiable, Equatable {
     let id: UUID
     var name: String
     var primaryMuscle: String?
+    var category: ExerciseCategory
     var sets: [WorkoutSet]
 
     init(
         id: UUID = UUID(),
         name: String,
         primaryMuscle: String? = nil,
+        category: ExerciseCategory = .barbell,
         sets: [WorkoutSet] = [WorkoutSet()]
     ) {
         self.id = id
         self.name = name
         self.primaryMuscle = primaryMuscle
+        self.category = category
         self.sets = sets
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, primaryMuscle, category, sets
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        primaryMuscle = try container.decodeIfPresent(String.self, forKey: .primaryMuscle)
+        category = try container.decodeIfPresent(ExerciseCategory.self, forKey: .category) ?? .barbell
+        sets = try container.decode([WorkoutSet].self, forKey: .sets)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(primaryMuscle, forKey: .primaryMuscle)
+        try container.encode(category, forKey: .category)
+        try container.encode(sets, forKey: .sets)
     }
 }
 
@@ -275,7 +311,11 @@ final class ActiveWorkoutViewModel: ObservableObject {
 
     func addExercise(_ exercise: Exercise) {
         exercises.append(
-            WorkoutExercise(name: exercise.name, primaryMuscle: exercise.primaryMuscle)
+            WorkoutExercise(
+                name: exercise.name,
+                primaryMuscle: exercise.primaryMuscle,
+                category: exercise.category
+            )
         )
         persist()
         syncLiveActivity(startIfNeeded: true)
@@ -350,7 +390,9 @@ final class ActiveWorkoutViewModel: ObservableObject {
                     CompletedSetPayload(
                         setNumber: confirmedSets.count + 1,
                         weightKg: weight,
-                        reps: reps
+                        reps: reps,
+                        durationSeconds: nil,
+                        distanceM: nil
                     )
                 )
             }
