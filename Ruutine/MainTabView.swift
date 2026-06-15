@@ -178,6 +178,7 @@ struct MainTabView: View {
     private var centerButton: some View {
         Button {
             Haptics.impact(.medium)
+            SoundFX.openNewWorkout()
             pendingExercises = nil
             showNewWorkout = true
         } label: {

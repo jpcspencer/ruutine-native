@@ -203,17 +203,32 @@ struct GlossaryView: View {
 
     @ViewBuilder
     private func exerciseCard(_ exercise: Exercise) -> some View {
-        let card = VStack(alignment: .leading, spacing: 6) {
-            Text(exercise.name)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(RuutineColor.foreground)
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(exercise.name)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(RuutineColor.foreground)
 
-            Text(exercise.subtitle)
-                .font(.system(size: 13))
-                .foregroundColor(RuutineColor.muted)
-                .fixedSize(horizontal: false, vertical: true)
+                Text(exercise.subtitle)
+                    .font(.system(size: 13))
+                    .foregroundColor(RuutineColor.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if exercise.id.hasPrefix("custom-") {
+                Button {
+                    exercisePendingDelete = exercise
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(RuutineColor.destructive)
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(RuutineColor.surface)
         .overlay(
@@ -221,16 +236,6 @@ struct GlossaryView: View {
                 .stroke(RuutineColor.border, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
-
-        if exercise.id.hasPrefix("custom-") {
-            card.contextMenu {
-                Button("Delete", role: .destructive) {
-                    exercisePendingDelete = exercise
-                }
-            }
-        } else {
-            card
-        }
     }
 
     private func confirmDeleteCustomExercise(_ exercise: Exercise) async {
@@ -272,6 +277,7 @@ struct GlossaryView: View {
 
 private enum MuscleCategory: String, CaseIterable {
     case all = "All"
+    case custom = "Custom"
     case chest = "Chest"
     case back = "Back"
     case shoulders = "Shoulders"
@@ -281,28 +287,30 @@ private enum MuscleCategory: String, CaseIterable {
     case cardio = "Cardio"
 
     func matches(_ exercise: Exercise) -> Bool {
-        guard self != .all else { return true }
-
-        let muscles = Set([exercise.primaryMuscle] + exercise.secondaryMuscles)
-
         switch self {
         case .all:
             return true
+        case .custom:
+            return exercise.id.hasPrefix("custom-")
         case .chest:
-            return muscles.contains("Chest")
+            return muscleSet(for: exercise).contains("Chest")
         case .back:
-            return muscles.contains(where: { ["Back", "Lats", "Traps"].contains($0) })
+            return muscleSet(for: exercise).contains(where: { ["Back", "Lats", "Traps"].contains($0) })
         case .shoulders:
-            return muscles.contains("Shoulders")
+            return muscleSet(for: exercise).contains("Shoulders")
         case .legs:
-            return muscles.contains(where: { ["Quadriceps", "Hamstrings", "Glutes", "Calves", "Legs"].contains($0) })
+            return muscleSet(for: exercise).contains(where: { ["Quadriceps", "Hamstrings", "Glutes", "Calves", "Legs"].contains($0) })
         case .arms:
-            return muscles.contains(where: { ["Biceps", "Triceps", "Forearms"].contains($0) })
+            return muscleSet(for: exercise).contains(where: { ["Biceps", "Triceps", "Forearms"].contains($0) })
         case .core:
-            return muscles.contains("Core")
+            return muscleSet(for: exercise).contains("Core")
         case .cardio:
-            return muscles.contains("Cardio") || muscles.contains("Full Body")
+            return muscleSet(for: exercise).contains("Cardio") || muscleSet(for: exercise).contains("Full Body")
         }
+    }
+
+    private func muscleSet(for exercise: Exercise) -> Set<String> {
+        Set([exercise.primaryMuscle] + exercise.secondaryMuscles)
     }
 }
 
