@@ -261,6 +261,12 @@ struct ActiveWorkoutView: View {
 
             ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { index, set in
                 setRow(exercise: exercise, set: set, setNumber: index + 1, setIndex: index)
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity,
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        )
+                    )
             }
 
             Button {
@@ -376,28 +382,34 @@ struct ActiveWorkoutView: View {
             distancePlaceholder: distancePlaceholder
         )
 
-        return WorkoutSetRowView(
-            inputKind: inputKind,
-            setNumber: setNumber,
-            previousText: previousText,
-            weight: weightBinding(exerciseID: exercise.id, setID: set.id),
-            reps: repsBinding(exerciseID: exercise.id, setID: set.id),
-            time: timeBinding(exerciseID: exercise.id, setID: set.id),
-            distance: distanceBinding(exerciseID: exercise.id, setID: set.id),
-            timeDurationSeconds: set.durationSeconds,
-            weightPlaceholder: weightPlaceholder,
-            repsPlaceholder: repsPlaceholder,
-            timePlaceholder: timePlaceholder,
-            distancePlaceholder: distancePlaceholder,
-            isConfirmed: isConfirmed,
-            canConfirm: canConfirm,
-            exerciseID: exercise.id,
-            setID: set.id,
-            onToggleConfirm: {
-                viewModel.toggleSetConfirmed(exerciseID: exercise.id, setID: set.id)
-            },
-            focusedField: $focusedField
-        )
+        return SwipeableSetRow(onDelete: {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                viewModel.removeSet(exerciseID: exercise.id, setID: set.id)
+            }
+        }) {
+            WorkoutSetRowView(
+                inputKind: inputKind,
+                setNumber: setNumber,
+                previousText: previousText,
+                weight: weightBinding(exerciseID: exercise.id, setID: set.id),
+                reps: repsBinding(exerciseID: exercise.id, setID: set.id),
+                time: timeBinding(exerciseID: exercise.id, setID: set.id),
+                distance: distanceBinding(exerciseID: exercise.id, setID: set.id),
+                timeDurationSeconds: set.durationSeconds,
+                weightPlaceholder: weightPlaceholder,
+                repsPlaceholder: repsPlaceholder,
+                timePlaceholder: timePlaceholder,
+                distancePlaceholder: distancePlaceholder,
+                isConfirmed: isConfirmed,
+                canConfirm: canConfirm,
+                exerciseID: exercise.id,
+                setID: set.id,
+                onToggleConfirm: {
+                    viewModel.toggleSetConfirmed(exerciseID: exercise.id, setID: set.id)
+                },
+                focusedField: $focusedField
+            )
+        }
     }
 
     private func weightBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {

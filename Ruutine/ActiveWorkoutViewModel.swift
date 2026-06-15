@@ -256,6 +256,16 @@ final class ActiveWorkoutViewModel: ObservableObject {
         syncLiveActivity()
     }
 
+    func removeSet(exerciseID: UUID, setID: UUID) {
+        guard let exerciseIndex = exercises.firstIndex(where: { $0.id == exerciseID }),
+              let setIndex = exercises[exerciseIndex].sets.firstIndex(where: { $0.id == setID })
+        else { return }
+        exercises[exerciseIndex].sets.remove(at: setIndex)
+        refreshHasConfirmedSet()
+        persist()
+        syncLiveActivity()
+    }
+
     func updateSet(
         exerciseID: UUID,
         setID: UUID,

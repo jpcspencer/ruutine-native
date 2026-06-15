@@ -377,6 +377,93 @@ struct WorkoutSetTimeInputField: View {
     }
 }
 
+struct SwipeableSetRow<Content: View>: View {
+    let onDelete: () -> Void
+    @ViewBuilder let content: () -> Content
+
+    @State private var dragOffset: CGFloat = 0
+    @State private var isHorizontalSwipe = false
+    @State private var rowWidth: CGFloat = 0
+    @State private var isCommittingDelete = false
+
+    private var commitThreshold: CGFloat {
+        max(130, rowWidth * 0.55)
+    }
+
+    private var isPastThreshold: Bool {
+        abs(dragOffset) >= commitThreshold
+    }
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                ZStack {
+                    RuutineColor.destructive.opacity(isPastThreshold ? 1 : 0.88)
+                    Image(systemName: "trash.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .scaleEffect(isPastThreshold ? 1.12 : 1)
+                        .animation(.easeInOut(duration: 0.15), value: isPastThreshold)
+                }
+                .frame(width: max(abs(dragOffset), 0))
+            }
+
+            content()
+                .background(RuutineColor.surface)
+                .offset(x: dragOffset)
+                .gesture(deleteDragGesture)
+        }
+        .background(
+            GeometryReader { geometry in
+                Color.clear
+                    .onAppear { rowWidth = geometry.size.width }
+                    .onChange(of: geometry.size.width) { _, newWidth in
+                        rowWidth = newWidth
+                    }
+            }
+        )
+        .clipped()
+    }
+
+    private var deleteDragGesture: some Gesture {
+        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+            .onChanged { value in
+                guard !isCommittingDelete else { return }
+
+                if !isHorizontalSwipe {
+                    let width = value.translation.width
+                    let height = value.translation.height
+                    guard abs(width) > abs(height), width < 0 else { return }
+                    isHorizontalSwipe = true
+                }
+
+                dragOffset = min(0, value.translation.width)
+            }
+            .onEnded { _ in
+                guard isHorizontalSwipe else { return }
+                isHorizontalSwipe = false
+
+                let threshold = max(130, rowWidth * 0.55)
+                if abs(dragOffset) >= threshold {
+                    isCommittingDelete = true
+                    let offScreen = -(rowWidth + 48)
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        dragOffset = offScreen
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                        Haptics.impact(.medium)
+                        onDelete()
+                    }
+                } else {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        dragOffset = 0
+                    }
+                }
+            }
+    }
+}
+
 struct WorkoutSetRowView: View {
     let inputKind: InputKind
     let setNumber: Int
