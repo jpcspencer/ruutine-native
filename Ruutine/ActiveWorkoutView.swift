@@ -18,6 +18,7 @@ struct ActiveWorkoutView: View {
     @State private var showRestPresets = false
     @State private var draggedExerciseID: UUID?
     @FocusState private var focusedField: WorkoutFieldFocus?
+    @State private var suppressHeaderMinimizeTap = false
 
     var body: some View {
         ZStack {
@@ -106,62 +107,73 @@ struct ActiveWorkoutView: View {
 
     private var header: some View {
         VStack(spacing: 8) {
-            Capsule()
-                .fill(RuutineColor.muted.opacity(0.5))
-                .frame(width: 36, height: 4)
-                .padding(.top, 6)
+            headerMinimizeRegion
 
-            ZStack {
-                VStack(spacing: 2) {
-                    Text(viewModel.workoutName.uppercased())
-                        .font(.bebas(26))
-                        .foregroundColor(RuutineColor.foreground)
-                        .tracking(1)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-
-                    Text(viewModel.workoutDateSubtitle)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(RuutineColor.muted)
+            HStack(alignment: .center) {
+                RuutineNavButton(kind: .gear) {
+                    showWorkoutSettings = true
                 }
-                .padding(.horizontal, 96)
+                .accessibilityLabel("Workout settings")
 
-                HStack(alignment: .center) {
-                    HStack(spacing: 0) {
-                        Button {
-                            Haptics.impact(.light)
-                            onMinimize()
-                        } label: {
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(RuutineColor.foreground)
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Minimize workout")
+                Spacer(minLength: 0)
 
-                        RuutineNavButton(kind: .gear) {
-                            showWorkoutSettings = true
-                        }
-                        .accessibilityLabel("Workout settings")
+                if viewModel.hasConfirmedSet {
+                    RuutineNavButton(kind: .finish(isLoading: isSaving)) {
+                        finishSession()
                     }
-
-                    Spacer(minLength: 0)
-
-                    if viewModel.hasConfirmedSet {
-                        RuutineNavButton(kind: .finish(isLoading: isSaving)) {
-                            finishSession()
-                        }
-                        .disabled(isSaving)
-                        .transition(.scale.combined(with: .opacity))
-                    }
+                    .disabled(isSaving)
+                    .transition(.scale.combined(with: .opacity))
                 }
             }
             .padding(.horizontal, 12)
             .animation(.easeInOut(duration: 0.2), value: viewModel.hasConfirmedSet)
         }
         .padding(.bottom, 6)
+    }
+
+    private var headerMinimizeRegion: some View {
+        VStack(spacing: 8) {
+            Capsule()
+                .fill(RuutineColor.muted.opacity(0.5))
+                .frame(width: 36, height: 4)
+                .padding(.top, 6)
+
+            VStack(spacing: 2) {
+                Text(viewModel.workoutName.uppercased())
+                    .font(.bebas(26))
+                    .foregroundColor(RuutineColor.foreground)
+                    .tracking(1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+
+                Text(viewModel.workoutDateSubtitle)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(RuutineColor.muted)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard !suppressHeaderMinimizeTap else { return }
+            Haptics.impact(.light)
+            onMinimize()
+        }
+        .gesture(headerMinimizeDragGesture)
+        .accessibilityLabel("Minimize workout")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var headerMinimizeDragGesture: some Gesture {
+        DragGesture(minimumDistance: 10, coordinateSpace: .local)
+            .onEnded { value in
+                guard value.translation.height > 60 else { return }
+                suppressHeaderMinimizeTap = true
+                Haptics.impact(.light)
+                onMinimize()
+                DispatchQueue.main.async {
+                    suppressHeaderMinimizeTap = false
+                }
+            }
     }
 
     private var timerBar: some View {
