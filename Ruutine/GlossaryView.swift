@@ -11,6 +11,8 @@ struct GlossaryView: View {
     @State private var showAddCustom = false
     @State private var customExerciseName = ""
     @State private var customExerciseError: String?
+    @State private var exercisePendingDelete: Exercise?
+    @State private var deleteExerciseError: String?
 
     private var filteredExercises: [Exercise] {
         exerciseService.exercises
@@ -73,6 +75,34 @@ struct GlossaryView: View {
             Text(customExerciseError ?? "")
         }
         .onChange(of: customExerciseError) { _, error in
+            if error != nil { Haptics.notify(.error) }
+        }
+        .alert("Delete Exercise?", isPresented: Binding(
+            get: { exercisePendingDelete != nil },
+            set: { if !$0 { exercisePendingDelete = nil } }
+        )) {
+            Button("Delete", role: .destructive) {
+                guard let exercise = exercisePendingDelete else { return }
+                exercisePendingDelete = nil
+                Task { await confirmDeleteCustomExercise(exercise) }
+            }
+            Button("Cancel", role: .cancel) {
+                exercisePendingDelete = nil
+            }
+        } message: {
+            if let exercise = exercisePendingDelete {
+                Text("Delete \"\(exercise.name)\"? This can't be undone.")
+            }
+        }
+        .alert("Couldn't Delete Exercise", isPresented: Binding(
+            get: { deleteExerciseError != nil },
+            set: { if !$0 { deleteExerciseError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteExerciseError ?? "")
+        }
+        .onChange(of: deleteExerciseError) { _, error in
             if error != nil { Haptics.notify(.error) }
         }
     }
@@ -171,8 +201,9 @@ struct GlossaryView: View {
         }
     }
 
+    @ViewBuilder
     private func exerciseCard(_ exercise: Exercise) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let card = VStack(alignment: .leading, spacing: 6) {
             Text(exercise.name)
                 .font(.system(size: 16, weight: .bold))
                 .foregroundColor(RuutineColor.foreground)
@@ -190,6 +221,31 @@ struct GlossaryView: View {
                 .stroke(RuutineColor.border, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
+
+        if exercise.id.hasPrefix("custom-") {
+            card.contextMenu {
+                Button("Delete", role: .destructive) {
+                    exercisePendingDelete = exercise
+                }
+            }
+        } else {
+            card
+        }
+    }
+
+    private func confirmDeleteCustomExercise(_ exercise: Exercise) async {
+        guard let profileId = authVM.session?.user.id else {
+            deleteExerciseError = ExerciseServiceError.notSignedIn.localizedDescription
+            return
+        }
+
+        deleteExerciseError = nil
+        do {
+            try await exerciseService.deleteCustomExercise(exerciseId: exercise.id, profileId: profileId)
+            Haptics.impact(.medium)
+        } catch {
+            deleteExerciseError = error.localizedDescription
+        }
     }
 
     private func addCustomExercise() async {

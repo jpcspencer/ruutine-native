@@ -76,6 +76,22 @@ final class ExerciseService: ObservableObject {
         return exercise
     }
 
+    func deleteCustomExercise(exerciseId: String, profileId: UUID) async throws {
+        guard exerciseId.hasPrefix("custom-") else { return }
+
+        let uuidString = String(exerciseId.dropFirst("custom-".count))
+        guard let uuid = UUID(uuidString: uuidString) else { return }
+
+        try await SupabaseClient.shared
+            .from("user_custom_exercises")
+            .delete()
+            .eq("id", value: uuid)
+            .eq("user_id", value: profileId)
+            .execute()
+
+        exercises.removeAll { $0.id == exerciseId }
+    }
+
     private func fetchCustomExercises(userId: UUID) async throws -> [CustomExerciseRow] {
         try await SupabaseClient.shared
             .from("user_custom_exercises")
