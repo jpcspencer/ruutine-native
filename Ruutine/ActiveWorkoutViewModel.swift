@@ -388,6 +388,9 @@ final class ActiveWorkoutViewModel: ObservableObject {
             }
         }
         previousSetsByExercise = updated
+        for exercise in exercises {
+            applyPreviousSetRowExpansion(for: exercise.name)
+        }
     }
 
     func loadPreviousSets(for exerciseName: String, userId: UUID) async {
@@ -397,6 +400,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
         )
         guard !records.isEmpty else { return }
         previousSetsByExercise[exerciseName] = records
+        applyPreviousSetRowExpansion(for: exerciseName)
     }
 
     func previousSet(for exerciseName: String, setIndex: Int) -> PreviousSetRecord? {
@@ -501,6 +505,10 @@ final class ActiveWorkoutViewModel: ObservableObject {
     }
 
     func placeholderDurationSeconds(for exercise: WorkoutExercise, setIndex: Int) -> Int? {
+        if let previous = previousSet(for: exercise.name, setIndex: setIndex),
+           let seconds = previous.durationSeconds, seconds > 0 {
+            return seconds
+        }
         if setIndex > 0 {
             let previous = exercise.sets[setIndex - 1]
             if previous.isConfirmed, let seconds = previous.durationSeconds, seconds > 0 {
@@ -513,6 +521,10 @@ final class ActiveWorkoutViewModel: ObservableObject {
     }
 
     func placeholderDistanceMeters(for exercise: WorkoutExercise, setIndex: Int) -> Double? {
+        if let previous = previousSet(for: exercise.name, setIndex: setIndex),
+           let meters = previous.distanceM, meters > 0 {
+            return meters
+        }
         if setIndex > 0 {
             let previous = exercise.sets[setIndex - 1]
             if previous.isConfirmed, let meters = previous.distanceM, meters > 0 {
@@ -600,6 +612,27 @@ final class ActiveWorkoutViewModel: ObservableObject {
         hasConfirmedSet = exercises.contains { exercise in
             exercise.sets.contains { $0.isConfirmed }
         }
+    }
+
+    private func isEligibleForPreviousSetPreload(_ exercise: WorkoutExercise) -> Bool {
+        guard exercise.sets.count == 1, let set = exercise.sets.first else { return false }
+        return !set.isConfirmed
+            && set.weight.isEmpty
+            && set.reps.isEmpty
+            && set.timeEntryDigits.isEmpty
+            && (set.durationSeconds ?? 0) <= 0
+            && (set.distanceM ?? 0) <= 0
+    }
+
+    private func applyPreviousSetRowExpansion(for exerciseName: String) {
+        guard let previousCount = previousSetsByExercise[exerciseName]?.count, previousCount > 1 else { return }
+        guard let index = exercises.firstIndex(where: {
+            $0.name == exerciseName && isEligibleForPreviousSetPreload($0)
+        }) else { return }
+
+        exercises[index].sets = (0..<previousCount).map { _ in WorkoutSet() }
+        persist()
+        syncLiveActivity()
     }
 
     private func persist() {
