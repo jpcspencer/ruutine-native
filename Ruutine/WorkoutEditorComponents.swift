@@ -260,21 +260,27 @@ struct WorkoutSetColumnHeader: View {
 struct WorkoutSetConfirmButton: View {
     let isConfirmed: Bool
 
+    private let cornerRadius: CGFloat = 7
+
     var body: some View {
         ZStack {
             if isConfirmed {
-                Circle()
+                RoundedRectangle(cornerRadius: cornerRadius)
                     .fill(RuutineColor.accent)
-                    .frame(width: 24, height: 24)
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(RuutineColor.accentForeground)
             } else {
-                Circle()
-                    .stroke(RuutineColor.muted, lineWidth: 1.5)
-                    .frame(width: 24, height: 24)
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(RuutineColor.background)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(RuutineColor.border, lineWidth: 1)
+                    )
             }
         }
+        .frame(width: WorkoutSetColumn.check, height: 30)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
 }
 

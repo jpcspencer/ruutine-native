@@ -261,6 +261,10 @@ final class ActiveWorkoutViewModel: ObservableObject {
               let setIndex = exercises[exerciseIndex].sets.firstIndex(where: { $0.id == setID })
         else { return }
         exercises[exerciseIndex].sets.remove(at: setIndex)
+        if exercises[exerciseIndex].sets.isEmpty {
+            removeExercise(exercises[exerciseIndex])
+            return
+        }
         refreshHasConfirmedSet()
         persist()
         syncLiveActivity()
