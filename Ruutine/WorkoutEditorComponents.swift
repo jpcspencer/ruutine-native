@@ -19,25 +19,74 @@ enum WorkoutFieldFocus: Hashable {
 enum WorkoutSetFieldFormatting {
     static func timeText(seconds: Int?) -> String {
         guard let seconds, seconds > 0 else { return "" }
-        return String(format: "%d:%02d", seconds / 60, seconds % 60)
+        return stopwatchDisplay(fromDigits: stopwatchDigits(fromDurationSeconds: seconds))
     }
 
-    static func parseTimeText(_ text: String) -> Int? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
+    static func stopwatchDigits(fromDurationSeconds totalSeconds: Int) -> String {
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        if minutes == 0 {
+            return seconds == 0 ? "" : String(seconds)
+        }
+        return "\(minutes)" + String(format: "%02d", seconds)
+    }
 
-        if trimmed.contains(":") {
-            let parts = trimmed.split(separator: ":", maxSplits: 1).map(String.init)
-            guard parts.count == 2,
-                  let minutes = Int(parts[0].trimmingCharacters(in: .whitespacesAndNewlines)),
-                  let seconds = Int(parts[1].trimmingCharacters(in: .whitespacesAndNewlines)),
-                  minutes >= 0, seconds >= 0, seconds < 60
-            else { return nil }
-            return minutes * 60 + seconds
+    static func minutesAndSeconds(fromDigits digits: String) -> (minutes: Int, seconds: Int) {
+        guard !digits.isEmpty else { return (0, 0) }
+
+        let secondsPart = Int(digits.suffix(min(2, digits.count))) ?? 0
+        let minutesPart = digits.count > 2 ? Int(digits.dropLast(2)) ?? 0 : 0
+
+        var minutes = minutesPart
+        var seconds = secondsPart
+        if seconds >= 60 {
+            minutes += seconds / 60
+            seconds %= 60
+        }
+        return (minutes, seconds)
+    }
+
+    static func stopwatchDisplay(fromDigits digits: String) -> String {
+        guard !digits.isEmpty else { return "" }
+        let parts = minutesAndSeconds(fromDigits: digits)
+        return String(format: "%d:%02d", parts.minutes, parts.seconds)
+    }
+
+    static func durationSeconds(fromStopwatchDigits digits: String) -> Int? {
+        guard !digits.isEmpty else { return nil }
+        let parts = minutesAndSeconds(fromDigits: digits)
+        let total = parts.minutes * 60 + parts.seconds
+        return total > 0 ? total : nil
+    }
+
+    static func processStopwatchEdit(previousDigits: String, newText: String) -> (digits: String, durationSeconds: Int?) {
+        let newDigitsOnly = String(newText.filter(\.isNumber).prefix(6))
+        let updatedDigits: String
+
+        if newDigitsOnly.count < previousDigits.count {
+            updatedDigits = String(previousDigits.dropLast())
+        } else if newDigitsOnly.count > previousDigits.count, let lastDigit = newDigitsOnly.last {
+            updatedDigits = previousDigits + String(lastDigit)
+        } else {
+            updatedDigits = previousDigits
         }
 
-        guard let seconds = Int(trimmed), seconds >= 0 else { return nil }
-        return seconds
+        return (updatedDigits, durationSeconds(fromStopwatchDigits: updatedDigits))
+    }
+
+    static func timeDisplayText(for set: WorkoutSet) -> String {
+        if !set.timeEntryDigits.isEmpty {
+            return stopwatchDisplay(fromDigits: set.timeEntryDigits)
+        }
+        return timeText(seconds: set.durationSeconds)
+    }
+
+    static func effectiveStopwatchDigits(for set: WorkoutSet) -> String {
+        if !set.timeEntryDigits.isEmpty {
+            return set.timeEntryDigits
+        }
+        guard let seconds = set.durationSeconds, seconds > 0 else { return "" }
+        return stopwatchDigits(fromDurationSeconds: seconds)
     }
 
     static func distanceText(meters: Double?) -> String {
@@ -361,7 +410,7 @@ struct WorkoutSetRowView: View {
                 placeholder: timePlaceholder,
                 width: WorkoutSetColumn.kg,
                 isConfirmed: isConfirmed,
-                keyboardType: .numbersAndPunctuation,
+                keyboardType: .numberPad,
                 focus: .time(exerciseID: exerciseID, setID: setID),
                 focusedField: focusedField
             )

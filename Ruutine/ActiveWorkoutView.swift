@@ -347,7 +347,7 @@ struct ActiveWorkoutView: View {
         let repsPlaceholder = viewModel.placeholderReps(for: exercise, setIndex: setIndex)
         let durationPlaceholderSeconds = viewModel.placeholderDurationSeconds(for: exercise, setIndex: setIndex)
         let distancePlaceholderMeters = viewModel.placeholderDistanceMeters(for: exercise, setIndex: setIndex)
-        let timeText = WorkoutSetFieldFormatting.timeText(seconds: set.durationSeconds)
+        let timeText = WorkoutSetFieldFormatting.timeDisplayText(for: set)
         let distanceText = WorkoutSetFieldFormatting.distanceText(meters: set.distanceM)
         let timePlaceholder = WorkoutSetFieldFormatting.timeText(seconds: durationPlaceholderSeconds)
         let distancePlaceholder = WorkoutSetFieldFormatting.distanceText(meters: distancePlaceholderMeters)
@@ -412,16 +412,28 @@ struct ActiveWorkoutView: View {
     private func timeBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {
         Binding(
             get: {
-                let seconds = viewModel.exercises
+                guard let set = viewModel.exercises
                     .first(where: { $0.id == exerciseID })?
-                    .sets.first(where: { $0.id == setID })?.durationSeconds
-                return WorkoutSetFieldFormatting.timeText(seconds: seconds)
+                    .sets.first(where: { $0.id == setID })
+                else { return "" }
+                return WorkoutSetFieldFormatting.timeDisplayText(for: set)
             },
             set: { newValue in
-                viewModel.updateSet(
+                guard let set = viewModel.exercises
+                    .first(where: { $0.id == exerciseID })?
+                    .sets.first(where: { $0.id == setID })
+                else { return }
+
+                let previousDigits = WorkoutSetFieldFormatting.effectiveStopwatchDigits(for: set)
+                let result = WorkoutSetFieldFormatting.processStopwatchEdit(
+                    previousDigits: previousDigits,
+                    newText: newValue
+                )
+                viewModel.updateSetTime(
                     exerciseID: exerciseID,
                     setID: setID,
-                    durationSeconds: WorkoutSetFieldFormatting.parseTimeText(newValue)
+                    digits: result.digits,
+                    durationSeconds: result.durationSeconds
                 )
             }
         )

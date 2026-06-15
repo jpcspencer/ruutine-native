@@ -127,12 +127,16 @@ enum WorkoutSetPersistence {
     static func completedSetPayload(
         from set: WorkoutSet,
         setNumber: Int,
-        inputKind: InputKind
+        inputKind: InputKind,
+        weightPlaceholder: String = "",
+        repsPlaceholder: String = ""
     ) -> CompletedSetPayload? {
         switch inputKind {
         case .weightReps, .addedWeightReps, .assistedReps:
-            guard let weight = Double(set.weight.trimmingCharacters(in: .whitespaces)),
-                  let reps = Int(set.reps.trimmingCharacters(in: .whitespaces))
+            let weightText = set.weight.isEmpty ? weightPlaceholder : set.weight
+            let repsText = set.reps.isEmpty ? repsPlaceholder : set.reps
+            guard let weight = Double(weightText.trimmingCharacters(in: .whitespaces)),
+                  let reps = Int(repsText.trimmingCharacters(in: .whitespaces))
             else { return nil }
             return CompletedSetPayload(
                 setNumber: setNumber,
@@ -143,7 +147,8 @@ enum WorkoutSetPersistence {
             )
 
         case .repsOnly:
-            guard let reps = Int(set.reps.trimmingCharacters(in: .whitespaces)) else { return nil }
+            let repsText = set.reps.isEmpty ? repsPlaceholder : set.reps
+            guard let reps = Int(repsText.trimmingCharacters(in: .whitespaces)) else { return nil }
             return CompletedSetPayload(
                 setNumber: setNumber,
                 weightKg: nil,

@@ -8,6 +8,7 @@ struct WorkoutSet: Codable, Identifiable, Equatable {
     var reps: String
     var durationSeconds: Int?
     var distanceM: Double?
+    var timeEntryDigits: String
     var isConfirmed: Bool
 
     init(
@@ -16,6 +17,7 @@ struct WorkoutSet: Codable, Identifiable, Equatable {
         reps: String = "",
         durationSeconds: Int? = nil,
         distanceM: Double? = nil,
+        timeEntryDigits: String = "",
         isConfirmed: Bool = false
     ) {
         self.id = id
@@ -23,7 +25,34 @@ struct WorkoutSet: Codable, Identifiable, Equatable {
         self.reps = reps
         self.durationSeconds = durationSeconds
         self.distanceM = distanceM
+        self.timeEntryDigits = timeEntryDigits
         self.isConfirmed = isConfirmed
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, weight, reps, durationSeconds, distanceM, timeEntryDigits, isConfirmed
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        weight = try container.decode(String.self, forKey: .weight)
+        reps = try container.decode(String.self, forKey: .reps)
+        durationSeconds = try container.decodeIfPresent(Int.self, forKey: .durationSeconds)
+        distanceM = try container.decodeIfPresent(Double.self, forKey: .distanceM)
+        timeEntryDigits = try container.decodeIfPresent(String.self, forKey: .timeEntryDigits) ?? ""
+        isConfirmed = try container.decode(Bool.self, forKey: .isConfirmed)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(weight, forKey: .weight)
+        try container.encode(reps, forKey: .reps)
+        try container.encodeIfPresent(durationSeconds, forKey: .durationSeconds)
+        try container.encodeIfPresent(distanceM, forKey: .distanceM)
+        try container.encode(timeEntryDigits, forKey: .timeEntryDigits)
+        try container.encode(isConfirmed, forKey: .isConfirmed)
     }
 }
 
@@ -259,6 +288,16 @@ final class ActiveWorkoutViewModel: ObservableObject {
         persist()
     }
 
+    func updateSetTime(exerciseID: UUID, setID: UUID, digits: String, durationSeconds: Int?) {
+        guard let exerciseIndex = exercises.firstIndex(where: { $0.id == exerciseID }),
+              let setIndex = exercises[exerciseIndex].sets.firstIndex(where: { $0.id == setID })
+        else { return }
+
+        exercises[exerciseIndex].sets[setIndex].timeEntryDigits = digits
+        exercises[exerciseIndex].sets[setIndex].durationSeconds = durationSeconds
+        persist()
+    }
+
     func toggleSetConfirmed(exerciseID: UUID, setID: UUID) {
         guard let exerciseIndex = exercises.firstIndex(where: { $0.id == exerciseID }),
               let setIndex = exercises[exerciseIndex].sets.firstIndex(where: { $0.id == setID })
@@ -380,11 +419,13 @@ final class ActiveWorkoutViewModel: ObservableObject {
         for exercise in exercises {
             var confirmedSets: [CompletedSetPayload] = []
 
-            for set in exercise.sets where set.isConfirmed {
+            for (setIndex, set) in exercise.sets.enumerated() where set.isConfirmed {
                 guard let payload = WorkoutSetPersistence.completedSetPayload(
                     from: set,
                     setNumber: confirmedSets.count + 1,
-                    inputKind: exercise.category.inputKind
+                    inputKind: exercise.category.inputKind,
+                    weightPlaceholder: placeholderWeight(for: exercise, setIndex: setIndex),
+                    repsPlaceholder: placeholderReps(for: exercise, setIndex: setIndex)
                 ) else { continue }
 
                 if let weightKg = payload.weightKg, let reps = payload.reps {

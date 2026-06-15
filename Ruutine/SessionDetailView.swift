@@ -318,7 +318,7 @@ struct SessionDetailView: View {
                 let repsPlaceholder = editState.placeholderReps(for: exercise, setIndex: index)
                 let durationPlaceholderSeconds = editState.placeholderDurationSeconds(for: exercise, setIndex: index)
                 let distancePlaceholderMeters = editState.placeholderDistanceMeters(for: exercise, setIndex: index)
-                let timeText = WorkoutSetFieldFormatting.timeText(seconds: set.durationSeconds)
+                let timeText = WorkoutSetFieldFormatting.timeDisplayText(for: set)
                 let distanceText = WorkoutSetFieldFormatting.distanceText(meters: set.distanceM)
                 let timePlaceholder = WorkoutSetFieldFormatting.timeText(seconds: durationPlaceholderSeconds)
                 let distancePlaceholder = WorkoutSetFieldFormatting.distanceText(meters: distancePlaceholderMeters)
@@ -448,16 +448,28 @@ struct SessionDetailView: View {
     private func timeBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {
         Binding(
             get: {
-                let seconds = editState.exercises
+                guard let set = editState.exercises
                     .first(where: { $0.id == exerciseID })?
-                    .sets.first(where: { $0.id == setID })?.durationSeconds
-                return WorkoutSetFieldFormatting.timeText(seconds: seconds)
+                    .sets.first(where: { $0.id == setID })
+                else { return "" }
+                return WorkoutSetFieldFormatting.timeDisplayText(for: set)
             },
             set: { newValue in
-                editState.updateSet(
+                guard let set = editState.exercises
+                    .first(where: { $0.id == exerciseID })?
+                    .sets.first(where: { $0.id == setID })
+                else { return }
+
+                let previousDigits = WorkoutSetFieldFormatting.effectiveStopwatchDigits(for: set)
+                let result = WorkoutSetFieldFormatting.processStopwatchEdit(
+                    previousDigits: previousDigits,
+                    newText: newValue
+                )
+                editState.updateSetTime(
                     exerciseID: exerciseID,
                     setID: setID,
-                    durationSeconds: WorkoutSetFieldFormatting.parseTimeText(newValue)
+                    digits: result.digits,
+                    durationSeconds: result.durationSeconds
                 )
             }
         )

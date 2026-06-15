@@ -128,6 +128,15 @@ struct SessionEditState {
         }
     }
 
+    mutating func updateSetTime(exerciseID: UUID, setID: UUID, digits: String, durationSeconds: Int?) {
+        guard let exerciseIndex = exercises.firstIndex(where: { $0.id == exerciseID }),
+              let setIndex = exercises[exerciseIndex].sets.firstIndex(where: { $0.id == setID })
+        else { return }
+
+        exercises[exerciseIndex].sets[setIndex].timeEntryDigits = digits
+        exercises[exerciseIndex].sets[setIndex].durationSeconds = durationSeconds
+    }
+
     mutating func toggleSetConfirmed(exerciseID: UUID, setID: UUID) {
         guard let exerciseIndex = exercises.firstIndex(where: { $0.id == exerciseID }),
               let setIndex = exercises[exerciseIndex].sets.firstIndex(where: { $0.id == setID })
