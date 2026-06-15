@@ -208,7 +208,8 @@ enum ExerciseLogDeduper {
 
     static func dedupeLogs(_ logs: [ExerciseLogDetail]) -> [ExerciseLogDetail] {
         dedupe(logs, key: { log in
-            "\(log.exerciseName ?? "")-\(log.setNumber ?? 0)"
+            let sessionId = log.sessionId?.uuidString ?? ""
+            return "\(sessionId)-\(log.exerciseName ?? "")-\(log.setNumber ?? 0)"
         }, prefer: { existing, row in
             if existing.weightKg == nil, row.weightKg != nil {
                 return row
