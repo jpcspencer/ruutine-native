@@ -289,17 +289,22 @@ enum SessionLogConverter {
 
         for exercise in draft.exercises {
             for (index, set) in exercise.sets.enumerated() {
+                let fields = WorkoutSetPersistence.exerciseLogFields(
+                    from: set,
+                    inputKind: exercise.category.inputKind,
+                    isImperial: isImperial
+                )
                 result.append(
                     ExerciseLogDetail(
                         id: set.id,
                         sessionId: sessionId,
                         exerciseName: exercise.name,
-                        weightKg: HistoryFormatting.parseWeight(set.weight, isImperial: isImperial),
-                        reps: HistoryFormatting.parseReps(set.reps),
+                        weightKg: fields.weightKg,
+                        reps: fields.reps,
                         setNumber: index + 1,
                         completed: set.isConfirmed,
-                        durationSeconds: nil,
-                        distanceM: nil
+                        durationSeconds: fields.durationSeconds,
+                        distanceM: fields.distanceM
                     )
                 )
             }

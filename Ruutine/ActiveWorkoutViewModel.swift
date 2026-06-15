@@ -381,21 +381,17 @@ final class ActiveWorkoutViewModel: ObservableObject {
             var confirmedSets: [CompletedSetPayload] = []
 
             for set in exercise.sets where set.isConfirmed {
-                guard let weight = Double(set.weight.trimmingCharacters(in: .whitespaces)),
-                      let reps = Int(set.reps.trimmingCharacters(in: .whitespaces))
-                else { continue }
+                guard let payload = WorkoutSetPersistence.completedSetPayload(
+                    from: set,
+                    setNumber: confirmedSets.count + 1,
+                    inputKind: exercise.category.inputKind
+                ) else { continue }
 
-                totalVolume += weight * Double(reps)
+                if let weightKg = payload.weightKg, let reps = payload.reps {
+                    totalVolume += weightKg * Double(reps)
+                }
                 totalSets += 1
-                confirmedSets.append(
-                    CompletedSetPayload(
-                        setNumber: confirmedSets.count + 1,
-                        weightKg: weight,
-                        reps: reps,
-                        durationSeconds: nil,
-                        distanceM: nil
-                    )
-                )
+                confirmedSets.append(payload)
             }
 
             if !confirmedSets.isEmpty {

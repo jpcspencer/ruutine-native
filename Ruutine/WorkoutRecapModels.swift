@@ -116,6 +116,115 @@ struct CompletedSetPayload {
     let distanceM: Double?
 }
 
+enum WorkoutSetPersistence {
+    struct ExerciseLogFields {
+        let weightKg: Double?
+        let reps: Int?
+        let durationSeconds: Int?
+        let distanceM: Double?
+    }
+
+    static func completedSetPayload(
+        from set: WorkoutSet,
+        setNumber: Int,
+        inputKind: InputKind
+    ) -> CompletedSetPayload? {
+        switch inputKind {
+        case .weightReps, .addedWeightReps, .assistedReps:
+            guard let weight = Double(set.weight.trimmingCharacters(in: .whitespaces)),
+                  let reps = Int(set.reps.trimmingCharacters(in: .whitespaces))
+            else { return nil }
+            return CompletedSetPayload(
+                setNumber: setNumber,
+                weightKg: weight,
+                reps: reps,
+                durationSeconds: nil,
+                distanceM: nil
+            )
+
+        case .repsOnly:
+            guard let reps = Int(set.reps.trimmingCharacters(in: .whitespaces)) else { return nil }
+            return CompletedSetPayload(
+                setNumber: setNumber,
+                weightKg: nil,
+                reps: reps,
+                durationSeconds: nil,
+                distanceM: nil
+            )
+
+        case .cardio:
+            let durationSeconds = set.durationSeconds
+            let distanceM = set.distanceM
+            let hasTime = (durationSeconds ?? 0) > 0
+            let hasDistance = (distanceM ?? 0) > 0
+            guard hasTime || hasDistance else { return nil }
+            return CompletedSetPayload(
+                setNumber: setNumber,
+                weightKg: nil,
+                reps: nil,
+                durationSeconds: hasTime ? durationSeconds : nil,
+                distanceM: hasDistance ? distanceM : nil
+            )
+
+        case .duration:
+            guard let durationSeconds = set.durationSeconds, durationSeconds > 0 else { return nil }
+            return CompletedSetPayload(
+                setNumber: setNumber,
+                weightKg: nil,
+                reps: nil,
+                durationSeconds: durationSeconds,
+                distanceM: nil
+            )
+        }
+    }
+
+    static func exerciseLogFields(
+        from set: WorkoutSet,
+        inputKind: InputKind,
+        isImperial: Bool
+    ) -> ExerciseLogFields {
+        switch inputKind {
+        case .weightReps, .addedWeightReps, .assistedReps:
+            return ExerciseLogFields(
+                weightKg: HistoryFormatting.parseWeight(set.weight, isImperial: isImperial),
+                reps: HistoryFormatting.parseReps(set.reps),
+                durationSeconds: nil,
+                distanceM: nil
+            )
+
+        case .repsOnly:
+            return ExerciseLogFields(
+                weightKg: nil,
+                reps: HistoryFormatting.parseReps(set.reps),
+                durationSeconds: nil,
+                distanceM: nil
+            )
+
+        case .cardio:
+            let durationSeconds = set.durationSeconds
+            let distanceM = set.distanceM
+            let hasTime = (durationSeconds ?? 0) > 0
+            let hasDistance = (distanceM ?? 0) > 0
+            return ExerciseLogFields(
+                weightKg: nil,
+                reps: nil,
+                durationSeconds: hasTime ? durationSeconds : nil,
+                distanceM: hasDistance ? distanceM : nil
+            )
+
+        case .duration:
+            let durationSeconds = set.durationSeconds
+            let hasTime = (durationSeconds ?? 0) > 0
+            return ExerciseLogFields(
+                weightKg: nil,
+                reps: nil,
+                durationSeconds: hasTime ? durationSeconds : nil,
+                distanceM: nil
+            )
+        }
+    }
+}
+
 extension Notification.Name {
     static let workoutCompleted = Notification.Name("workoutCompleted")
 }

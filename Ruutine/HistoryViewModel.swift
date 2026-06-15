@@ -189,16 +189,19 @@ final class HistoryViewModel: ObservableObject {
         for exercise in draft.exercises {
             for (index, set) in exercise.sets.enumerated() {
                 let setNumber = index + 1
-                let weightKg = HistoryFormatting.parseWeight(set.weight, isImperial: isImperial)
-                let reps = HistoryFormatting.parseReps(set.reps)
+                let fields = WorkoutSetPersistence.exerciseLogFields(
+                    from: set,
+                    inputKind: exercise.category.inputKind,
+                    isImperial: isImperial
+                )
                 let logPayload = ExerciseLogSavePayload(
-                    weight_kg: weightKg,
-                    reps: reps,
+                    weight_kg: fields.weightKg,
+                    reps: fields.reps,
                     set_number: setNumber,
                     exercise_name: exercise.name,
                     completed: set.isConfirmed,
-                    duration_seconds: nil,
-                    distance_m: nil
+                    duration_seconds: fields.durationSeconds,
+                    distance_m: fields.distanceM
                 )
 
                 if draft.originalLogIds.contains(set.id) {
@@ -214,11 +217,11 @@ final class HistoryViewModel: ObservableObject {
                         sessionId: sessionId,
                         exerciseName: exercise.name,
                         setNumber: setNumber,
-                        weightKg: weightKg,
-                        reps: reps,
+                        weightKg: fields.weightKg,
+                        reps: fields.reps,
                         completed: set.isConfirmed,
-                        durationSeconds: nil,
-                        distanceM: nil
+                        durationSeconds: fields.durationSeconds,
+                        distanceM: fields.distanceM
                     )
                     try await SupabaseClient.shared
                         .from("exercise_logs")
