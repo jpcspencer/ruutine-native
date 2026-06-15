@@ -46,10 +46,13 @@ enum WorkoutSetFieldFormatting {
         return (minutes, seconds)
     }
 
+    /// Raw digit-position display (no seconds rollover). Rollover applies only in `durationSeconds(fromStopwatchDigits:)`.
     static func stopwatchDisplay(fromDigits digits: String) -> String {
         guard !digits.isEmpty else { return "" }
-        let parts = minutesAndSeconds(fromDigits: digits)
-        return String(format: "%d:%02d", parts.minutes, parts.seconds)
+        let secondsDigits = digits.suffix(min(2, digits.count))
+        let seconds = String(format: "%02d", Int(secondsDigits) ?? 0)
+        let minutes = digits.count > 2 ? String(digits.dropLast(2)) : "0"
+        return "\(minutes):\(seconds)"
     }
 
     static func durationSeconds(fromStopwatchDigits digits: String) -> Int? {
@@ -317,6 +320,63 @@ struct WorkoutSetInputField: View {
     }
 }
 
+struct WorkoutSetTimeInputField: View {
+    @Binding var digits: String
+    let durationSeconds: Int?
+    let placeholder: String
+    let width: CGFloat
+    let isConfirmed: Bool
+    let focus: WorkoutFieldFocus
+    var focusedField: FocusState<WorkoutFieldFocus?>.Binding
+
+    private var isFocused: Bool {
+        focusedField.wrappedValue == focus
+    }
+
+    private var overlayText: String {
+        if !digits.isEmpty {
+            return WorkoutSetFieldFormatting.stopwatchDisplay(fromDigits: digits)
+        }
+        if let durationSeconds, durationSeconds > 0 {
+            return WorkoutSetFieldFormatting.timeText(seconds: durationSeconds)
+        }
+        return ""
+    }
+
+    var body: some View {
+        ZStack {
+            if overlayText.isEmpty, !placeholder.isEmpty {
+                Text(placeholder)
+                    .font(.system(size: 13))
+                    .foregroundColor(RuutineColor.muted.opacity(0.55))
+            } else if !overlayText.isEmpty {
+                Text(overlayText)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(isConfirmed ? RuutineColor.muted : RuutineColor.foreground)
+            }
+
+            TextField("", text: $digits)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.clear)
+                .tint(.clear)
+                .multilineTextAlignment(.center)
+                .keyboardType(.numberPad)
+                .disabled(isConfirmed)
+                .focused(focusedField, equals: focus)
+        }
+        .frame(width: width, height: 30)
+        .background(RuutineColor.background)
+        .overlay(
+            RoundedRectangle(cornerRadius: 7)
+                .stroke(
+                    isFocused ? RuutineColor.accent : RuutineColor.border,
+                    lineWidth: isFocused ? 2 : 1
+                )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 7))
+    }
+}
+
 struct WorkoutSetRowView: View {
     let inputKind: InputKind
     let setNumber: Int
@@ -325,6 +385,7 @@ struct WorkoutSetRowView: View {
     @Binding var reps: String
     @Binding var time: String
     @Binding var distance: String
+    let timeDurationSeconds: Int?
     let weightPlaceholder: String
     let repsPlaceholder: String
     let timePlaceholder: String
@@ -395,12 +456,12 @@ struct WorkoutSetRowView: View {
         case .repsOnly:
             EmptyView()
         case .cardio, .duration:
-            WorkoutSetInputField(
-                text: $time,
+            WorkoutSetTimeInputField(
+                digits: $time,
+                durationSeconds: timeDurationSeconds,
                 placeholder: timePlaceholder,
                 width: WorkoutSetColumn.kg,
                 isConfirmed: isConfirmed,
-                keyboardType: .numberPad,
                 focus: .time(exerciseID: exerciseID, setID: setID),
                 focusedField: focusedField
             )

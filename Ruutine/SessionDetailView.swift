@@ -342,6 +342,7 @@ struct SessionDetailView: View {
                     reps: repsBinding(exerciseID: exercise.id, setID: set.id),
                     time: timeBinding(exerciseID: exercise.id, setID: set.id),
                     distance: distanceBinding(exerciseID: exercise.id, setID: set.id),
+                    timeDurationSeconds: set.durationSeconds,
                     weightPlaceholder: weightPlaceholder,
                     repsPlaceholder: repsPlaceholder,
                     timePlaceholder: timePlaceholder,
@@ -448,11 +449,10 @@ struct SessionDetailView: View {
     private func timeBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {
         Binding(
             get: {
-                guard let set = editState.exercises
+                editState.exercises
                     .first(where: { $0.id == exerciseID })?
-                    .sets.first(where: { $0.id == setID })
-                else { return "" }
-                return WorkoutSetFieldFormatting.timeDisplayText(for: set)
+                    .sets.first(where: { $0.id == setID })?
+                    .timeEntryDigits ?? ""
             },
             set: { newValue in
                 let result = WorkoutSetFieldFormatting.parseStopwatchInput(newValue)
