@@ -200,7 +200,7 @@ extension Exercise {
         Exercise(id: "stationary-bike", name: "Stationary Bike", primaryMuscle: "Cardio", secondaryMuscles: ["Legs"], difficulty: "Beginner", category: .cardio),
         Exercise(id: "treadmill", name: "Treadmill", primaryMuscle: "Cardio", secondaryMuscles: ["Legs"], difficulty: "Beginner", category: .cardio),
         Exercise(id: "assault-bike", name: "Assault Bike", primaryMuscle: "Cardio", secondaryMuscles: ["Full Body"], difficulty: "Beginner", category: .cardio),
-        Exercise(id: "jump-rope", name: "Jump Rope", primaryMuscle: "Cardio", secondaryMuscles: ["Calves", "Legs"], difficulty: "Beginner", category: .cardio),
+        Exercise(id: "jump-rope", name: "Jump Rope", primaryMuscle: "Cardio", secondaryMuscles: ["Calves", "Legs"], difficulty: "Beginner", category: .duration),
         Exercise(id: "stair-climber", name: "Stair Climber", primaryMuscle: "Cardio", secondaryMuscles: ["Legs", "Glutes"], difficulty: "Beginner", category: .cardio),
     ]
 }

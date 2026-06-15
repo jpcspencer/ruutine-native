@@ -232,6 +232,8 @@ final class ActiveWorkoutViewModel: ObservableObject {
         setID: UUID,
         weight: String? = nil,
         reps: String? = nil,
+        durationSeconds: Int? = nil,
+        distanceM: Double? = nil,
         isConfirmed: Bool? = nil
     ) {
         guard let exerciseIndex = exercises.firstIndex(where: { $0.id == exerciseID }),
@@ -243,6 +245,12 @@ final class ActiveWorkoutViewModel: ObservableObject {
         }
         if let reps {
             exercises[exerciseIndex].sets[setIndex].reps = reps
+        }
+        if let durationSeconds {
+            exercises[exerciseIndex].sets[setIndex].durationSeconds = durationSeconds
+        }
+        if let distanceM {
+            exercises[exerciseIndex].sets[setIndex].distanceM = distanceM
         }
         if let isConfirmed {
             exercises[exerciseIndex].sets[setIndex].isConfirmed = isConfirmed
@@ -261,22 +269,15 @@ final class ActiveWorkoutViewModel: ObservableObject {
         if exercises[exerciseIndex].sets[setIndex].isConfirmed {
             exercises[exerciseIndex].sets[setIndex].isConfirmed = false
         } else {
-            if exercises[exerciseIndex].sets[setIndex].weight.isEmpty {
-                let placeholder = placeholderWeight(for: exercise, setIndex: setIndex)
-                if !placeholder.isEmpty {
-                    exercises[exerciseIndex].sets[setIndex].weight = placeholder
-                }
-            }
-            if exercises[exerciseIndex].sets[setIndex].reps.isEmpty {
-                let placeholder = placeholderReps(for: exercise, setIndex: setIndex)
-                if !placeholder.isEmpty {
-                    exercises[exerciseIndex].sets[setIndex].reps = placeholder
-                }
-            }
-
-            guard !exercises[exerciseIndex].sets[setIndex].weight.isEmpty,
-                  !exercises[exerciseIndex].sets[setIndex].reps.isEmpty
-            else { return }
+            let canConfirm = WorkoutSetConfirmLogic.prepareForConfirm(
+                set: &exercises[exerciseIndex].sets[setIndex],
+                inputKind: exercise.category.inputKind,
+                weightPlaceholder: placeholderWeight(for: exercise, setIndex: setIndex),
+                repsPlaceholder: placeholderReps(for: exercise, setIndex: setIndex),
+                durationPlaceholderSeconds: placeholderDurationSeconds(for: exercise, setIndex: setIndex),
+                distancePlaceholderMeters: placeholderDistanceMeters(for: exercise, setIndex: setIndex)
+            )
+            guard canConfirm else { return }
 
             exercises[exerciseIndex].sets[setIndex].isConfirmed = true
             Haptics.impact(.medium)
@@ -446,6 +447,30 @@ final class ActiveWorkoutViewModel: ObservableObject {
             }
         }
         return exercise.sets.prefix(setIndex).last(where: { $0.isConfirmed && !$0.reps.isEmpty })?.reps ?? ""
+    }
+
+    func placeholderDurationSeconds(for exercise: WorkoutExercise, setIndex: Int) -> Int? {
+        if setIndex > 0 {
+            let previous = exercise.sets[setIndex - 1]
+            if previous.isConfirmed, let seconds = previous.durationSeconds, seconds > 0 {
+                return seconds
+            }
+        }
+        return exercise.sets.prefix(setIndex).last(where: {
+            $0.isConfirmed && ($0.durationSeconds ?? 0) > 0
+        })?.durationSeconds
+    }
+
+    func placeholderDistanceMeters(for exercise: WorkoutExercise, setIndex: Int) -> Double? {
+        if setIndex > 0 {
+            let previous = exercise.sets[setIndex - 1]
+            if previous.isConfirmed, let meters = previous.distanceM, meters > 0 {
+                return meters
+            }
+        }
+        return exercise.sets.prefix(setIndex).last(where: {
+            $0.isConfirmed && ($0.distanceM ?? 0) > 0
+        })?.distanceM
     }
 
     var elapsedFormatted: String {

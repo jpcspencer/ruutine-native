@@ -295,13 +295,15 @@ struct SessionDetailView: View {
 
     private func editExerciseCard(for exercise: WorkoutExercise) -> some View {
         let isDragging = draggedExerciseID == exercise.id
+        let inputKind = exercise.category.inputKind
 
         return WorkoutExerciseEditorCard(
             exerciseName: exercise.name,
             showsDragHandle: true,
             isDragging: isDragging,
             showsDeleteColumn: true,
-            weightLabel: weightColumnLabel,
+            inputKind: inputKind,
+            weightColumnLabel: weightColumnLabel,
             hasSets: !exercise.sets.isEmpty,
             onRemoveExercise: {
                 editState.removeExercise(exercise)
@@ -314,16 +316,36 @@ struct SessionDetailView: View {
                 let isConfirmed = editState.isSetConfirmed(exerciseID: exercise.id, setID: set.id)
                 let weightPlaceholder = editState.placeholderWeight(for: exercise, setIndex: index)
                 let repsPlaceholder = editState.placeholderReps(for: exercise, setIndex: index)
-                let canConfirm = (!set.weight.isEmpty || !weightPlaceholder.isEmpty)
-                    && (!set.reps.isEmpty || !repsPlaceholder.isEmpty)
+                let durationPlaceholderSeconds = editState.placeholderDurationSeconds(for: exercise, setIndex: index)
+                let distancePlaceholderMeters = editState.placeholderDistanceMeters(for: exercise, setIndex: index)
+                let timeText = WorkoutSetFieldFormatting.timeText(seconds: set.durationSeconds)
+                let distanceText = WorkoutSetFieldFormatting.distanceText(meters: set.distanceM)
+                let timePlaceholder = WorkoutSetFieldFormatting.timeText(seconds: durationPlaceholderSeconds)
+                let distancePlaceholder = WorkoutSetFieldFormatting.distanceText(meters: distancePlaceholderMeters)
+                let canConfirm = WorkoutSetConfirmLogic.canConfirm(
+                    inputKind: inputKind,
+                    weight: set.weight,
+                    weightPlaceholder: weightPlaceholder,
+                    reps: set.reps,
+                    repsPlaceholder: repsPlaceholder,
+                    time: timeText,
+                    timePlaceholder: timePlaceholder,
+                    distance: distanceText,
+                    distancePlaceholder: distancePlaceholder
+                )
 
                 WorkoutSetRowView(
+                    inputKind: inputKind,
                     setNumber: index + 1,
                     previousText: "—",
                     weight: weightBinding(exerciseID: exercise.id, setID: set.id),
                     reps: repsBinding(exerciseID: exercise.id, setID: set.id),
+                    time: timeBinding(exerciseID: exercise.id, setID: set.id),
+                    distance: distanceBinding(exerciseID: exercise.id, setID: set.id),
                     weightPlaceholder: weightPlaceholder,
                     repsPlaceholder: repsPlaceholder,
+                    timePlaceholder: timePlaceholder,
+                    distancePlaceholder: distancePlaceholder,
                     isConfirmed: isConfirmed,
                     canConfirm: canConfirm,
                     exerciseID: exercise.id,
@@ -351,7 +373,8 @@ struct SessionDetailView: View {
     private func sessionExerciseDragPreview(_ exercise: WorkoutExercise) -> some View {
         WorkoutExerciseDragPreview(
             exerciseName: exercise.name,
-            weightLabel: weightColumnLabel,
+            inputKind: exercise.category.inputKind,
+            weightColumnLabel: weightColumnLabel,
             hasSets: !exercise.sets.isEmpty
         ) {
             ForEach(Array(exercise.sets.prefix(3).enumerated()), id: \.element.id) { index, set in
@@ -419,6 +442,42 @@ struct SessionDetailView: View {
                     .sets.first(where: { $0.id == setID })?.reps ?? ""
             },
             set: { editState.updateSet(exerciseID: exerciseID, setID: setID, reps: $0) }
+        )
+    }
+
+    private func timeBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {
+        Binding(
+            get: {
+                let seconds = editState.exercises
+                    .first(where: { $0.id == exerciseID })?
+                    .sets.first(where: { $0.id == setID })?.durationSeconds
+                return WorkoutSetFieldFormatting.timeText(seconds: seconds)
+            },
+            set: { newValue in
+                editState.updateSet(
+                    exerciseID: exerciseID,
+                    setID: setID,
+                    durationSeconds: WorkoutSetFieldFormatting.parseTimeText(newValue)
+                )
+            }
+        )
+    }
+
+    private func distanceBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {
+        Binding(
+            get: {
+                let meters = editState.exercises
+                    .first(where: { $0.id == exerciseID })?
+                    .sets.first(where: { $0.id == setID })?.distanceM
+                return WorkoutSetFieldFormatting.distanceText(meters: meters)
+            },
+            set: { newValue in
+                editState.updateSet(
+                    exerciseID: exerciseID,
+                    setID: setID,
+                    distanceM: WorkoutSetFieldFormatting.parseDistanceText(newValue)
+                )
+            }
         )
     }
 

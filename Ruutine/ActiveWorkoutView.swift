@@ -242,7 +242,10 @@ struct ActiveWorkoutView: View {
             }
 
             if !exercise.sets.isEmpty {
-                WorkoutSetColumnHeader(weightLabel: "kg")
+                WorkoutSetColumnHeader(
+                    inputKind: exercise.category.inputKind,
+                    weightColumnLabel: "kg"
+                )
             }
 
             ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { index, set in
@@ -281,7 +284,7 @@ struct ActiveWorkoutView: View {
     }
 
     private var setColumnHeader: some View {
-        WorkoutSetColumnHeader(weightLabel: "kg")
+        WorkoutSetColumnHeader(inputKind: .weightReps, weightColumnLabel: "kg")
     }
 
     private func exerciseDragPreview(_ exercise: WorkoutExercise) -> some View {
@@ -296,7 +299,10 @@ struct ActiveWorkoutView: View {
             }
 
             if !exercise.sets.isEmpty {
-                WorkoutSetColumnHeader(weightLabel: "kg")
+                WorkoutSetColumnHeader(
+                    inputKind: exercise.category.inputKind,
+                    weightColumnLabel: "kg"
+                )
             }
 
             ForEach(Array(exercise.sets.prefix(3).enumerated()), id: \.element.id) { index, set in
@@ -333,22 +339,43 @@ struct ActiveWorkoutView: View {
         setNumber: Int,
         setIndex: Int
     ) -> some View {
+        let inputKind = exercise.category.inputKind
         let isConfirmed = viewModel.isSetConfirmed(exerciseID: exercise.id, setID: set.id)
         let weight = viewModel.setWeight(exerciseID: exercise.id, setID: set.id)
         let reps = viewModel.setReps(exerciseID: exercise.id, setID: set.id)
         let weightPlaceholder = viewModel.placeholderWeight(for: exercise, setIndex: setIndex)
         let repsPlaceholder = viewModel.placeholderReps(for: exercise, setIndex: setIndex)
+        let durationPlaceholderSeconds = viewModel.placeholderDurationSeconds(for: exercise, setIndex: setIndex)
+        let distancePlaceholderMeters = viewModel.placeholderDistanceMeters(for: exercise, setIndex: setIndex)
+        let timeText = WorkoutSetFieldFormatting.timeText(seconds: set.durationSeconds)
+        let distanceText = WorkoutSetFieldFormatting.distanceText(meters: set.distanceM)
+        let timePlaceholder = WorkoutSetFieldFormatting.timeText(seconds: durationPlaceholderSeconds)
+        let distancePlaceholder = WorkoutSetFieldFormatting.distanceText(meters: distancePlaceholderMeters)
         let previousText = viewModel.previousSet(for: exercise.name, setIndex: setIndex)?.displayText ?? "—"
-        let canConfirm = (!weight.isEmpty || !weightPlaceholder.isEmpty)
-            && (!reps.isEmpty || !repsPlaceholder.isEmpty)
+        let canConfirm = WorkoutSetConfirmLogic.canConfirm(
+            inputKind: inputKind,
+            weight: weight,
+            weightPlaceholder: weightPlaceholder,
+            reps: reps,
+            repsPlaceholder: repsPlaceholder,
+            time: timeText,
+            timePlaceholder: timePlaceholder,
+            distance: distanceText,
+            distancePlaceholder: distancePlaceholder
+        )
 
         return WorkoutSetRowView(
+            inputKind: inputKind,
             setNumber: setNumber,
             previousText: previousText,
             weight: weightBinding(exerciseID: exercise.id, setID: set.id),
             reps: repsBinding(exerciseID: exercise.id, setID: set.id),
+            time: timeBinding(exerciseID: exercise.id, setID: set.id),
+            distance: distanceBinding(exerciseID: exercise.id, setID: set.id),
             weightPlaceholder: weightPlaceholder,
             repsPlaceholder: repsPlaceholder,
+            timePlaceholder: timePlaceholder,
+            distancePlaceholder: distancePlaceholder,
             isConfirmed: isConfirmed,
             canConfirm: canConfirm,
             exerciseID: exercise.id,
@@ -379,6 +406,42 @@ struct ActiveWorkoutView: View {
                     .sets.first(where: { $0.id == setID })?.reps ?? ""
             },
             set: { viewModel.updateSet(exerciseID: exerciseID, setID: setID, reps: $0) }
+        )
+    }
+
+    private func timeBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {
+        Binding(
+            get: {
+                let seconds = viewModel.exercises
+                    .first(where: { $0.id == exerciseID })?
+                    .sets.first(where: { $0.id == setID })?.durationSeconds
+                return WorkoutSetFieldFormatting.timeText(seconds: seconds)
+            },
+            set: { newValue in
+                viewModel.updateSet(
+                    exerciseID: exerciseID,
+                    setID: setID,
+                    durationSeconds: WorkoutSetFieldFormatting.parseTimeText(newValue)
+                )
+            }
+        )
+    }
+
+    private func distanceBinding(exerciseID: UUID, setID: UUID) -> Binding<String> {
+        Binding(
+            get: {
+                let meters = viewModel.exercises
+                    .first(where: { $0.id == exerciseID })?
+                    .sets.first(where: { $0.id == setID })?.distanceM
+                return WorkoutSetFieldFormatting.distanceText(meters: meters)
+            },
+            set: { newValue in
+                viewModel.updateSet(
+                    exerciseID: exerciseID,
+                    setID: setID,
+                    distanceM: WorkoutSetFieldFormatting.parseDistanceText(newValue)
+                )
+            }
         )
     }
 

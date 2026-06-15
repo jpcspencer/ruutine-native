@@ -12,11 +12,170 @@ enum WorkoutSetColumn {
 enum WorkoutFieldFocus: Hashable {
     case weight(exerciseID: UUID, setID: UUID)
     case reps(exerciseID: UUID, setID: UUID)
+    case time(exerciseID: UUID, setID: UUID)
+    case distance(exerciseID: UUID, setID: UUID)
+}
+
+enum WorkoutSetFieldFormatting {
+    static func timeText(seconds: Int?) -> String {
+        guard let seconds, seconds > 0 else { return "" }
+        return String(format: "%d:%02d", seconds / 60, seconds % 60)
+    }
+
+    static func parseTimeText(_ text: String) -> Int? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        if trimmed.contains(":") {
+            let parts = trimmed.split(separator: ":", maxSplits: 1).map(String.init)
+            guard parts.count == 2,
+                  let minutes = Int(parts[0].trimmingCharacters(in: .whitespacesAndNewlines)),
+                  let seconds = Int(parts[1].trimmingCharacters(in: .whitespacesAndNewlines)),
+                  minutes >= 0, seconds >= 0, seconds < 60
+            else { return nil }
+            return minutes * 60 + seconds
+        }
+
+        guard let seconds = Int(trimmed), seconds >= 0 else { return nil }
+        return seconds
+    }
+
+    static func distanceText(meters: Double?) -> String {
+        guard let meters, meters > 0 else { return "" }
+        let km = meters / 1000
+        if km == km.rounded() {
+            return String(format: "%.0f", km)
+        }
+        var formatted = String(format: "%.2f", km)
+        while formatted.contains(".") && (formatted.hasSuffix("0") || formatted.hasSuffix(".")) {
+            formatted.removeLast()
+        }
+        return formatted
+    }
+
+    static func parseDistanceText(_ text: String) -> Double? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let km = Double(trimmed), km >= 0 else { return nil }
+        return km * 1000
+    }
+}
+
+enum WorkoutSetConfirmLogic {
+    private static func hasText(_ value: String, placeholder: String) -> Bool {
+        !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !placeholder.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    static func canConfirm(
+        inputKind: InputKind,
+        weight: String,
+        weightPlaceholder: String,
+        reps: String,
+        repsPlaceholder: String,
+        time: String,
+        timePlaceholder: String,
+        distance: String,
+        distancePlaceholder: String
+    ) -> Bool {
+        switch inputKind {
+        case .weightReps, .addedWeightReps, .assistedReps:
+            return hasText(weight, placeholder: weightPlaceholder)
+                && hasText(reps, placeholder: repsPlaceholder)
+        case .repsOnly:
+            return hasText(reps, placeholder: repsPlaceholder)
+        case .cardio:
+            return hasText(time, placeholder: timePlaceholder)
+                || hasText(distance, placeholder: distancePlaceholder)
+        case .duration:
+            return hasText(time, placeholder: timePlaceholder)
+        }
+    }
+
+    static func prepareForConfirm(
+        set: inout WorkoutSet,
+        inputKind: InputKind,
+        weightPlaceholder: String,
+        repsPlaceholder: String,
+        durationPlaceholderSeconds: Int?,
+        distancePlaceholderMeters: Double?
+    ) -> Bool {
+        switch inputKind {
+        case .weightReps, .addedWeightReps, .assistedReps:
+            if set.weight.isEmpty, !weightPlaceholder.isEmpty {
+                set.weight = weightPlaceholder
+            }
+            if set.reps.isEmpty, !repsPlaceholder.isEmpty {
+                set.reps = repsPlaceholder
+            }
+            return !set.weight.isEmpty && !set.reps.isEmpty
+
+        case .repsOnly:
+            if set.reps.isEmpty, !repsPlaceholder.isEmpty {
+                set.reps = repsPlaceholder
+            }
+            return !set.reps.isEmpty
+
+        case .cardio:
+            if (set.durationSeconds ?? 0) <= 0, let durationPlaceholderSeconds, durationPlaceholderSeconds > 0 {
+                set.durationSeconds = durationPlaceholderSeconds
+            }
+            if (set.distanceM ?? 0) <= 0, let distancePlaceholderMeters, distancePlaceholderMeters > 0 {
+                set.distanceM = distancePlaceholderMeters
+            }
+            let hasTime = (set.durationSeconds ?? 0) > 0
+            let hasDistance = (set.distanceM ?? 0) > 0
+            return hasTime || hasDistance
+
+        case .duration:
+            if (set.durationSeconds ?? 0) <= 0, let durationPlaceholderSeconds, durationPlaceholderSeconds > 0 {
+                set.durationSeconds = durationPlaceholderSeconds
+            }
+            return (set.durationSeconds ?? 0) > 0
+        }
+    }
+}
+
+extension InputKind {
+    func weightColumnLabel(unit: String) -> String {
+        switch self {
+        case .weightReps:
+            return unit
+        case .addedWeightReps:
+            return "+\(unit)"
+        case .assistedReps:
+            return "−\(unit)"
+        default:
+            return unit
+        }
+    }
 }
 
 struct WorkoutSetColumnHeader: View {
-    let weightLabel: String
+    let inputKind: InputKind
+    var weightColumnLabel: String = "kg"
     var showsDeleteColumn = false
+
+    private var primaryLabel: String? {
+        switch inputKind {
+        case .weightReps, .addedWeightReps, .assistedReps:
+            return inputKind.weightColumnLabel(unit: weightColumnLabel)
+        case .repsOnly:
+            return nil
+        case .cardio, .duration:
+            return "Time"
+        }
+    }
+
+    private var secondaryLabel: String? {
+        switch inputKind {
+        case .weightReps, .addedWeightReps, .assistedReps, .repsOnly:
+            return "Reps"
+        case .cardio:
+            return "km"
+        case .duration:
+            return nil
+        }
+    }
 
     var body: some View {
         HStack(spacing: WorkoutSetColumn.spacing) {
@@ -24,12 +183,20 @@ struct WorkoutSetColumnHeader: View {
                 .frame(width: WorkoutSetColumn.set, alignment: .center)
             Text("Previous")
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text(weightLabel)
-                .frame(width: WorkoutSetColumn.kg, alignment: .center)
-            Text("Reps")
-                .frame(width: WorkoutSetColumn.reps, alignment: .center)
+
+            if let primaryLabel {
+                Text(primaryLabel)
+                    .frame(width: WorkoutSetColumn.kg, alignment: .center)
+            }
+
+            if let secondaryLabel {
+                Text(secondaryLabel)
+                    .frame(width: secondaryFieldWidth, alignment: .center)
+            }
+
             Text("✓")
                 .frame(width: WorkoutSetColumn.check, alignment: .center)
+
             if showsDeleteColumn {
                 Color.clear
                     .frame(width: WorkoutSetColumn.delete)
@@ -39,6 +206,12 @@ struct WorkoutSetColumnHeader: View {
         .foregroundColor(RuutineColor.muted)
         .textCase(.uppercase)
         .padding(.top, 2)
+    }
+
+    private var secondaryFieldWidth: CGFloat {
+        inputKind == .repsOnly
+            ? WorkoutSetColumn.kg + WorkoutSetColumn.spacing + WorkoutSetColumn.reps
+            : WorkoutSetColumn.reps
     }
 }
 
@@ -106,12 +279,17 @@ struct WorkoutSetInputField: View {
 }
 
 struct WorkoutSetRowView: View {
+    let inputKind: InputKind
     let setNumber: Int
     let previousText: String
     @Binding var weight: String
     @Binding var reps: String
+    @Binding var time: String
+    @Binding var distance: String
     let weightPlaceholder: String
     let repsPlaceholder: String
+    let timePlaceholder: String
+    let distancePlaceholder: String
     let isConfirmed: Bool
     let canConfirm: Bool
     let exerciseID: UUID
@@ -137,25 +315,8 @@ struct WorkoutSetRowView: View {
                 .minimumScaleFactor(0.75)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            WorkoutSetInputField(
-                text: $weight,
-                placeholder: weightPlaceholder,
-                width: WorkoutSetColumn.kg,
-                isConfirmed: isConfirmed,
-                keyboardType: .decimalPad,
-                focus: .weight(exerciseID: exerciseID, setID: setID),
-                focusedField: focusedField
-            )
-
-            WorkoutSetInputField(
-                text: $reps,
-                placeholder: repsPlaceholder,
-                width: WorkoutSetColumn.reps,
-                isConfirmed: isConfirmed,
-                keyboardType: .numberPad,
-                focus: .reps(exerciseID: exerciseID, setID: setID),
-                focusedField: focusedField
-            )
+            primaryField
+            secondaryField
 
             Button(action: onToggleConfirm) {
                 WorkoutSetConfirmButton(isConfirmed: isConfirmed)
@@ -178,6 +339,72 @@ struct WorkoutSetRowView: View {
         }
         .padding(.vertical, 2)
     }
+
+    @ViewBuilder
+    private var primaryField: some View {
+        switch inputKind {
+        case .weightReps, .addedWeightReps, .assistedReps:
+            WorkoutSetInputField(
+                text: $weight,
+                placeholder: weightPlaceholder,
+                width: WorkoutSetColumn.kg,
+                isConfirmed: isConfirmed,
+                keyboardType: .decimalPad,
+                focus: .weight(exerciseID: exerciseID, setID: setID),
+                focusedField: focusedField
+            )
+        case .repsOnly:
+            EmptyView()
+        case .cardio, .duration:
+            WorkoutSetInputField(
+                text: $time,
+                placeholder: timePlaceholder,
+                width: WorkoutSetColumn.kg,
+                isConfirmed: isConfirmed,
+                keyboardType: .numbersAndPunctuation,
+                focus: .time(exerciseID: exerciseID, setID: setID),
+                focusedField: focusedField
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var secondaryField: some View {
+        switch inputKind {
+        case .weightReps, .addedWeightReps, .assistedReps:
+            WorkoutSetInputField(
+                text: $reps,
+                placeholder: repsPlaceholder,
+                width: WorkoutSetColumn.reps,
+                isConfirmed: isConfirmed,
+                keyboardType: .numberPad,
+                focus: .reps(exerciseID: exerciseID, setID: setID),
+                focusedField: focusedField
+            )
+        case .repsOnly:
+            WorkoutSetInputField(
+                text: $reps,
+                placeholder: repsPlaceholder,
+                width: WorkoutSetColumn.kg + WorkoutSetColumn.spacing + WorkoutSetColumn.reps,
+                isConfirmed: isConfirmed,
+                keyboardType: .numberPad,
+                focus: .reps(exerciseID: exerciseID, setID: setID),
+                focusedField: focusedField
+            )
+        case .cardio:
+            WorkoutSetInputField(
+                text: $distance,
+                placeholder: distancePlaceholder,
+                width: WorkoutSetColumn.reps,
+                isConfirmed: isConfirmed,
+                keyboardType: .decimalPad,
+                focus: .distance(exerciseID: exerciseID, setID: setID),
+                focusedField: focusedField
+            )
+        case .duration:
+            EmptyView()
+        }
+    }
 }
 
 struct WorkoutExerciseEditorCard<SetRows: View>: View {
@@ -185,7 +412,8 @@ struct WorkoutExerciseEditorCard<SetRows: View>: View {
     var showsDragHandle = false
     var isDragging = false
     let showsDeleteColumn: Bool
-    let weightLabel: String
+    let inputKind: InputKind
+    var weightColumnLabel: String = "kg"
     let hasSets: Bool
     let onRemoveExercise: () -> Void
     let onAddSet: () -> Void
@@ -220,7 +448,11 @@ struct WorkoutExerciseEditorCard<SetRows: View>: View {
             }
 
             if hasSets {
-                WorkoutSetColumnHeader(weightLabel: weightLabel, showsDeleteColumn: showsDeleteColumn)
+                WorkoutSetColumnHeader(
+                    inputKind: inputKind,
+                    weightColumnLabel: weightColumnLabel,
+                    showsDeleteColumn: showsDeleteColumn
+                )
             }
 
             setRows()
@@ -252,7 +484,8 @@ struct WorkoutExerciseEditorCard<SetRows: View>: View {
 
 struct WorkoutExerciseDragPreview<SetRows: View>: View {
     let exerciseName: String
-    let weightLabel: String
+    let inputKind: InputKind
+    var weightColumnLabel: String = "kg"
     let hasSets: Bool
     @ViewBuilder let setRows: () -> SetRows
 
@@ -273,7 +506,7 @@ struct WorkoutExerciseDragPreview<SetRows: View>: View {
             }
 
             if hasSets {
-                WorkoutSetColumnHeader(weightLabel: weightLabel)
+                WorkoutSetColumnHeader(inputKind: inputKind, weightColumnLabel: weightColumnLabel)
             }
 
             setRows()
