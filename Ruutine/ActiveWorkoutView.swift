@@ -3,10 +3,11 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ActiveWorkoutView: View {
-    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authVM: AuthViewModel
     @EnvironmentObject private var themeManager: ThemeManager
-    @StateObject private var viewModel: ActiveWorkoutViewModel
+    @ObservedObject var viewModel: ActiveWorkoutViewModel
+    let onMinimize: () -> Void
+    let onEnd: () -> Void
     @State private var recapData: WorkoutRecapData?
     @State private var recapSaveError: String?
     @State private var isSaving = false
@@ -17,22 +18,6 @@ struct ActiveWorkoutView: View {
     @State private var showRestPresets = false
     @State private var draggedExerciseID: UUID?
     @FocusState private var focusedField: WorkoutFieldFocus?
-
-    var onWorkoutComplete: (() -> Void)?
-
-    init(
-        initialExercises: [WorkoutExercise]? = nil,
-        workoutName: String? = nil,
-        onWorkoutComplete: (() -> Void)? = nil
-    ) {
-        _viewModel = StateObject(
-            wrappedValue: ActiveWorkoutViewModel(
-                initialExercises: initialExercises,
-                workoutName: workoutName
-            )
-        )
-        self.onWorkoutComplete = onWorkoutComplete
-    }
 
     var body: some View {
         ZStack {
@@ -56,8 +41,7 @@ struct ActiveWorkoutView: View {
             WorkoutRecapView(data: data, saveError: recapSaveError) {
                 recapData = nil
                 recapSaveError = nil
-                onWorkoutComplete?()
-                dismiss()
+                onEnd()
             }
         }
         .sheet(isPresented: $showWorkoutSettings) {
@@ -143,10 +127,25 @@ struct ActiveWorkoutView: View {
                 .padding(.horizontal, 96)
 
                 HStack(alignment: .center) {
-                    RuutineNavButton(kind: .gear) {
-                        showWorkoutSettings = true
+                    HStack(spacing: 0) {
+                        Button {
+                            Haptics.impact(.light)
+                            onMinimize()
+                        } label: {
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(RuutineColor.foreground)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Minimize workout")
+
+                        RuutineNavButton(kind: .gear) {
+                            showWorkoutSettings = true
+                        }
+                        .accessibilityLabel("Workout settings")
                     }
-                    .accessibilityLabel("Workout settings")
 
                     Spacer(minLength: 0)
 
@@ -627,7 +626,7 @@ struct ActiveWorkoutView: View {
                         Button {
                             showCancelConfirmation = false
                             viewModel.cancelWorkout()
-                            dismiss()
+                            onEnd()
                         } label: {
                             Text("Cancel Workout")
                                 .font(.system(size: 15, weight: .semibold))
@@ -705,6 +704,10 @@ struct ActiveWorkoutView: View {
 }
 
 #Preview {
-    ActiveWorkoutView()
-        .environmentObject(AuthViewModel())
+    ActiveWorkoutView(
+        viewModel: ActiveWorkoutViewModel(),
+        onMinimize: {},
+        onEnd: {}
+    )
+    .environmentObject(AuthViewModel())
 }

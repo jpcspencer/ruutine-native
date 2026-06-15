@@ -5,13 +5,12 @@ struct MainTabView: View {
     @EnvironmentObject private var authVM: AuthViewModel
     @EnvironmentObject private var themeManager: ThemeManager
     @StateObject private var atlasService = AtlasService()
+    @StateObject private var workout = ActiveWorkoutCoordinator()
     @State private var selectedTab: Tab = .home
     @State private var homePath = NavigationPath()
     @State private var showNewWorkout = false
-    @State private var showActiveWorkout = false
     @State private var showAtlasChat = false
     @State private var pendingExercises: [WorkoutExercise]?
-    @State private var pendingWorkoutName: String?
 
     private enum Tab {
         case home
@@ -24,6 +23,22 @@ struct MainTabView: View {
         selectedTab == .home || selectedTab == .program || selectedTab == .glossary
     }
 
+    private var showsMinimizedWorkoutBar: Bool {
+        workout.viewModel != nil && !workout.isExpanded
+    }
+
+    private var minimizedBarHeight: CGFloat {
+        showsMinimizedWorkoutBar ? MinimizedWorkoutBarLayout.height : 0
+    }
+
+    private var tabContentBottomPadding: CGFloat {
+        AtlasFloatingButtonLayout.tabBarHeight + minimizedBarHeight
+    }
+
+    private var atlasBottomPadding: CGFloat {
+        AtlasFloatingButtonLayout.bottomInset + minimizedBarHeight
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
             Group {
@@ -34,9 +49,7 @@ struct MainTabView: View {
                     }
                 case .program:
                     ProgramView { workoutName, exercises in
-                        pendingExercises = exercises
-                        pendingWorkoutName = workoutName
-                        showActiveWorkout = true
+                        workout.start(initialExercises: exercises, workoutName: workoutName)
                     }
                 case .glossary:
                     GlossaryView()
@@ -45,14 +58,22 @@ struct MainTabView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.bottom, AtlasFloatingButtonLayout.tabBarHeight)
+            .padding(.bottom, tabContentBottomPadding)
+
+            if showsMinimizedWorkoutBar, let viewModel = workout.viewModel {
+                MinimizedWorkoutBar(viewModel: viewModel) {
+                    Haptics.impact(.light)
+                    workout.expand()
+                }
+                .padding(.bottom, AtlasFloatingButtonLayout.tabBarHeight)
+            }
 
             if showsAtlasFloatingButton {
                 AtlasFloatingButton {
                     showAtlasChat = true
                 }
                 .padding(.trailing, AtlasFloatingButtonLayout.trailingInset)
-                .padding(.bottom, AtlasFloatingButtonLayout.bottomInset)
+                .padding(.bottom, atlasBottomPadding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             }
 
@@ -83,35 +104,29 @@ struct MainTabView: View {
         }
         .onChange(of: showNewWorkout) { _, isPresented in
             if !isPresented, pendingExercises != nil {
-                showActiveWorkout = true
+                workout.start(initialExercises: pendingExercises, workoutName: nil)
+                pendingExercises = nil
             }
         }
-        .onChange(of: showActiveWorkout) { _, isShowing in
+        .onChange(of: workout.isExpanded) { _, isShowing in
             if isShowing { Haptics.impact(.medium) }
         }
-        .fullScreenCover(isPresented: $showActiveWorkout, onDismiss: {
-            pendingExercises = nil
-            pendingWorkoutName = nil
-        }) {
-            ActiveWorkoutView(
-                initialExercises: pendingExercises,
-                workoutName: pendingWorkoutName
-            ) {
-                showActiveWorkout = false
-                pendingExercises = nil
-                pendingWorkoutName = nil
-                selectedTab = .home
-                homePath = NavigationPath()
-                NotificationCenter.default.post(name: .workoutCompleted, object: nil)
+        .fullScreenCover(isPresented: $workout.isExpanded) {
+            if let viewModel = workout.viewModel {
+                ActiveWorkoutView(
+                    viewModel: viewModel,
+                    onMinimize: { workout.minimize() },
+                    onEnd: {
+                        workout.end()
+                        selectedTab = .home
+                        homePath = NavigationPath()
+                        NotificationCenter.default.post(name: .workoutCompleted, object: nil)
+                    }
+                )
+                .environmentObject(authVM)
+                .environmentObject(themeManager)
             }
         }
-    }
-
-    private func placeholderScreen(_ title: String) -> some View {
-        Text(title)
-            .foregroundColor(RuutineColor.foreground)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(RuutineColor.background)
     }
 
     private var tabBar: some View {
