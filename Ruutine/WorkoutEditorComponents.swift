@@ -59,34 +59,24 @@ enum WorkoutSetFieldFormatting {
         return total > 0 ? total : nil
     }
 
-    static func processStopwatchEdit(previousDigits: String, newText: String) -> (digits: String, durationSeconds: Int?) {
-        let newDigitsOnly = String(newText.filter(\.isNumber).prefix(6))
-        let updatedDigits: String
-
-        if newDigitsOnly.count < previousDigits.count {
-            updatedDigits = String(previousDigits.dropLast())
-        } else if newDigitsOnly.count > previousDigits.count, let lastDigit = newDigitsOnly.last {
-            updatedDigits = previousDigits + String(lastDigit)
-        } else {
-            updatedDigits = previousDigits
+    /// Idempotent right-to-left stopwatch input: extract digits, strip leading zeros, cap at 6.
+    static func parseStopwatchInput(_ newText: String) -> (digits: String, durationSeconds: Int?) {
+        var digits = String(newText.filter(\.isNumber))
+        digits = String(digits.drop(while: { $0 == "0" }))
+        if digits.count > 6 {
+            digits = String(digits.suffix(6))
         }
-
-        return (updatedDigits, durationSeconds(fromStopwatchDigits: updatedDigits))
+        return (digits, durationSeconds(fromStopwatchDigits: digits))
     }
 
     static func timeDisplayText(for set: WorkoutSet) -> String {
         if !set.timeEntryDigits.isEmpty {
             return stopwatchDisplay(fromDigits: set.timeEntryDigits)
         }
-        return timeText(seconds: set.durationSeconds)
-    }
-
-    static func effectiveStopwatchDigits(for set: WorkoutSet) -> String {
-        if !set.timeEntryDigits.isEmpty {
-            return set.timeEntryDigits
+        if let seconds = set.durationSeconds, seconds > 0 {
+            return timeText(seconds: seconds)
         }
-        guard let seconds = set.durationSeconds, seconds > 0 else { return "" }
-        return stopwatchDigits(fromDurationSeconds: seconds)
+        return ""
     }
 
     static func distanceText(meters: Double?) -> String {

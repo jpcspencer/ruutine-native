@@ -455,16 +455,7 @@ struct SessionDetailView: View {
                 return WorkoutSetFieldFormatting.timeDisplayText(for: set)
             },
             set: { newValue in
-                guard let set = editState.exercises
-                    .first(where: { $0.id == exerciseID })?
-                    .sets.first(where: { $0.id == setID })
-                else { return }
-
-                let previousDigits = WorkoutSetFieldFormatting.effectiveStopwatchDigits(for: set)
-                let result = WorkoutSetFieldFormatting.processStopwatchEdit(
-                    previousDigits: previousDigits,
-                    newText: newValue
-                )
+                let result = WorkoutSetFieldFormatting.parseStopwatchInput(newValue)
                 editState.updateSetTime(
                     exerciseID: exerciseID,
                     setID: setID,

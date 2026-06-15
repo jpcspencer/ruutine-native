@@ -362,7 +362,8 @@ struct ActiveWorkoutView: View {
         let distanceText = WorkoutSetFieldFormatting.distanceText(meters: set.distanceM)
         let timePlaceholder = WorkoutSetFieldFormatting.timeText(seconds: durationPlaceholderSeconds)
         let distancePlaceholder = WorkoutSetFieldFormatting.distanceText(meters: distancePlaceholderMeters)
-        let previousText = viewModel.previousSet(for: exercise.name, setIndex: setIndex)?.displayText ?? "—"
+        let previousText = viewModel.previousSet(for: exercise.name, setIndex: setIndex)?
+            .displayText(inputKind: inputKind) ?? "—"
         let canConfirm = WorkoutSetConfirmLogic.canConfirm(
             inputKind: inputKind,
             weight: weight,
@@ -430,16 +431,7 @@ struct ActiveWorkoutView: View {
                 return WorkoutSetFieldFormatting.timeDisplayText(for: set)
             },
             set: { newValue in
-                guard let set = viewModel.exercises
-                    .first(where: { $0.id == exerciseID })?
-                    .sets.first(where: { $0.id == setID })
-                else { return }
-
-                let previousDigits = WorkoutSetFieldFormatting.effectiveStopwatchDigits(for: set)
-                let result = WorkoutSetFieldFormatting.processStopwatchEdit(
-                    previousDigits: previousDigits,
-                    newText: newValue
-                )
+                let result = WorkoutSetFieldFormatting.parseStopwatchInput(newValue)
                 viewModel.updateSetTime(
                     exerciseID: exerciseID,
                     setID: setID,
