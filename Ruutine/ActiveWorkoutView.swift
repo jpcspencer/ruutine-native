@@ -107,60 +107,59 @@ struct ActiveWorkoutView: View {
 
     private var header: some View {
         VStack(spacing: 8) {
-            headerMinimizeRegion
-
-            HStack(alignment: .center) {
+            HStack(alignment: .center, spacing: 0) {
                 RuutineNavButton(kind: .gear) {
                     showWorkoutSettings = true
                 }
                 .accessibilityLabel("Workout settings")
 
-                Spacer(minLength: 0)
+                VStack(spacing: 8) {
+                    Capsule()
+                        .fill(RuutineColor.muted.opacity(0.5))
+                        .frame(width: 36, height: 4)
+                        .padding(.top, 6)
 
-                if viewModel.hasConfirmedSet {
-                    RuutineNavButton(kind: .finish(isLoading: isSaving)) {
-                        finishSession()
+                    VStack(spacing: 2) {
+                        Text(viewModel.workoutName.uppercased())
+                            .font(.bebas(26))
+                            .foregroundColor(RuutineColor.foreground)
+                            .tracking(1)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+
+                        Text(viewModel.workoutDateSubtitle)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(RuutineColor.muted)
                     }
-                    .disabled(isSaving)
-                    .transition(.scale.combined(with: .opacity))
+                }
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    guard !suppressHeaderMinimizeTap else { return }
+                    Haptics.impact(.light)
+                    onMinimize()
+                }
+                .gesture(headerMinimizeDragGesture)
+                .accessibilityLabel("Minimize workout")
+                .accessibilityAddTraits(.isButton)
+
+                Group {
+                    if viewModel.hasConfirmedSet {
+                        RuutineNavButton(kind: .finish(isLoading: isSaving)) {
+                            finishSession()
+                        }
+                        .disabled(isSaving)
+                        .transition(.scale.combined(with: .opacity))
+                    } else {
+                        Color.clear
+                            .frame(width: 44, height: 44)
+                    }
                 }
             }
             .padding(.horizontal, 12)
             .animation(.easeInOut(duration: 0.2), value: viewModel.hasConfirmedSet)
         }
         .padding(.bottom, 6)
-    }
-
-    private var headerMinimizeRegion: some View {
-        VStack(spacing: 8) {
-            Capsule()
-                .fill(RuutineColor.muted.opacity(0.5))
-                .frame(width: 36, height: 4)
-                .padding(.top, 6)
-
-            VStack(spacing: 2) {
-                Text(viewModel.workoutName.uppercased())
-                    .font(.bebas(26))
-                    .foregroundColor(RuutineColor.foreground)
-                    .tracking(1)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-
-                Text(viewModel.workoutDateSubtitle)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(RuutineColor.muted)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard !suppressHeaderMinimizeTap else { return }
-            Haptics.impact(.light)
-            onMinimize()
-        }
-        .gesture(headerMinimizeDragGesture)
-        .accessibilityLabel("Minimize workout")
-        .accessibilityAddTraits(.isButton)
     }
 
     private var headerMinimizeDragGesture: some Gesture {

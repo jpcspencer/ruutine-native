@@ -388,20 +388,24 @@ struct SwipeableSetRow<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     @State private var dragOffset: CGFloat = 0
-    @State private var isHorizontalSwipe = false
+    @GestureState private var gestureDrag: CGFloat = 0
     @State private var rowWidth: CGFloat = 0
     @State private var isCommittingDelete = false
+
+    private var displayedOffset: CGFloat {
+        dragOffset + gestureDrag
+    }
 
     private var commitThreshold: CGFloat {
         max(130, rowWidth * 0.55)
     }
 
     private var isPastThreshold: Bool {
-        abs(dragOffset) >= commitThreshold
+        abs(displayedOffset) >= commitThreshold
     }
 
     var body: some View {
-        ZStack(alignment: .trailing) {
+        ZStack(alignment: .leading) {
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
                 ZStack {
@@ -410,16 +414,17 @@ struct SwipeableSetRow<Content: View>: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                         .scaleEffect(isPastThreshold ? 1.12 : 1)
-                        .animation(.easeInOut(duration: 0.15), value: isPastThreshold)
                 }
-                .frame(width: max(abs(dragOffset), 0))
+                .frame(width: max(abs(displayedOffset), 0))
             }
 
             content()
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .background(RuutineColor.surface)
-                .offset(x: dragOffset)
-                .gesture(deleteDragGesture)
+                .offset(x: displayedOffset)
         }
+        .contentShape(Rectangle())
+        .simultaneousGesture(deleteDragGesture)
         .background(
             GeometryReader { geometry in
                 Color.clear
@@ -434,24 +439,33 @@ struct SwipeableSetRow<Content: View>: View {
 
     private var deleteDragGesture: some Gesture {
         DragGesture(minimumDistance: 12, coordinateSpace: .local)
-            .onChanged { value in
+            .updating($gestureDrag) { value, state, transaction in
+                transaction.disablesAnimations = true
                 guard !isCommittingDelete else { return }
 
-                if !isHorizontalSwipe {
-                    let width = value.translation.width
-                    let height = value.translation.height
-                    guard abs(width) > abs(height), width < 0 else { return }
-                    isHorizontalSwipe = true
+                let width = value.translation.width
+                let height = value.translation.height
+                guard abs(width) > abs(height), width < 0 else { return }
+
+                state = min(0, width)
+            }
+            .onEnded { value in
+                guard !isCommittingDelete else { return }
+
+                let width = value.translation.width
+                let height = value.translation.height
+                guard abs(width) > abs(height), width < 0 else {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        dragOffset = 0
+                    }
+                    return
                 }
 
-                dragOffset = min(0, value.translation.width)
-            }
-            .onEnded { _ in
-                guard isHorizontalSwipe else { return }
-                isHorizontalSwipe = false
+                let finalOffset = min(0, width)
+                dragOffset = finalOffset
 
                 let threshold = max(130, rowWidth * 0.55)
-                if abs(dragOffset) >= threshold {
+                if abs(finalOffset) >= threshold {
                     isCommittingDelete = true
                     let offScreen = -(rowWidth + 48)
                     withAnimation(.easeInOut(duration: 0.22)) {
