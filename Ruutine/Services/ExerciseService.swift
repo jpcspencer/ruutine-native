@@ -88,7 +88,8 @@ final class ExerciseService: ObservableObject {
 
     private static func mergeCatalog(_ catalog: [Exercise], with custom: [CustomExerciseRow]) -> [Exercise] {
         var byName = Dictionary(
-            uniqueKeysWithValues: catalog.map { ($0.name.lowercased(), $0) }
+            catalog.map { ($0.name.lowercased(), $0) },
+            uniquingKeysWith: { first, _ in first }
         )
         for row in custom {
             byName[row.name.lowercased()] = row.toExercise()
