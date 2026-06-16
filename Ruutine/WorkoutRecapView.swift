@@ -15,7 +15,7 @@ struct WorkoutRecapView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            header
+            sheetGrabber
 
             ScrollView {
                 VStack(spacing: 16) {
@@ -52,37 +52,13 @@ struct WorkoutRecapView: View {
         }
     }
 
-    private var header: some View {
-        VStack(spacing: 12) {
-            Capsule()
-                .fill(RuutineColor.muted.opacity(0.5))
-                .frame(width: 36, height: 4)
-                .padding(.top, 8)
-
-            ZStack {
-                Text(data.sessionName.uppercased())
-                    .font(.bebas(28))
-                    .foregroundColor(RuutineColor.foreground)
-                    .tracking(1)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .padding(.horizontal, 48)
-
-                HStack {
-                    Spacer()
-                    Button {
-                        // Settings placeholder
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 18))
-                            .foregroundColor(RuutineColor.muted)
-                            .frame(width: 44, height: 44)
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-        }
-        .padding(.bottom, 8)
+    private var sheetGrabber: some View {
+        Capsule()
+            .fill(RuutineColor.muted.opacity(0.5))
+            .frame(width: 36, height: 4)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
+            .frame(maxWidth: .infinity)
     }
 
     private func saveErrorBanner(_ message: String) -> some View {
