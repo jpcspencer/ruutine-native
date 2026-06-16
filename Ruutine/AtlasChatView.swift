@@ -59,18 +59,11 @@ struct AtlasChatView: View {
                     .overlay(alignment: .top) {
                         scrollUpHint(proxy: proxy)
                     }
-                    .onChange(of: atlasService.isLoadingHistory) { _, isLoading in
-                        guard !isLoading else { return }
-                        openAtBottom(proxy: proxy)
-                    }
-                    .onChange(of: atlasService.messages.count) { _, _ in
-                        if !atlasService.isLoadingHistory {
-                            scrollToBottom(proxy: proxy, animated: true)
-                            refreshScrollUpHint()
-                        }
-                    }
-                    .onChange(of: atlasService.isTyping) { _, _ in
+                    .onChange(of: atlasService.messages.count) { oldCount, newCount in
+                        guard newCount > oldCount else { return }
+                        guard !atlasService.isLoadingHistory else { return }
                         scrollToBottom(proxy: proxy, animated: true)
+                        refreshScrollUpHint()
                     }
                     .onAppear {
                         refreshScrollUpHint()
@@ -130,14 +123,6 @@ struct AtlasChatView: View {
 
     private func refreshScrollUpHint() {
         showScrollUpHint = atlasService.shouldShowScrollUpHint && !isScrolledNearTop
-    }
-
-    private func openAtBottom(proxy: ScrollViewProxy) {
-        scrollToBottom(proxy: proxy, animated: false)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            scrollToBottom(proxy: proxy, animated: false)
-            refreshScrollUpHint()
-        }
     }
 
     private var header: some View {
@@ -365,13 +350,7 @@ struct AtlasChatView: View {
 
     private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool) {
         let scroll = {
-            if atlasService.isTyping {
-                proxy.scrollTo("typing", anchor: .bottom)
-            } else if let last = atlasService.messages.last?.id {
-                proxy.scrollTo(last, anchor: .bottom)
-            } else {
-                proxy.scrollTo("chat-bottom", anchor: .bottom)
-            }
+            proxy.scrollTo("chat-bottom", anchor: .bottom)
         }
 
         if animated {
