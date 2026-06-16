@@ -13,6 +13,7 @@ struct OnboardingView: View {
     @State private var showLaterConfirm = false
     @State private var skipError: String?
     @State private var configureError: String?
+    @State private var didCelebrateProgramBuilt = false
     @FocusState private var isInputFocused: Bool
 
     let flow: OnboardingFlow
@@ -176,6 +177,12 @@ struct OnboardingView: View {
         }
         .onChange(of: configureError) { _, error in
             if error != nil { Haptics.notify(.error) }
+        }
+        .onChange(of: showsProgramPreviewContinue) { _, isShowing in
+            guard isShowing, !didCelebrateProgramBuilt else { return }
+            didCelebrateProgramBuilt = true
+            SoundFX.onboardingComplete()
+            Haptics.notify(.success)
         }
     }
 
@@ -420,8 +427,8 @@ struct OnboardingView: View {
 
     private var programPreviewContinueBar: some View {
         Button {
-            SoundFX.onboardingComplete()
-            Haptics.notify(.success)
+            SoundFX.select()
+            Haptics.impact(.light)
             Task { await saveAndFinish() }
         } label: {
             Group {
