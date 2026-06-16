@@ -100,7 +100,7 @@ struct ProgramEditView: View {
                     } label: {
                         HStack {
                             Image(systemName: "sparkles")
-                            Text("Edit with Atlas")
+                            Text("Edit with Ruu")
                         }
                         .foregroundColor(RuutineColor.accent)
                     }
@@ -172,7 +172,7 @@ struct ProgramEditView: View {
             .sheet(isPresented: $showAtlasEdit) {
                 NavigationStack {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Describe the changes you want Atlas to make.")
+                        Text("Describe the changes you want Ruu to make.")
                             .font(.system(size: 14))
                             .foregroundColor(RuutineColor.muted)
 
@@ -193,7 +193,7 @@ struct ProgramEditView: View {
                                 if isAtlasEditing {
                                     ProgressView().tint(RuutineColor.accentForeground)
                                 } else {
-                                    Text("Apply with Atlas")
+                                    Text("Apply with Ruu")
                                         .font(.system(size: 16, weight: .semibold))
                                 }
                             }
@@ -209,7 +209,7 @@ struct ProgramEditView: View {
                     }
                     .padding(20)
                     .background(RuutineColor.background)
-                    .navigationTitle("Atlas Edit")
+                    .navigationTitle("Ruu Edit")
                     .navigationBarTitleDisplayMode(.inline)
                     .ruutineNavigationChrome()
                     .toolbar {

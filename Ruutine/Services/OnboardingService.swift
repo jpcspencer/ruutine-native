@@ -450,12 +450,12 @@ final class OnboardingService: ObservableObject {
             }
 
             guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-                appendAssistant("Atlas request failed (HTTP \(status)).")
+                appendAssistant("Ruu request failed (HTTP \(status)).")
                 return
             }
 
             guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                appendAssistant("Atlas returned an unexpected response.")
+                appendAssistant("Ruu returned an unexpected response.")
                 return
             }
 
@@ -482,7 +482,7 @@ final class OnboardingService: ObservableObject {
             }
         } catch {
             print("[OnboardingService] chat network error: \(error)")
-            appendAssistant("Couldn't reach Atlas. Check your connection and try again.")
+            appendAssistant("Couldn't reach Ruu. Check your connection and try again.")
         }
     }
 

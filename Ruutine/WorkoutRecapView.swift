@@ -205,14 +205,14 @@ struct WorkoutRecapView: View {
             showAtlasChat = true
         } label: {
             VStack(alignment: .leading, spacing: 8) {
-                Text("ATLAS")
+                Text("RUU")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(RuutineColor.muted)
                     .tracking(1)
 
                 atlasMessageContent
 
-                Text("Tap to chat with Atlas →")
+                Text("Tap to chat with Ruu →")
                     .font(.system(size: 12))
                     .foregroundColor(RuutineColor.muted)
             }

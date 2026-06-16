@@ -33,7 +33,7 @@ struct AtlasFloatingButton: View {
         .shadow(color: RuutineColor.foreground.opacity(0.25), radius: 8, y: 3)
     }
     .buttonStyle(.plain)
-    .accessibilityLabel("Chat with Atlas")
+    .accessibilityLabel("Chat with Ruu")
   }
 }
 

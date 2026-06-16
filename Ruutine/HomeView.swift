@@ -66,7 +66,7 @@ struct HomeView: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(RuutineColor.foreground)
 
-                Text("Tap to chat with Atlas →")
+                Text("Tap to chat with Ruu →")
                     .font(.system(size: 12))
                     .foregroundColor(RuutineColor.muted)
             }
@@ -81,12 +81,12 @@ struct HomeView: View {
             return "Nice work today. You crushed it."
         }
         if viewModel.totalSessions == 0 {
-            return "Ready to start your first workout? Tap to chat with Atlas."
+            return "Ready to start your first workout? Tap to chat with Ruu."
         }
         if viewModel.streak > 0 {
             return "You're on a \(viewModel.streak)-day streak. Keep it going."
         }
-        return "What's on the agenda today? Tap to talk to Atlas."
+        return "What's on the agenda today? Tap to talk to Ruu."
     }
 
     @ViewBuilder
@@ -131,7 +131,7 @@ struct HomeView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
         } else {
             VStack(spacing: 8) {
-                Text("Your workout will appear here after you complete your chat with Atlas.")
+                Text("Your workout will appear here after you complete your chat with Ruu.")
                     .font(.system(size: 12))
                     .foregroundColor(RuutineColor.muted)
                     .multilineTextAlignment(.center)

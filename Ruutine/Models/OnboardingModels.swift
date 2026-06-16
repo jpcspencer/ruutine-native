@@ -55,7 +55,7 @@ enum OnboardingMaps {
     ]
 
     static let greeting =
-        "Hey! I'm Atlas, your training coach. What should I call you?"
+        "Hey! I'm Ruu, your training coach. What should I call you?"
 
     static let programBuildOpener = "Ready to build your program? Let's start."
 
@@ -98,7 +98,7 @@ enum OnboardingMaps {
         case .gender: return "e.g. Male, female..."
         case .measurementsAsk: return "Enter height and weight below"
         case .measurementsInput: return "Enter height and weight below"
-        default: return "Message Atlas…"
+        default: return "Message Ruu…"
         }
     }
 }

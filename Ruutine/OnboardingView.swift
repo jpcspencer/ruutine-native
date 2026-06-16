@@ -153,7 +153,7 @@ struct OnboardingView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("You can build your program with Atlas anytime.")
+            Text("You can build your program with Ruu anytime.")
         }
         .alert("Couldn't Skip Onboarding", isPresented: Binding(
             get: { skipError != nil },
@@ -207,7 +207,7 @@ struct OnboardingView: View {
     private var header: some View {
         HStack(spacing: 0) {
             if flow == .programBuild {
-                Text("ATLAS")
+                Text("RUU")
                     .font(.bebas(28))
                     .foregroundColor(RuutineColor.foreground)
                     .tracking(1)
@@ -235,7 +235,7 @@ struct OnboardingView: View {
                     .buttonStyle(.plain)
                     .disabled(service.isSkipping || service.isSaving)
 
-                    Text("ATLAS")
+                    Text("RUU")
                         .font(.bebas(28))
                         .foregroundColor(RuutineColor.foreground)
                         .tracking(1)

@@ -142,7 +142,7 @@ struct AtlasChatView: View {
 
     private var header: some View {
         HStack {
-            Text("ATLAS")
+            Text("RUU")
                 .font(.bebas(28))
                 .foregroundColor(RuutineColor.foreground)
                 .tracking(1)
@@ -314,7 +314,7 @@ struct AtlasChatView: View {
 
     private var inputBar: some View {
         HStack(spacing: 10) {
-            TextField("Message Atlas…", text: $inputText, axis: .vertical)
+            TextField("Message Ruu…", text: $inputText, axis: .vertical)
                 .font(.system(size: 15))
                 .foregroundColor(RuutineColor.foreground)
                 .lineLimit(1...4)

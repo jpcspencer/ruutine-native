@@ -31,7 +31,7 @@ final class AtlasService: ObservableObject {
 
     private let endpoint = URL(string: "https://www.ruutine.app/api/coach/chat")!
 
-    static let defaultGreeting = "Hey, I'm Atlas. How can I help with your training today?"
+    static let defaultGreeting = "Hey, I'm Ruu. How can I help with your training today?"
 
     /// Messages before the coach greeting / active thread — used for scroll-up hint.
     var priorHistoryMessageCount: Int {
@@ -164,7 +164,7 @@ final class AtlasService: ObservableObject {
             print("[AtlasService] raw response: \(raw)")
 
             guard let http = response as? HTTPURLResponse else {
-                appendAssistantError("Unexpected response from Atlas.")
+                appendAssistantError("Unexpected response from Ruu.")
                 return
             }
 
@@ -176,7 +176,7 @@ final class AtlasService: ObservableObject {
             }
 
             guard (200...299).contains(http.statusCode) else {
-                appendAssistantError("Atlas request failed (HTTP \(http.statusCode)).")
+                appendAssistantError("Ruu request failed (HTTP \(http.statusCode)).")
                 return
             }
 
@@ -187,11 +187,11 @@ final class AtlasService: ObservableObject {
                 // coach/chat route persists user + assistant rows to coach_messages.
                 await reloadHistoryAfterSend(profileId: profileId)
             } else {
-                appendAssistantError("Atlas returned an empty response.")
+                appendAssistantError("Ruu returned an empty response.")
             }
         } catch {
             print("[AtlasService] network error: \(error)")
-            appendAssistantError("Couldn't reach Atlas. Check your connection and try again.")
+            appendAssistantError("Couldn't reach Ruu. Check your connection and try again.")
         }
     }
 
