@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import SwiftUI
+import UIKit
 
 struct WorkoutSet: Codable, Identifiable, Equatable {
     let id: UUID
@@ -164,6 +165,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
         updateElapsed()
         refreshHasConfirmedSet()
         startElapsedTimer()
+        setKeepScreenAwakeEnabledIfNeeded()
         if let remaining = restSecondsRemaining {
             startRestTimer()
             RestTimerNotificationManager.scheduleRestEnd(
@@ -176,6 +178,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
     deinit {
         elapsedTimer?.invalidate()
         restTimer?.invalidate()
+        UIApplication.shared.isIdleTimerDisabled = false
     }
 
     func toggleRestTimer() {
@@ -422,6 +425,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
     func cancelWorkout() {
         endLiveActivity()
         clearPersistence()
+        UIApplication.shared.isIdleTimerDisabled = false
     }
 
     func buildCompletionPayload() -> (
@@ -474,6 +478,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
         restTimer?.invalidate()
         endLiveActivity()
         clearPersistence()
+        UIApplication.shared.isIdleTimerDisabled = false
     }
 
     func placeholderWeight(for exercise: WorkoutExercise, setIndex: Int) -> String {
@@ -655,6 +660,10 @@ final class ActiveWorkoutViewModel: ObservableObject {
         UserDefaults.standard.removeObject(forKey: Self.storageKey)
         elapsedTimer?.invalidate()
         restTimer?.invalidate()
+    }
+
+    private func setKeepScreenAwakeEnabledIfNeeded() {
+        UIApplication.shared.isIdleTimerDisabled = AppPreferences.shared.keepScreenAwake
     }
 
     private static func loadState() -> ActiveWorkoutState? {
