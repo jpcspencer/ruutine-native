@@ -49,7 +49,7 @@ final class OnboardingService: ObservableObject {
         !hidesInputBar && !quickReplyChips.isEmpty
     }
 
-    /// Matches Capacitor `onboarding-chat.tsx` chip selection (lines 578–584), with handoff + free-text guards.
+    /// Chips always follow the most recent assistant question — never the state-machine `step`.
     var effectiveChipStep: OnboardingStep {
         if step == .generating || step == .programPreview || isGenerating {
             return .none
@@ -65,33 +65,23 @@ final class OnboardingService: ObservableObject {
             return .none
         }
 
-        var chipStep = chipStepFromMessage(lastAssistantMessage)
+        let chipStep = chipStepFromMessage(lastAssistantMessage)
 
-        if chipStep == .none {
-            if messages.isEmpty && step == .greetingName {
-                chipStep = .greetingName
-            } else {
-                chipStep = step
-            }
+        if chipStep == .none || chipStep == .greetingName {
+            return .none
         }
 
         if (chipStep == .injuries || chipStep == .injuriesCustom) && conversationMentionsInjury() {
-            chipStep = .none
+            return .none
         }
 
         let stepsWithChips: Set<OnboardingStep> = [
-            .greetingName, .goal, .experience, .daysPerWeek, .trainingDays,
+            .goal, .experience, .daysPerWeek, .trainingDays,
             .equipment, .injuries, .injuriesCustom, .gender,
         ]
 
-        var effective = chipStep == .none && stepsWithChips.contains(step) ? step : chipStep
-
-        if effective != .none, stepsWithChips.contains(step), stepIndex(step) > stepIndex(effective) {
-            effective = step
-        }
-
-        guard stepsWithChips.contains(effective) else { return .none }
-        return effective
+        guard stepsWithChips.contains(chipStep) else { return .none }
+        return chipStep
     }
 
     var quickReplyChips: [String] {
@@ -789,36 +779,98 @@ final class OnboardingService: ObservableObject {
     }
 
     private func chipStepFromMessage(_ message: String) -> OnboardingStep {
-        let sentences = message
-            .components(separatedBy: CharacterSet(charactersIn: ".!?"))
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        let last = (sentences.last ?? "").lowercased()
+        let text = message.lowercased()
 
-        if last.contains("how many days") || last.contains("days per week") || last.contains("days a week") || last.contains("realistically train") {
-            return .daysPerWeek
+        // Name question — free text only (pinned greeting is display-only; no chips).
+        if text.contains("what should i call you")
+            || text.contains("what can i call you")
+            || text.contains("what do you want me to call you") {
+            return .greetingName
         }
-        if last.contains("which days") || last.contains("what days") || last.contains("days work best") || last.contains("days of the week") {
-            return .trainingDays
-        }
-        if last.contains("equipment") || last.contains("gym") || last.contains("access to") || last.contains("working out") {
-            return .equipment
-        }
-        if last.contains("injur") || last.contains("limitation") || last.contains("pain") || last.contains("areas") || last.contains("watch out") {
-            return .injuries
-        }
-        if last.contains("gender") || last.contains("identify") || last.contains("pronouns") || last.contains("male or female") {
+
+        // Gender — including re-ask phrasings.
+        if text.contains("male or female")
+            || text.contains("your gender")
+            || text.contains("need to know your gender")
+            || text.contains("are you male")
+            || text.contains("are you female")
+            || text.contains("identify as")
+            || text.contains("pronouns")
+            || (text.contains("gender") && (text.contains("male") || text.contains("female") || text.contains("calibrate"))) {
             return .gender
         }
-        if last.contains("height") || last.contains("weight") || last.contains("measurements") {
+
+        // Measurements (guarded out of chips at effectiveChipStep, but parsed for completeness).
+        if text.contains("measurements")
+            || (text.contains("height") && text.contains("weight")) {
             return .measurementsAsk
         }
-        if last.contains("goal") || last.contains("looking to") || last.contains("training goal") {
-            return .goal
+
+        // Training days before days-per-week (more specific first).
+        if text.contains("which days")
+            || text.contains("what days")
+            || text.contains("days work best")
+            || text.contains("days of the week")
+            || text.contains("days would you like to train")
+            || text.contains("days do you want to train") {
+            return .trainingDays
         }
-        if last.contains("experience") || last.contains("beginner") || last.contains("lifting for") {
+
+        if text.contains("how many days")
+            || text.contains("days per week")
+            || text.contains("days a week")
+            || text.contains("realistically train")
+            || text.contains("train per week")
+            || text.contains("times per week") {
+            return .daysPerWeek
+        }
+
+        // Injuries — including re-ask and "areas to program around".
+        if text.contains("injur")
+            || text.contains("limitation")
+            || text.contains("program around")
+            || text.contains("watch out for")
+            || text.contains("areas i should")
+            || text.contains("areas to avoid")
+            || (text.contains("areas") && text.contains("around"))
+            || text.contains("anything i should know about") {
+            return .injuries
+        }
+
+        // Equipment.
+        if text.contains("equipment")
+            || text.contains("have access to")
+            || text.contains("what do you have access")
+            || text.contains("working out at")
+            || text.contains("dumbbells")
+            || text.contains("barbells")
+            || (text.contains("gym") && (text.contains("access") || text.contains("have") || text.contains("equipment"))) {
+            return .equipment
+        }
+
+        // Experience.
+        if text.contains("experience level")
+            || text.contains("experience with")
+            || text.contains("how long have you been lifting")
+            || text.contains("lifting for")
+            || text.contains("how experienced")
+            || (text.contains("beginner") && text.contains("advanced"))
+            || text.contains("new to lifting") {
             return .experience
         }
+
+        // Goal.
+        if text.contains("training goal")
+            || text.contains("primary goal")
+            || text.contains("what's your goal")
+            || text.contains("what is your goal")
+            || text.contains("looking to achieve")
+            || text.contains("what are you training for")
+            || text.contains("main goal")
+            || (text.contains("goal") && (text.contains("primary") || text.contains("training") || text.contains("fitness"))) {
+            return .goal
+        }
+
         return .none
     }
 
