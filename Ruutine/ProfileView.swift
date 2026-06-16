@@ -179,6 +179,7 @@ struct ProfileView: View {
 
             infoSection(title: "GOAL", value: ProfileLabels.goal(profile.goal))
             infoSection(title: "EXPERIENCE", value: ProfileLabels.experience(profile.experienceLevel))
+            infoSection(title: "GENDER", value: ProfileLabels.gender(profile.biologicalSex))
             infoSection(title: "DAYS PER WEEK", value: "\(profile.daysPerWeek)")
             infoSection(title: "TRAINING DAYS", value: ProfileLabels.trainingDays(profile.trainingDays))
             infoSection(title: "EQUIPMENT", value: ProfileLabels.equipmentList(profile.equipmentAccess))
