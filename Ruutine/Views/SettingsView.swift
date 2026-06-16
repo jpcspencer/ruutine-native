@@ -49,8 +49,8 @@ struct SettingsView: View {
                         .foregroundColor(RuutineColor.foreground)
                         .tracking(1)
                 }
-                RuutineToolbarItem(placement: .topBarLeading) {
-                    RuutineNavButton(kind: .cancel) { dismiss() }
+                RuutineToolbarItem(placement: .topBarTrailing) {
+                    RuutineNavButton(kind: .done) { dismiss() }
                 }
             }
         }
