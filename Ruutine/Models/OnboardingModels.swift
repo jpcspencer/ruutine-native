@@ -106,13 +106,65 @@ enum OnboardingMaps {
 struct OnboardingProgramPayload: Codable {
     let week: Int?
     let days: [OnboardingProgramDay]?
+
+    init(week: Int? = nil, days: [OnboardingProgramDay]? = nil) {
+        self.week = week
+        self.days = days
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case week, days
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        week = OnboardingProgramDecoding.flexibleInt(from: container, forKey: .week)
+        days = try? container.decodeIfPresent([OnboardingProgramDay].self, forKey: .days) ?? nil
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(week, forKey: .week)
+        try container.encodeIfPresent(days, forKey: .days)
+    }
 }
 
 struct OnboardingProgramDay: Codable, Identifiable {
-    var id: Int { day }
+    var id: String { "\(day)-\(name)" }
     let day: Int
     let name: String
     let exercises: [OnboardingProgramExercise]?
+
+    init(day: Int, name: String, exercises: [OnboardingProgramExercise]? = nil) {
+        self.day = day
+        self.name = name
+        self.exercises = exercises
+    }
+
+    private enum DecodeKeys: String, CodingKey {
+        case day, name, focus, title, label, exercises
+    }
+
+    private enum EncodeKeys: String, CodingKey {
+        case day, name, exercises
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: DecodeKeys.self)
+        day = OnboardingProgramDecoding.flexibleInt(from: container, keys: [.day]) ?? 0
+        name = OnboardingProgramDecoding.flexibleString(
+            from: container,
+            keys: [.name, .focus, .title, .label]
+        ) ?? "Workout"
+        exercises = (try? container.decodeIfPresent([OnboardingProgramExercise].self, forKey: .exercises)) ?? nil
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: EncodeKeys.self)
+        try container.encode(day, forKey: .day)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(exercises, forKey: .exercises)
+    }
 }
 
 struct OnboardingProgramExercise: Codable, Identifiable {
@@ -122,4 +174,116 @@ struct OnboardingProgramExercise: Codable, Identifiable {
     let reps: String?
     let rest: String?
     let notes: String?
+
+    init(
+        name: String,
+        sets: Int? = nil,
+        reps: String? = nil,
+        rest: String? = nil,
+        notes: String? = nil
+    ) {
+        self.name = name
+        self.sets = sets
+        self.reps = reps
+        self.rest = rest
+        self.notes = notes
+    }
+
+    private enum DecodeKeys: String, CodingKey {
+        case name, exercise, sets, reps, rest, notes, cue
+    }
+
+    private enum EncodeKeys: String, CodingKey {
+        case name, sets, reps, rest, notes
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: DecodeKeys.self)
+        name = OnboardingProgramDecoding.flexibleString(
+            from: container,
+            keys: [.name, .exercise]
+        ) ?? "Exercise"
+        sets = OnboardingProgramDecoding.flexibleInt(from: container, forKey: .sets)
+        reps = OnboardingProgramDecoding.flexibleStringOrInt(from: container, forKey: .reps)
+        rest = OnboardingProgramDecoding.flexibleStringOrInt(from: container, forKey: .rest)
+        notes = OnboardingProgramDecoding.flexibleString(from: container, keys: [.notes, .cue])
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: EncodeKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(sets, forKey: .sets)
+        try container.encodeIfPresent(reps, forKey: .reps)
+        try container.encodeIfPresent(rest, forKey: .rest)
+        try container.encodeIfPresent(notes, forKey: .notes)
+    }
+}
+
+private enum OnboardingProgramDecoding {
+    static func flexibleInt<K: CodingKey>(
+        from container: KeyedDecodingContainer<K>,
+        forKey key: K
+    ) -> Int? {
+        if let value = try? container.decodeIfPresent(Int.self, forKey: key) {
+            return value
+        }
+        if let string = try? container.decodeIfPresent(String.self, forKey: key) {
+            let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let value = Int(trimmed) {
+                return value
+            }
+            if let value = Double(trimmed) {
+                return Int(value)
+            }
+        }
+        return nil
+    }
+
+    static func flexibleInt<K: CodingKey>(
+        from container: KeyedDecodingContainer<K>,
+        keys: [K]
+    ) -> Int? {
+        for key in keys {
+            if let value = flexibleInt(from: container, forKey: key) {
+                return value
+            }
+        }
+        return nil
+    }
+
+    static func flexibleString<K: CodingKey>(
+        from container: KeyedDecodingContainer<K>,
+        forKey key: K
+    ) -> String? {
+        guard let value = try? container.decodeIfPresent(String.self, forKey: key) else {
+            return nil
+        }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    static func flexibleString<K: CodingKey>(
+        from container: KeyedDecodingContainer<K>,
+        keys: [K]
+    ) -> String? {
+        for key in keys {
+            if let value = flexibleString(from: container, forKey: key) {
+                return value
+            }
+        }
+        return nil
+    }
+
+    static func flexibleStringOrInt<K: CodingKey>(
+        from container: KeyedDecodingContainer<K>,
+        forKey key: K
+    ) -> String? {
+        if let value = flexibleString(from: container, forKey: key) {
+            return value
+        }
+        if let value = try? container.decodeIfPresent(Int.self, forKey: key) {
+            return String(value)
+        }
+        return nil
+    }
 }
