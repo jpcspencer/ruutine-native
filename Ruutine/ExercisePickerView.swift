@@ -8,7 +8,8 @@ struct ExercisePickerView: View {
     @StateObject private var exerciseService = ExerciseService()
     @State private var searchText = ""
     @State private var selectedExerciseIDs: [String] = []
-    @State private var createError: String?
+    @State private var showCreateExerciseSheet = false
+    @State private var createExercisePrefill = ""
     @FocusState private var isSearchFocused: Bool
 
     let onSelect: ([Exercise]) -> Void
@@ -108,16 +109,20 @@ struct ExercisePickerView: View {
             .task {
                 await exerciseService.loadExercises(profileId: authVM.session?.user.id)
             }
-            .alert("Couldn't Create Exercise", isPresented: Binding(
-                get: { createError != nil },
-                set: { if !$0 { createError = nil } }
-            )) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(createError ?? "")
-            }
-            .onChange(of: createError) { _, error in
-                if error != nil { Haptics.notify(.error) }
+            .sheet(isPresented: $showCreateExerciseSheet) {
+                if let profileId = authVM.session?.user.id {
+                    CreateExerciseSheet(
+                        exerciseService: exerciseService,
+                        profileId: profileId,
+                        prefilledName: createExercisePrefill
+                    ) { exercise in
+                        if !selectedExerciseIDs.contains(exercise.id) {
+                            selectedExerciseIDs.append(exercise.id)
+                        }
+                        SoundFX.select()
+                        Haptics.selection()
+                    }
+                }
             }
         }
     }
@@ -164,16 +169,12 @@ struct ExercisePickerView: View {
 
             Button {
                 Haptics.impact(.light)
-                Task { await createAndSelect() }
+                createExercisePrefill = trimmedSearch
+                showCreateExerciseSheet = true
             } label: {
                 HStack(spacing: 8) {
-                    if exerciseService.isSaving {
-                        ProgressView()
-                            .tint(RuutineColor.accentForeground)
-                    } else {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                    }
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 16, weight: .semibold))
                     Text("Create \"\(trimmedSearch)\"")
                         .font(.system(size: 15, weight: .semibold))
                 }
@@ -184,7 +185,6 @@ struct ExercisePickerView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
-            .disabled(exerciseService.isSaving)
             .padding(.horizontal, 16)
 
             Spacer()
@@ -276,28 +276,6 @@ struct ExercisePickerView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .contentShape(RoundedRectangle(cornerRadius: 12))
-    }
-
-    private func createAndSelect() async {
-        guard let profileId = authVM.session?.user.id else {
-            createError = ExerciseServiceError.notSignedIn.localizedDescription
-            return
-        }
-
-        createError = nil
-        do {
-            let exercise = try await exerciseService.createCustomExercise(
-                name: trimmedSearch,
-                profileId: profileId
-            )
-            if !selectedExerciseIDs.contains(exercise.id) {
-                selectedExerciseIDs.append(exercise.id)
-            }
-            SoundFX.select()
-            Haptics.selection()
-        } catch {
-            createError = error.localizedDescription
-        }
     }
 }
 

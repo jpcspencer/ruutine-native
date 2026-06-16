@@ -40,9 +40,17 @@ final class ExerciseService: ObservableObject {
         }
     }
 
-    func createCustomExercise(name: String, profileId: UUID) async throws -> Exercise {
+    func createCustomExercise(
+        name: String,
+        profileId: UUID,
+        muscleGroup: String = "Other",
+        category: ExerciseCategory
+    ) async throws -> Exercise {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw ExerciseServiceError.emptyName }
+
+        let normalizedMuscleGroup = muscleGroup.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedMuscleGroup = normalizedMuscleGroup.isEmpty ? "Other" : normalizedMuscleGroup
 
         if let existing = exercises.first(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame }) {
             return existing
@@ -54,8 +62,8 @@ final class ExerciseService: ObservableObject {
         let insert = CustomExerciseInsert(
             userId: profileId,
             name: trimmed,
-            muscleGroup: "Custom",
-            category: ExerciseCategory.barbell.rawValue,
+            muscleGroup: resolvedMuscleGroup,
+            category: category.rawValue,
             difficulty: "beginner"
         )
 

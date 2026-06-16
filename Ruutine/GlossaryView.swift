@@ -8,9 +8,7 @@ struct GlossaryView: View {
 
     @State private var searchText = ""
     @State private var selectedCategory: MuscleCategory = .all
-    @State private var showAddCustom = false
-    @State private var customExerciseName = ""
-    @State private var customExerciseError: String?
+    @State private var showCreateExerciseSheet = false
     @State private var exercisePendingDelete: Exercise?
     @State private var deleteExerciseError: String?
 
@@ -55,27 +53,13 @@ struct GlossaryView: View {
         .task {
             await reload()
         }
-        .alert("Add Custom Exercise", isPresented: $showAddCustom) {
-            TextField("Exercise name", text: $customExerciseName)
-            Button("Add") {
-                Task { await addCustomExercise() }
+        .sheet(isPresented: $showCreateExerciseSheet) {
+            if let profileId = authVM.session?.user.id {
+                CreateExerciseSheet(
+                    exerciseService: exerciseService,
+                    profileId: profileId
+                ) { _ in }
             }
-            Button("Cancel", role: .cancel) {
-                customExerciseName = ""
-            }
-        } message: {
-            Text("Enter a name for your custom exercise.")
-        }
-        .alert("Couldn't Add Exercise", isPresented: Binding(
-            get: { customExerciseError != nil },
-            set: { if !$0 { customExerciseError = nil } }
-        )) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(customExerciseError ?? "")
-        }
-        .onChange(of: customExerciseError) { _, error in
-            if error != nil { Haptics.notify(.error) }
         }
         .alert("Delete Exercise?", isPresented: Binding(
             get: { exercisePendingDelete != nil },
@@ -169,7 +153,7 @@ struct GlossaryView: View {
     private var addCustomButton: some View {
         Button {
             Haptics.impact(.light)
-            showAddCustom = true
+            showCreateExerciseSheet = true
         } label: {
             Text("+ Add custom exercise")
                 .font(.system(size: 14, weight: .medium))
@@ -250,23 +234,6 @@ struct GlossaryView: View {
             Haptics.impact(.medium)
         } catch {
             deleteExerciseError = error.localizedDescription
-        }
-    }
-
-    private func addCustomExercise() async {
-        let trimmed = customExerciseName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        guard let profileId = authVM.session?.user.id else {
-            customExerciseError = ExerciseServiceError.notSignedIn.localizedDescription
-            return
-        }
-
-        customExerciseError = nil
-        do {
-            _ = try await exerciseService.createCustomExercise(name: trimmed, profileId: profileId)
-            customExerciseName = ""
-        } catch {
-            customExerciseError = error.localizedDescription
         }
     }
 
