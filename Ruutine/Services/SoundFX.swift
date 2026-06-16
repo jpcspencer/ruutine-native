@@ -6,7 +6,7 @@ enum SoundFX {
     static func workoutComplete() { play(1025) }
     static func restEnd()         { play(1005) }
     static func select()          { play(1104) }
-    static func add()             { play(1116) }
+    static func add()             { play(1001) }
     static func openNewWorkout()  { play(1306) }
     static func startWorkout()    { play(1113) }
 }
