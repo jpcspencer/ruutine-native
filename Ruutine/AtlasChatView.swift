@@ -13,7 +13,7 @@ struct AtlasChatView: View {
     @State private var isScrolledNearTop = false
     @State private var showScrollUpHint = false
     @State private var scrollUpPulse = false
-    @State private var didInitialScrollOnOpen = false
+    @State private var didInitialScrollToBottom = false
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
@@ -73,14 +73,14 @@ struct AtlasChatView: View {
                     }
                     .onChange(of: atlasService.isLoadingHistory) { _, isLoading in
                         guard !isLoading else { return }
-                        scrollToOpenPositionIfNeeded(proxy: proxy)
+                        scrollToBottomOnOpenIfNeeded(proxy: proxy)
                     }
                     .onAppear {
-                        scrollToOpenPositionIfNeeded(proxy: proxy)
+                        scrollToBottomOnOpenIfNeeded(proxy: proxy)
                         refreshScrollUpHint()
                     }
                     .onDisappear {
-                        didInitialScrollOnOpen = false
+                        didInitialScrollToBottom = false
                     }
                 }
 
@@ -370,19 +370,13 @@ struct AtlasChatView: View {
         }
     }
 
-    private func scrollToOpenPositionIfNeeded(proxy: ScrollViewProxy) {
-        guard !didInitialScrollOnOpen else { return }
+    private func scrollToBottomOnOpenIfNeeded(proxy: ScrollViewProxy) {
+        guard !didInitialScrollToBottom else { return }
         guard !atlasService.isLoadingHistory else { return }
 
-        didInitialScrollOnOpen = true
+        didInitialScrollToBottom = true
         DispatchQueue.main.async {
-            if AppPreferences.shared.hasSentCoachMessage {
-                scrollToBottom(proxy: proxy, animated: false)
-            } else if let lastMessageId = atlasService.messages.last?.id {
-                proxy.scrollTo(lastMessageId, anchor: .top)
-            } else {
-                proxy.scrollTo("chat-bottom", anchor: .bottom)
-            }
+            scrollToBottom(proxy: proxy, animated: false)
             refreshScrollUpHint()
         }
     }
