@@ -13,7 +13,7 @@ struct AtlasChatView: View {
     @State private var isScrolledNearTop = false
     @State private var showScrollUpHint = false
     @State private var scrollUpPulse = false
-    @State private var didInitialScrollToBottom = false
+    @State private var didInitialScrollOnOpen = false
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
@@ -73,14 +73,14 @@ struct AtlasChatView: View {
                     }
                     .onChange(of: atlasService.isLoadingHistory) { _, isLoading in
                         guard !isLoading else { return }
-                        scrollToBottomOnOpenIfNeeded(proxy: proxy)
+                        scrollToOpenPositionIfNeeded(proxy: proxy)
                     }
                     .onAppear {
-                        scrollToBottomOnOpenIfNeeded(proxy: proxy)
+                        scrollToOpenPositionIfNeeded(proxy: proxy)
                         refreshScrollUpHint()
                     }
                     .onDisappear {
-                        didInitialScrollToBottom = false
+                        didInitialScrollOnOpen = false
                     }
                 }
 
@@ -370,13 +370,19 @@ struct AtlasChatView: View {
         }
     }
 
-    private func scrollToBottomOnOpenIfNeeded(proxy: ScrollViewProxy) {
-        guard !didInitialScrollToBottom else { return }
+    private func scrollToOpenPositionIfNeeded(proxy: ScrollViewProxy) {
+        guard !didInitialScrollOnOpen else { return }
         guard !atlasService.isLoadingHistory else { return }
 
-        didInitialScrollToBottom = true
+        didInitialScrollOnOpen = true
         DispatchQueue.main.async {
-            scrollToBottom(proxy: proxy, animated: false)
+            if AppPreferences.shared.hasSentCoachMessage {
+                scrollToBottom(proxy: proxy, animated: false)
+            } else if let lastMessageId = atlasService.messages.last?.id {
+                proxy.scrollTo(lastMessageId, anchor: .top)
+            } else {
+                proxy.scrollTo("chat-bottom", anchor: .bottom)
+            }
             refreshScrollUpHint()
         }
     }

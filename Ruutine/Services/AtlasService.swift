@@ -125,6 +125,10 @@ final class AtlasService: ObservableObject {
 
             print("[AtlasService] loaded \(rows.count) coach_messages for profile \(profileId)")
 
+            if rows.contains(where: { $0.role == AtlasMessage.Role.user.rawValue }) {
+                AppPreferences.shared.hasSentCoachMessage = true
+            }
+
             if rows.isEmpty {
                 messages = []
                 didSeedGreeting = false
@@ -180,6 +184,9 @@ final class AtlasService: ObservableObject {
         }
 
         messages.append(AtlasMessage(role: .user, content: trimmed))
+        if !AppPreferences.shared.hasSentCoachMessage {
+            AppPreferences.shared.hasSentCoachMessage = true
+        }
         isTyping = true
         defer { isTyping = false }
 

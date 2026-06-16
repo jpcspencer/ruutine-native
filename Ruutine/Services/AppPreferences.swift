@@ -8,6 +8,7 @@ final class AppPreferences: ObservableObject {
     private static let hapticsKey = "ruutine.hapticsEnabled"
     private static let notificationsKey = "ruutine.notificationsEnabled"
     private static let keepScreenAwakeKey = "ruutine.keepScreenAwake"
+    private static let hasSentCoachMessageKey = "ruutine.hasSentCoachMessage"
 
     @Published var soundsEnabled: Bool {
         didSet { UserDefaults.standard.set(soundsEnabled, forKey: Self.soundsKey) }
@@ -25,11 +26,16 @@ final class AppPreferences: ObservableObject {
         didSet { UserDefaults.standard.set(keepScreenAwake, forKey: Self.keepScreenAwakeKey) }
     }
 
+    @Published var hasSentCoachMessage: Bool {
+        didSet { UserDefaults.standard.set(hasSentCoachMessage, forKey: Self.hasSentCoachMessageKey) }
+    }
+
     private init() {
         soundsEnabled = Self.bool(forKey: Self.soundsKey)
         hapticsEnabled = Self.bool(forKey: Self.hapticsKey)
         notificationsEnabled = Self.bool(forKey: Self.notificationsKey)
         keepScreenAwake = Self.bool(forKey: Self.keepScreenAwakeKey)
+        hasSentCoachMessage = UserDefaults.standard.bool(forKey: Self.hasSentCoachMessageKey)
     }
 
     private static func bool(forKey key: String) -> Bool {
