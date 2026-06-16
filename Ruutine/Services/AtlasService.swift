@@ -100,10 +100,10 @@ final class AtlasService: ObservableObject {
                 didSeedGreeting = false
                 seedGreetingIfNeeded()
             } else {
-                messages = rows.compactMap { row in
+                messages = ensureGreetingAtTop(rows.compactMap { row in
                     guard let role = AtlasMessage.Role(rawValue: row.role) else { return nil }
                     return AtlasMessage(id: row.id, role: role, content: row.content)
-                }
+                })
                 didSeedGreeting = true
             }
 
@@ -117,11 +117,18 @@ final class AtlasService: ObservableObject {
     func seedGreetingIfNeeded() {
         guard !didSeedGreeting else { return }
         didSeedGreeting = true
-        if messages.isEmpty {
-            messages = [
-                AtlasMessage(role: .assistant, content: Self.defaultGreeting),
-            ]
+        messages = ensureGreetingAtTop(messages)
+    }
+
+    /// Keeps the default greeting as the first message when it isn't already present.
+    private func ensureGreetingAtTop(_ list: [AtlasMessage]) -> [AtlasMessage] {
+        if list.first?.role == .assistant, list.first?.content == Self.defaultGreeting {
+            return list
         }
+        if list.contains(where: { $0.role == .assistant && $0.content == Self.defaultGreeting }) {
+            return list
+        }
+        return [AtlasMessage(role: .assistant, content: Self.defaultGreeting)] + list
     }
 
     func sendMessage(_ text: String) async {
@@ -130,14 +137,6 @@ final class AtlasService: ObservableObject {
         guard let profileId else {
             appendAssistantError("You're not signed in. Please log in and try again.")
             return
-        }
-
-        let hadOnlyGreeting = messages.count == 1
-            && messages.first?.role == .assistant
-            && messages.first?.content == Self.defaultGreeting
-
-        if hadOnlyGreeting {
-            messages = []
         }
 
         messages.append(AtlasMessage(role: .user, content: trimmed))
@@ -231,10 +230,10 @@ final class AtlasService: ObservableObject {
                 .execute()
                 .value
 
-            messages = rows.compactMap { row in
+            messages = ensureGreetingAtTop(rows.compactMap { row in
                 guard let role = AtlasMessage.Role(rawValue: row.role) else { return nil }
                 return AtlasMessage(id: row.id, role: role, content: row.content)
-            }
+            })
             didSeedGreeting = true
             loadedProfileId = profileId
         } catch {
