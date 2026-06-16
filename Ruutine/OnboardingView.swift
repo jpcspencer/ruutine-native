@@ -42,7 +42,12 @@ struct OnboardingView: View {
                                 .id(message.id)
                         }
 
-                        if service.showsQuickReplyChips || service.canGoBack {
+                        if service.isTyping, !showsProgramBuildingLoader {
+                            typingIndicator
+                                .id("typing")
+                        }
+
+                        if (service.showsQuickReplyChips || service.canGoBack), !service.isTyping {
                             chipRow
                                 .id("chips")
                         }
@@ -50,11 +55,6 @@ struct OnboardingView: View {
                         if service.showsStructuredMeasurements {
                             measurementsInputs
                                 .id("measurements")
-                        }
-
-                        if service.isTyping {
-                            typingIndicator
-                                .id("typing")
                         }
 
                         if showsProgramBuildingLoader {
@@ -311,21 +311,17 @@ struct OnboardingView: View {
                     Haptics.impact(.light)
                     service.goBack()
                 } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 12, weight: .semibold))
-                        Text("Back")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .foregroundColor(RuutineColor.muted)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.clear)
-                    .overlay(
-                        Capsule()
-                            .stroke(RuutineColor.accent, lineWidth: 1.5)
-                    )
-                    .clipShape(Capsule())
+                    Image(systemName: "arrow.uturn.backward")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(RuutineColor.muted)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(RuutineColor.surface.opacity(0.55))
+                        .overlay(
+                            Capsule()
+                                .stroke(RuutineColor.border, lineWidth: 1.5)
+                        )
+                        .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .disabled(service.isTyping || service.isGenerating)

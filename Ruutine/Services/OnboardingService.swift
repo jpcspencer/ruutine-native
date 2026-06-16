@@ -415,8 +415,9 @@ final class OnboardingService: ObservableObject {
     // MARK: - Chat API
 
     private func sendToAtlas(_ message: String) async {
-        appendUser(message)
         isTyping = true
+        await Task.yield()
+        appendUser(message)
         defer { isTyping = false }
 
         let history = messages.dropLast().map { ["role": $0.role.rawValue, "content": $0.content] }
