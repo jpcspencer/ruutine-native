@@ -16,6 +16,7 @@ struct ProfileView: View {
     @State private var isSigningOut = false
     @State private var showEditProfile = false
     @State private var showWeightLogSheet = false
+    @State private var showSettings = false
     @State private var defaultRestSeconds = RestDurationPreferences.defaultSeconds
 
     var body: some View {
@@ -92,14 +93,27 @@ struct ProfileView: View {
                 .environmentObject(themeManager)
             }
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+                .environmentObject(themeManager)
+        }
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("PROFILE")
-                .font(.bebas(40))
-                .foregroundColor(RuutineColor.foreground)
-                .tracking(1)
+            HStack(alignment: .center, spacing: 8) {
+                Text("PROFILE")
+                    .font(.bebas(40))
+                    .foregroundColor(RuutineColor.foreground)
+                    .tracking(1)
+
+                Spacer()
+
+                RuutineNavButton(kind: .gear) {
+                    showSettings = true
+                }
+                .accessibilityLabel("Settings")
+            }
 
             Text("Your training profile and preferences")
                 .font(.system(size: 14))

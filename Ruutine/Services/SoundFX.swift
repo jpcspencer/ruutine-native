@@ -1,7 +1,10 @@
 import AudioToolbox
 
 enum SoundFX {
-    private static func play(_ id: SystemSoundID) { AudioServicesPlaySystemSound(id) }
+    private static func play(_ id: SystemSoundID) {
+        guard AppPreferences.shared.soundsEnabled else { return }
+        AudioServicesPlaySystemSound(id)
+    }
     static func setComplete()     { play(1104) }
     static func workoutComplete() { play(1025) }
     static func restEnd()         { play(1005) }

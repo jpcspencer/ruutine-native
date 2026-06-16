@@ -4,6 +4,7 @@ enum RestTimerNotificationManager {
     static let notificationID = "ruutine.rest-timer.end"
 
     static func scheduleRestEnd(at endDate: Date) {
+        guard AppPreferences.shared.notificationsEnabled else { return }
         Task {
             guard await requestAuthorizationIfNeeded() else { return }
 
