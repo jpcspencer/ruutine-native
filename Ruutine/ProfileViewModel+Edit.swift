@@ -9,6 +9,7 @@ struct ProfileEditDraft {
     var trainingDays: [Int]
     var equipmentAccess: [String]
     var injuriesLimitations: String
+    var biologicalSex: String
     var heightCmText: String
     var heightFeetText: String
     var heightInchesText: String
@@ -22,6 +23,7 @@ struct ProfileEditDraft {
         trainingDays = profile.trainingDays
         equipmentAccess = profile.equipmentAccess
         injuriesLimitations = profile.injuriesLimitations ?? ""
+        biologicalSex = Self.normalizedBiologicalSex(profile.biologicalSex) ?? "prefer_not_to_say"
         unitPreference = profile.unitPreference ?? "metric"
 
         if let heightCm = profile.heightCm {
@@ -59,6 +61,18 @@ struct ProfileEditDraft {
             ? String(format: "%.0f", value)
             : String(format: "%.1f", value)
     }
+
+    private static func normalizedBiologicalSex(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+              !value.isEmpty else { return nil }
+        let underscored = value.replacingOccurrences(of: " ", with: "_")
+        switch underscored {
+        case "male", "female", "prefer_not_to_say":
+            return underscored
+        default:
+            return nil
+        }
+    }
 }
 
 private struct ProfileUpdatePayload: Encodable {
@@ -71,6 +85,7 @@ private struct ProfileUpdatePayload: Encodable {
     let injuriesLimitations: String?
     let heightCm: Double?
     let unitPreference: String
+    let biologicalSex: String
 
     enum CodingKeys: String, CodingKey {
         case name, goal
@@ -81,6 +96,7 @@ private struct ProfileUpdatePayload: Encodable {
         case injuriesLimitations = "injuries_limitations"
         case heightCm = "height_cm"
         case unitPreference = "unit_preference"
+        case biologicalSex = "biological_sex"
     }
 }
 
@@ -113,7 +129,8 @@ extension ProfileViewModel {
             equipmentAccess: draft.equipmentAccess,
             injuriesLimitations: injuries.isEmpty ? nil : injuries,
             heightCm: draft.resolvedHeightCm(),
-            unitPreference: draft.unitPreference
+            unitPreference: draft.unitPreference,
+            biologicalSex: draft.biologicalSex
         )
 
         try await SupabaseClient.shared

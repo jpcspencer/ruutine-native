@@ -51,6 +51,9 @@ struct HomeView: View {
         .task(id: authVM.session?.user.id) {
             reload()
         }
+        .onAppear {
+            reload()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .workoutCompleted)) { _ in
             reload()
         }

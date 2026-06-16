@@ -14,6 +14,7 @@ struct ProfileDetail: Codable {
     let unitPreference: String?
     let theme: String?
     let avatarUrl: String?
+    let biologicalSex: String?
 
     enum CodingKeys: String, CodingKey {
         case id, name, goal
@@ -27,6 +28,7 @@ struct ProfileDetail: Codable {
         case unitPreference = "unit_preference"
         case theme
         case avatarUrl = "avatar_url"
+        case biologicalSex = "biological_sex"
     }
 }
 
@@ -71,12 +73,29 @@ enum ProfileLabels {
 
     static let weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
+    static let genders: [String: String] = [
+        "male": "Male",
+        "female": "Female",
+        "prefer_not_to_say": "Prefer not to say",
+    ]
+
+    static let genderOptionOrder = ["male", "female", "prefer_not_to_say"]
+
     static func goal(_ value: String) -> String {
         goals[value] ?? value.replacingOccurrences(of: "_", with: " ").capitalized
     }
 
     static func experience(_ value: String) -> String {
         experienceLevels[value] ?? value.capitalized
+    }
+
+    static func gender(_ value: String?) -> String {
+        guard let value else { return "Prefer not to say" }
+        let normalized = value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .replacingOccurrences(of: " ", with: "_")
+        return genders[normalized] ?? value.capitalized
     }
 
     static func equipmentList(_ values: [String]) -> String {

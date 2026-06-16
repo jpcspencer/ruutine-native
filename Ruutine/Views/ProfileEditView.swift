@@ -44,6 +44,12 @@ struct ProfileEditView: View {
                         } isSelected: { draft.experienceLevel == $0 } onSelect: { draft.experienceLevel = $0 }
                     }
 
+                    fieldSection(title: "GENDER") {
+                        chipGrid(ProfileLabels.genderOptionOrder) { key in
+                            ProfileLabels.gender(key)
+                        } isSelected: { draft.biologicalSex == $0 } onSelect: { draft.biologicalSex = $0 }
+                    }
+
                     fieldSection(title: "DAYS PER WEEK") {
                         HStack(spacing: 8) {
                             ForEach(1...7, id: \.self) { dayCount in
