@@ -442,16 +442,6 @@ struct OnboardingView: View {
         .onTapGesture {
             dismissKeyboard()
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    dismissKeyboard()
-                }
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(RuutineColor.accent)
-            }
-        }
     }
 
     private func measurementField(
