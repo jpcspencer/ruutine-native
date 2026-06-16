@@ -49,7 +49,7 @@ final class OnboardingService: ObservableObject {
         !hidesInputBar && !quickReplyChips.isEmpty
     }
 
-    /// Chips always follow the most recent assistant question — never the state-machine `step`.
+    /// Chips follow the latest assistant question; falls back to `step` when parsing is inconclusive.
     var effectiveChipStep: OnboardingStep {
         if step == .generating || step == .programPreview || isGenerating {
             return .none
@@ -65,23 +65,28 @@ final class OnboardingService: ObservableObject {
             return .none
         }
 
-        let chipStep = chipStepFromMessage(lastAssistantMessage)
-
-        if chipStep == .none || chipStep == .greetingName {
-            return .none
-        }
-
-        if (chipStep == .injuries || chipStep == .injuriesCustom) && conversationMentionsInjury() {
-            return .none
-        }
-
         let stepsWithChips: Set<OnboardingStep> = [
             .goal, .experience, .daysPerWeek, .trainingDays,
             .equipment, .injuries, .injuriesCustom, .gender,
         ]
 
-        guard stepsWithChips.contains(chipStep) else { return .none }
-        return chipStep
+        let parsedStep = chipStepFromMessage(lastAssistantMessage)
+        let effective: OnboardingStep
+        if parsedStep != .none,
+           parsedStep != .greetingName,
+           stepsWithChips.contains(parsedStep) {
+            effective = parsedStep
+        } else if stepsWithChips.contains(step) {
+            effective = step
+        } else {
+            return .none
+        }
+
+        if (effective == .injuries || effective == .injuriesCustom) && conversationMentionsInjury() {
+            return .none
+        }
+
+        return effective
     }
 
     var quickReplyChips: [String] {
@@ -849,14 +854,21 @@ final class OnboardingService: ObservableObject {
             return .equipment
         }
 
-        // Experience.
+        // Experience — including re-ask and conversational phrasings.
         if text.contains("experience level")
             || text.contains("experience with")
             || text.contains("how long have you been lifting")
+            || text.contains("how long have you been training")
+            || text.contains("been training")
+            || text.contains("training history")
+            || text.contains("are you a beginner")
             || text.contains("lifting for")
             || text.contains("how experienced")
+            || text.contains("new to lifting")
+            || text.contains("new to training")
             || (text.contains("beginner") && text.contains("advanced"))
-            || text.contains("new to lifting") {
+            || (text.contains("beginner") && text.contains("intermediate"))
+            || (text.contains("experience") && text.contains("training")) {
             return .experience
         }
 
