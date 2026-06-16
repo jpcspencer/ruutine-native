@@ -108,6 +108,10 @@ struct OnboardingView: View {
                 backControl
             }
 
+            if showsProgramPreviewContinue {
+                programPreviewContinueBar
+            }
+
             if !service.hidesInputBar {
                 inputBar
             }
@@ -128,11 +132,6 @@ struct OnboardingView: View {
         }
         .task(id: service.messages.last?.id) {
             await service.handleGeneratingHandoffIfNeeded()
-        }
-        .task(id: service.step) {
-            if service.step == .programPreview, service.program != nil, !service.isSaving {
-                await saveAndFinish()
-            }
         }
         .overlay {
             if service.isSkipping {
@@ -181,6 +180,10 @@ struct OnboardingView: View {
 
     private var showsProgramBuildingLoader: Bool {
         service.isGenerating || service.step == .generating
+    }
+
+    private var showsProgramPreviewContinue: Bool {
+        service.step == .programPreview && service.program != nil
     }
 
     /// Hide redundant Atlas handoff copy while the themed loader is visible.
@@ -388,6 +391,42 @@ struct OnboardingView: View {
                     .stroke(RuutineColor.border, lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var programPreviewContinueBar: some View {
+        Button {
+            SoundFX.onboardingComplete()
+            Haptics.notify(.success)
+            Task { await saveAndFinish() }
+        } label: {
+            Group {
+                if service.isSaving {
+                    ProgressView()
+                        .tint(RuutineColor.accentForeground)
+                } else {
+                    Text("Continue")
+                        .font(.system(size: 17, weight: .semibold))
+                }
+            }
+            .foregroundColor(RuutineColor.accentForeground)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(RuutineColor.accent)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+        .buttonStyle(.plain)
+        .disabled(service.isSaving)
+        .opacity(service.isSaving ? 0.7 : 1)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RuutineColor.background
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(RuutineColor.border)
+                        .frame(height: 1)
+                }
+        )
     }
 
     private func programPreview(_ program: OnboardingProgramPayload) -> some View {

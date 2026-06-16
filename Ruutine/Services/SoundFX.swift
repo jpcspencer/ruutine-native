@@ -12,4 +12,5 @@ enum SoundFX {
     static func add()             { play(1104) }
     static func openNewWorkout()  { play(1306) }
     static func startWorkout()    { play(1113) }
+    static func onboardingComplete() { play(1394) }
 }
