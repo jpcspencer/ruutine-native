@@ -49,7 +49,12 @@ struct AtlasChatView: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            dismissKeyboard()
+                        }
                     }
+                    .scrollDismissesKeyboard(.interactively)
                     .onScrollGeometryChange(for: Bool.self) { geometry in
                         geometry.contentOffset.y <= 16
                     } action: { _, nearTop in
@@ -159,6 +164,10 @@ struct AtlasChatView: View {
             Rectangle()
                 .fill(RuutineColor.border)
                 .frame(height: 1)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            dismissKeyboard()
         }
     }
 
@@ -336,6 +345,10 @@ struct AtlasChatView: View {
                         .frame(height: 1)
                 }
         )
+    }
+
+    private func dismissKeyboard() {
+        isInputFocused = false
     }
 
     private func sendTapped() {
