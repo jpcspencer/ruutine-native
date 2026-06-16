@@ -13,6 +13,7 @@ struct AtlasChatView: View {
     @State private var isScrolledNearTop = false
     @State private var showScrollUpHint = false
     @State private var scrollUpPulse = false
+    @State private var didInitialScrollToBottom = false
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
@@ -70,8 +71,16 @@ struct AtlasChatView: View {
                         scrollToBottom(proxy: proxy, animated: true)
                         refreshScrollUpHint()
                     }
+                    .onChange(of: atlasService.isLoadingHistory) { _, isLoading in
+                        guard !isLoading else { return }
+                        scrollToBottomOnOpenIfNeeded(proxy: proxy)
+                    }
                     .onAppear {
+                        scrollToBottomOnOpenIfNeeded(proxy: proxy)
                         refreshScrollUpHint()
+                    }
+                    .onDisappear {
+                        didInitialScrollToBottom = false
                     }
                 }
 
@@ -358,6 +367,17 @@ struct AtlasChatView: View {
         inputText = ""
         Task {
             await atlasService.sendMessage(text)
+        }
+    }
+
+    private func scrollToBottomOnOpenIfNeeded(proxy: ScrollViewProxy) {
+        guard !didInitialScrollToBottom else { return }
+        guard !atlasService.isLoadingHistory else { return }
+
+        didInitialScrollToBottom = true
+        DispatchQueue.main.async {
+            scrollToBottom(proxy: proxy, animated: false)
+            refreshScrollUpHint()
         }
     }
 
