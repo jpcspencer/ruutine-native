@@ -28,12 +28,39 @@ final class AtlasService: ObservableObject {
     private var profileId: UUID?
     private var didSeedGreeting = false
     private var loadedProfileId: UUID?
+    private var activeGreeting: String?
 
     private let endpoint = URL(string: "https://www.ruutine.app/api/coach/chat")!
     private static let systemPrompt =
         "You are Ruu, a personal training coach inside Ruutine. Introduce and refer to yourself as Ruu."
 
-    static let defaultGreeting = "Hey, I'm Ruu. How can I help with your training today?"
+    static func coachGreeting(profileName: String?) -> String {
+        if let name = UserDisplayName.storedName(from: profileName) {
+            let first = UserDisplayName.firstName(from: name)
+            return "Hey \(first), how can I help with your training today?"
+        }
+        return "Hey, how can I help with your training today?"
+    }
+
+    static func isCoachGreeting(_ content: String) -> Bool {
+        let lower = content.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return lower.hasPrefix("hey") && lower.contains("how can i help with your training today")
+    }
+
+    static func fetchProfileName(profileId: UUID) async -> String? {
+        struct NameRow: Decodable { let name: String? }
+
+        guard let row: NameRow = try? await SupabaseClient.shared
+            .from("user_profiles")
+            .select("name")
+            .eq("id", value: profileId)
+            .single()
+            .execute()
+            .value
+        else { return nil }
+
+        return UserDisplayName.storedName(from: row.name)
+    }
 
     /// Messages before the coach greeting / active thread — used for scroll-up hint.
     var priorHistoryMessageCount: Int {
@@ -41,13 +68,13 @@ final class AtlasService: ObservableObject {
 
         if messages.count == 1,
            messages[0].role == .assistant,
-           messages[0].content == Self.defaultGreeting {
+           Self.isCoachGreeting(messages[0].content) {
             return 0
         }
 
         if let last = messages.last,
            last.role == .assistant,
-           last.content == Self.defaultGreeting {
+           Self.isCoachGreeting(last.content) {
             return max(0, messages.count - 1)
         }
 
@@ -63,6 +90,7 @@ final class AtlasService: ObservableObject {
             self.profileId = profileId
             loadedProfileId = nil
             didSeedGreeting = false
+            activeGreeting = nil
             messages = []
         }
     }
@@ -77,6 +105,8 @@ final class AtlasService: ObservableObject {
 
         isLoadingHistory = true
         defer { isLoadingHistory = false }
+
+        await refreshGreetingText(profileId: profileId)
 
         struct CoachMessageRow: Decodable {
             let id: UUID
@@ -114,21 +144,31 @@ final class AtlasService: ObservableObject {
         }
     }
 
+    /// Keeps the coach greeting as the first message when it isn't already present.
+    private func ensureGreetingAtTop(_ list: [AtlasMessage]) -> [AtlasMessage] {
+        let greeting = activeGreeting ?? Self.coachGreeting(profileName: nil)
+
+        if list.first?.role == .assistant, Self.isCoachGreeting(list.first?.content ?? "") {
+            return list
+        }
+        if list.contains(where: { $0.role == .assistant && Self.isCoachGreeting($0.content) }) {
+            return list
+        }
+        return [AtlasMessage(role: .assistant, content: greeting)] + list
+    }
+
+    private func refreshGreetingText(profileId: UUID) async {
+        let name = await Self.fetchProfileName(profileId: profileId)
+        activeGreeting = Self.coachGreeting(profileName: name)
+    }
+
     func seedGreetingIfNeeded() {
         guard !didSeedGreeting else { return }
         didSeedGreeting = true
+        if activeGreeting == nil {
+            activeGreeting = Self.coachGreeting(profileName: nil)
+        }
         messages = ensureGreetingAtTop(messages)
-    }
-
-    /// Keeps the default greeting as the first message when it isn't already present.
-    private func ensureGreetingAtTop(_ list: [AtlasMessage]) -> [AtlasMessage] {
-        if list.first?.role == .assistant, list.first?.content == Self.defaultGreeting {
-            return list
-        }
-        if list.contains(where: { $0.role == .assistant && $0.content == Self.defaultGreeting }) {
-            return list
-        }
-        return [AtlasMessage(role: .assistant, content: Self.defaultGreeting)] + list
     }
 
     func sendMessage(_ text: String) async {
@@ -210,6 +250,7 @@ final class AtlasService: ObservableObject {
         messages = []
         didSeedGreeting = false
         loadedProfileId = profileId
+        await refreshGreetingText(profileId: profileId)
         seedGreetingIfNeeded()
         print("[AtlasService] coach chat cleared")
     }
@@ -222,6 +263,8 @@ final class AtlasService: ObservableObject {
         }
 
         do {
+            await refreshGreetingText(profileId: profileId)
+
             let rows: [CoachMessageRow] = try await SupabaseClient.shared
                 .from("coach_messages")
                 .select("id, role, content")

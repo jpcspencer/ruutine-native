@@ -48,7 +48,7 @@ struct OnboardingView: View {
                                 .id("typing")
                         }
 
-                        if (service.showsQuickReplyChips || service.canGoBack), !service.isTyping {
+                        if showsOnboardingChipRow {
                             chipRow
                                 .id("chips")
                         }
@@ -194,6 +194,19 @@ struct OnboardingView: View {
         service.step == .programPreview && service.program != nil
     }
 
+    private var onboardingAnswerChips: [String] {
+        service.quickReplyChips.filter { $0 != "Skip" }
+    }
+
+    private var showsOnboardingSkipChip: Bool {
+        service.quickReplyChips.contains("Skip")
+    }
+
+    private var showsOnboardingChipRow: Bool {
+        !service.isTyping
+            && (!onboardingAnswerChips.isEmpty || service.canGoBack || showsOnboardingSkipChip)
+    }
+
     private var hidesLaterButton: Bool {
         switch service.step {
         case .measurementsAsk, .measurementsInput, .generating, .programPreview:
@@ -292,7 +305,7 @@ struct OnboardingView: View {
 
     private var chipRow: some View {
         FlowLayout(spacing: 8) {
-            ForEach(service.quickReplyChips, id: \.self) { label in
+            ForEach(onboardingAnswerChips, id: \.self) { label in
                 Button {
                     Haptics.selection()
                     Task { await service.selectChip(label) }
@@ -314,27 +327,38 @@ struct OnboardingView: View {
             }
 
             if service.canGoBack {
-                Button {
+                onboardingNavChip(icon: "arrow.uturn.backward") {
                     Haptics.impact(.light)
                     service.goBack()
-                } label: {
-                    Image(systemName: "arrow.uturn.backward")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(RuutineColor.muted)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(RuutineColor.surface.opacity(0.55))
-                        .overlay(
-                            Capsule()
-                                .stroke(RuutineColor.border, lineWidth: 1.5)
-                        )
-                        .clipShape(Capsule())
                 }
-                .buttonStyle(.plain)
-                .disabled(service.isTyping || service.isGenerating)
+            }
+
+            if showsOnboardingSkipChip {
+                onboardingNavChip(icon: "arrow.uturn.forward") {
+                    Haptics.selection()
+                    Task { await service.selectChip("Skip") }
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func onboardingNavChip(icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(RuutineColor.muted)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(RuutineColor.surface.opacity(0.55))
+                .overlay(
+                    Capsule()
+                        .stroke(RuutineColor.border, lineWidth: 1.5)
+                )
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(service.isTyping || service.isGenerating)
     }
 
     private func chipForeground(_ label: String) -> Color {

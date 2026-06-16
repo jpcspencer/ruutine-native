@@ -44,6 +44,9 @@ enum CoachMessageService {
 
             guard existing.isEmpty else { return }
 
+            let profileName = await AtlasService.fetchProfileName(profileId: profileId)
+            let greeting = AtlasService.coachGreeting(profileName: profileName)
+
             var rows = filtered.map {
                 InsertRow(userProfileId: profileId, role: $0.role.rawValue, content: $0.content)
             }
@@ -51,7 +54,7 @@ enum CoachMessageService {
                 InsertRow(
                     userProfileId: profileId,
                     role: AtlasMessage.Role.assistant.rawValue,
-                    content: AtlasService.defaultGreeting
+                    content: greeting
                 )
             )
 
