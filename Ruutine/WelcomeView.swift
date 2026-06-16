@@ -68,7 +68,7 @@ struct WelcomeView: View {
             .navigationDestination(for: AuthRoute.self) { route in
                 switch route {
                 case .login:
-                    LoginView()
+                    LoginView(onNavigateToSignUp: { path.append(AuthRoute.signup) })
                 case .signup:
                     SignupView { email in
                         path.append(AuthRoute.emailConfirmation(email))

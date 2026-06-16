@@ -8,8 +8,10 @@ struct LoginView: View {
     @State private var password = ""
     @State private var showPassword = false
     @State private var isSigningIn = false
-    @State private var errorMessage: String?
+    @State private var signInError: SignInError?
     @FocusState private var focusedField: Field?
+
+    var onNavigateToSignUp: () -> Void = {}
 
     private enum Field {
         case email
@@ -73,11 +75,7 @@ struct LoginView: View {
                     .disabled(isSigningIn)
                     .padding(.top, 8)
 
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.system(size: 14))
-                            .foregroundColor(RuutineColor.destructive)
-                    }
+                    signInErrorView
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 8)
@@ -167,16 +165,48 @@ struct LoginView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
+    @ViewBuilder
+    private var signInErrorView: some View {
+        if let signInError {
+            switch signInError {
+            case .invalidCredentials:
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("Incorrect email or password. Don't have an account?")
+                        .foregroundColor(RuutineColor.destructive)
+
+                    Button {
+                        Haptics.impact(.light)
+                        onNavigateToSignUp()
+                    } label: {
+                        Text("Sign up")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(RuutineColor.accent)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .font(.system(size: 14))
+                .fixedSize(horizontal: false, vertical: true)
+            default:
+                if let message = signInError.message {
+                    Text(message)
+                        .font(.system(size: 14))
+                        .foregroundColor(RuutineColor.destructive)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
     private func signIn() {
         guard !isSigningIn else { return }
-        errorMessage = nil
+        signInError = nil
         isSigningIn = true
 
         Task {
             do {
                 try await authVM.signIn(email: email, password: password)
             } catch {
-                errorMessage = error.localizedDescription
+                signInError = SignInError.map(error)
             }
             isSigningIn = false
         }

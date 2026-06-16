@@ -28,6 +28,55 @@ enum AuthError: LocalizedError {
     }
 }
 
+enum SignInError: Equatable {
+    case invalidCredentials
+    case rateLimited
+    case networkUnavailable
+    case unknown(String)
+
+    var message: String? {
+        switch self {
+        case .invalidCredentials:
+            return nil
+        case .rateLimited:
+            return "Too many sign-in attempts. Please wait a moment and try again."
+        case .networkUnavailable:
+            return "Couldn't reach Ruu. Check your connection and try again."
+        case .unknown(let message):
+            return message
+        }
+    }
+
+    static func map(_ error: Error) -> SignInError {
+        if let signInError = error as? SignInError {
+            return signInError
+        }
+
+        let message = error.localizedDescription.lowercased()
+
+        if message.contains("invalid login credentials") {
+            return .invalidCredentials
+        }
+        if message.contains("rate limit") || message.contains("too many requests") {
+            return .rateLimited
+        }
+
+        let nsError = error as NSError
+        if nsError.domain == NSURLErrorDomain {
+            return .networkUnavailable
+        }
+        if message.contains("network")
+            || message.contains("internet")
+            || message.contains("offline")
+            || message.contains("timed out")
+            || message.contains("could not connect") {
+            return .networkUnavailable
+        }
+
+        return .unknown(error.localizedDescription)
+    }
+}
+
 @MainActor
 final class AuthViewModel: ObservableObject {
     @Published var session: Session?
