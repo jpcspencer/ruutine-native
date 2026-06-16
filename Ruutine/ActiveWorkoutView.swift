@@ -1,4 +1,5 @@
 import Auth
+import Supabase
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -10,6 +11,7 @@ struct ActiveWorkoutView: View {
     let onEnd: () -> Void
     @State private var recapData: WorkoutRecapData?
     @State private var recapSaveError: String?
+    @State private var profileBiologicalSex: String?
     @State private var isSaving = false
     @State private var saveError: String?
     @State private var showExercisePicker = false
@@ -37,6 +39,7 @@ struct ActiveWorkoutView: View {
         .task(id: authVM.session?.user.id) {
             guard let userId = authVM.session?.user.id else { return }
             await viewModel.loadPreviousSets(userId: userId)
+            await loadProfileBiologicalSex(userId: userId)
         }
         .fullScreenCover(item: $recapData) { data in
             WorkoutRecapView(data: data, saveError: recapSaveError) {
@@ -690,7 +693,8 @@ struct ActiveWorkoutView: View {
             totalVolumeKg: payload.totalVolume,
             totalSets: payload.totalSets,
             note: workoutNote,
-            photoData: workoutPhotoData
+            photoData: workoutPhotoData,
+            biologicalSex: profileBiologicalSex
         )
 
         recapSaveError = nil
@@ -714,6 +718,21 @@ struct ActiveWorkoutView: View {
                 print("[ActiveWorkoutView] Finish Session save failed: \(error)")
                 recapSaveError = WorkoutSessionService.userFacingMessage(for: error)
             }
+        }
+    }
+
+    private func loadProfileBiologicalSex(userId: UUID) async {
+        do {
+            let profile: UserProfile = try await SupabaseClient.shared
+                .from("user_profiles")
+                .select()
+                .eq("id", value: userId)
+                .single()
+                .execute()
+                .value
+            profileBiologicalSex = profile.biologicalSex
+        } catch {
+            profileBiologicalSex = nil
         }
     }
 }

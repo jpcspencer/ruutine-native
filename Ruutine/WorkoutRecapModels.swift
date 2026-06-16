@@ -24,6 +24,7 @@ struct WorkoutRecapData: Identifiable, Equatable {
     let profileId: UUID
     let note: String?
     let photoData: Data?
+    let biologicalSex: String?
 
     init(
         id: UUID,
@@ -34,7 +35,8 @@ struct WorkoutRecapData: Identifiable, Equatable {
         exercises: [RecapExercise],
         profileId: UUID,
         note: String? = nil,
-        photoData: Data? = nil
+        photoData: Data? = nil,
+        biologicalSex: String? = nil
     ) {
         self.id = id
         self.sessionName = sessionName
@@ -45,6 +47,7 @@ struct WorkoutRecapData: Identifiable, Equatable {
         self.profileId = profileId
         self.note = note
         self.photoData = photoData
+        self.biologicalSex = biologicalSex
     }
 
     var trainedMuscles: [String] {
@@ -70,6 +73,7 @@ struct WorkoutRecapData: Identifiable, Equatable {
         totalSets: Int,
         note: String? = nil,
         photoData: Data? = nil,
+        biologicalSex: String? = nil,
         sessionId: UUID = UUID()
     ) -> WorkoutRecapData {
         let recapExercises = exercises.map { exercise in
@@ -97,7 +101,8 @@ struct WorkoutRecapData: Identifiable, Equatable {
             exercises: recapExercises,
             profileId: profileId,
             note: trimmedNote?.isEmpty == false ? trimmedNote : nil,
-            photoData: photoData
+            photoData: photoData,
+            biologicalSex: biologicalSex
         )
     }
 }

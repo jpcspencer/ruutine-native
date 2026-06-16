@@ -45,6 +45,12 @@ enum MuscleMapGender {
     case male
     case female
 
+    static func from(biologicalSex: String?) -> MuscleMapGender {
+        biologicalSex?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased() == "female" ? .female : .male
+    }
+
     var frontResourceName: String {
         switch self {
         case .male: "man-front"

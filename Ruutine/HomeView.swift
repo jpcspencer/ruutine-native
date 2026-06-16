@@ -236,7 +236,10 @@ struct HomeView: View {
                 .font(.bebas(24))
                 .foregroundColor(RuutineColor.foreground)
 
-            MuscleMapView(trainedMuscles: viewModel.trainedMuscles)
+            MuscleMapView(
+                trainedMuscles: viewModel.trainedMuscles,
+                gender: MuscleMapGender.from(biologicalSex: viewModel.profile?.biologicalSex)
+            )
         }
         .ruuCard()
     }

@@ -234,7 +234,10 @@ struct WorkoutRecapView: View {
                 .foregroundColor(RuutineColor.muted)
                 .tracking(1)
 
-            MuscleMapView(trainedMuscles: data.trainedMuscles)
+            MuscleMapView(
+                trainedMuscles: data.trainedMuscles,
+                gender: MuscleMapGender.from(biologicalSex: data.biologicalSex)
+            )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
