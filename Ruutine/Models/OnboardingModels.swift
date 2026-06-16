@@ -64,21 +64,21 @@ enum OnboardingMaps {
     static func chips(for step: OnboardingStep) -> [String] {
         switch step {
         case .greetingName:
-            return ["Skip"]
+            return []
         case .goal:
-            return ["Get Stronger", "Build Muscle", "Lose Fat", "General Fitness", "Skip"]
+            return ["Get Stronger", "Build Muscle", "Lose Fat", "General Fitness"]
         case .experience:
-            return ["Beginner", "Intermediate", "Advanced", "Skip"]
+            return ["Beginner", "Intermediate", "Advanced"]
         case .daysPerWeek:
-            return ["2", "3", "4", "5", "6", "Skip"]
+            return ["2", "3", "4", "5", "6"]
         case .trainingDays:
-            return (1...7).compactMap { dayLabels[$0] } + ["Skip"]
+            return (1...7).compactMap { dayLabels[$0] }
         case .equipment:
-            return ["Full Gym", "Dumbbells Only", "Barbells & Rack", "Machines Only", "No Equipment", "Skip"]
+            return ["Full Gym", "Dumbbells Only", "Barbells & Rack", "Machines Only", "No Equipment"]
         case .injuries, .injuriesCustom:
-            return ["None", "Lower Back", "Knee", "Shoulder", "Hip", "Skip"]
+            return ["None", "Lower Back", "Knee", "Shoulder", "Hip"]
         case .gender:
-            return ["Male", "Female", "Prefer not to say", "Skip"]
+            return ["Male", "Female", "Prefer not to say"]
         case .measurementsAsk, .measurementsInput:
             return []
         default:
