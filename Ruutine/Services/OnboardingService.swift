@@ -30,6 +30,8 @@ final class OnboardingService: ObservableObject {
     private let chatURL = URL(string: "https://www.ruutine.app/api/onboarding/chat")!
     private let generateURL = URL(string: "https://www.ruutine.app/api/onboarding/generate")!
     private let completeURL = URL(string: "https://www.ruutine.app/api/onboarding/complete")!
+    private static let systemPrompt =
+        "You are Ruu, a personal training coach inside Ruutine. Introduce and refer to yourself as Ruu."
 
     var showsStructuredMeasurements: Bool {
         step == .measurementsAsk || step == .measurementsInput
@@ -433,6 +435,7 @@ final class OnboardingService: ObservableObject {
             "messages": history,
             "collected": collectedPayload(),
             "currentStep": step.rawValue,
+            "systemPrompt": Self.systemPrompt,
         ]
 
         do {

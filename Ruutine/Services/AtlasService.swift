@@ -30,6 +30,8 @@ final class AtlasService: ObservableObject {
     private var loadedProfileId: UUID?
 
     private let endpoint = URL(string: "https://www.ruutine.app/api/coach/chat")!
+    private static let systemPrompt =
+        "You are Ruu, a personal training coach inside Ruutine. Introduce and refer to yourself as Ruu."
 
     static let defaultGreeting = "Hey, I'm Ruu. How can I help with your training today?"
 
@@ -146,9 +148,10 @@ final class AtlasService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let body: [String: String] = [
+        let body: [String: Any] = [
             "profileId": profileId.uuidString,
             "message": trimmed,
+            "systemPrompt": Self.systemPrompt,
         ]
 
         do {
