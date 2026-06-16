@@ -30,7 +30,7 @@ struct OnboardingView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        if service.showInitialGreeting {
+                        if flow == .onboarding {
                             messageBubble(
                                 AtlasMessage(role: .assistant, content: OnboardingMaps.greeting)
                             )
@@ -42,7 +42,7 @@ struct OnboardingView: View {
                                 .id(message.id)
                         }
 
-                        if service.showsQuickReplyChips {
+                        if service.showsQuickReplyChips || service.canGoBack {
                             chipRow
                                 .id("chips")
                         }
@@ -78,7 +78,12 @@ struct OnboardingView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        dismissKeyboard()
+                    }
                 }
+                .scrollDismissesKeyboard(.interactively)
                 .onChange(of: service.messages.count) { _, _ in
                     scrollToBottom(proxy: proxy, preferChips: true)
                 }
@@ -102,10 +107,6 @@ struct OnboardingView: View {
                     }
                     scrollToBottom(proxy: proxy, preferChips: true)
                 }
-            }
-
-            if service.canGoBack {
-                backControl
             }
 
             if showsProgramPreviewContinue {
@@ -186,6 +187,15 @@ struct OnboardingView: View {
         service.step == .programPreview && service.program != nil
     }
 
+    private var hidesLaterButton: Bool {
+        switch service.step {
+        case .measurementsAsk, .measurementsInput, .generating, .programPreview:
+            return true
+        default:
+            return service.isGenerating
+        }
+    }
+
     /// Hide redundant Atlas handoff copy while the themed loader is visible.
     private var displayedMessages: [AtlasMessage] {
         guard showsProgramBuildingLoader else { return service.messages }
@@ -246,7 +256,7 @@ struct OnboardingView: View {
 
                 Spacer(minLength: 0)
 
-                if !showsProgramPreviewContinue {
+                if !hidesLaterButton {
                     Button("Later") {
                         Haptics.impact(.light)
                         showLaterConfirm = true
@@ -267,36 +277,10 @@ struct OnboardingView: View {
                 .fill(RuutineColor.border)
                 .frame(height: 1)
         }
-    }
-
-    private var backControl: some View {
-        HStack {
-            Button {
-                Haptics.impact(.light)
-                service.goBack()
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 12, weight: .semibold))
-                    Text("Back")
-                        .font(.system(size: 14, weight: .medium))
-                }
-                .foregroundColor(RuutineColor.muted)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(RuutineColor.surface)
-                .overlay(
-                    Capsule()
-                        .stroke(RuutineColor.border, lineWidth: 1)
-                )
-                .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
-            Spacer()
+        .contentShape(Rectangle())
+        .onTapGesture {
+            dismissKeyboard()
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
-        .padding(.bottom, 4)
     }
 
     private var chipRow: some View {
@@ -317,6 +301,31 @@ struct OnboardingView: View {
                                 .stroke(RuutineColor.accent, lineWidth: 1.5)
                         )
                         .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(service.isTyping || service.isGenerating)
+            }
+
+            if service.canGoBack {
+                Button {
+                    Haptics.impact(.light)
+                    service.goBack()
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text("Back")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundColor(RuutineColor.muted)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.clear)
+                    .overlay(
+                        Capsule()
+                            .stroke(RuutineColor.accent, lineWidth: 1.5)
+                    )
+                    .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .disabled(service.isTyping || service.isGenerating)
@@ -629,6 +638,10 @@ struct OnboardingView: View {
             return trimmed.count >= 2 || trimmed.lowercased() == "skip"
         }
         return !trimmed.isEmpty
+    }
+
+    private func dismissKeyboard() {
+        isInputFocused = false
     }
 
     private func sendTapped() {
