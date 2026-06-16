@@ -15,6 +15,7 @@ struct OnboardingView: View {
     @State private var configureError: String?
     @State private var didCelebrateProgramBuilt = false
     @FocusState private var isInputFocused: Bool
+    @FocusState private var focusedMeasurementField: MeasurementField?
 
     let flow: OnboardingFlow
     let onComplete: () -> Void
@@ -107,6 +108,11 @@ struct OnboardingView: View {
                         service.prepareMeasurementsStep()
                     }
                     scrollToBottom(proxy: proxy, preferChips: true)
+                }
+                .onChange(of: focusedMeasurementField) { _, field in
+                    if field == nil, service.showsStructuredMeasurements {
+                        scrollToBottom(proxy: proxy)
+                    }
                 }
             }
 
@@ -393,14 +399,14 @@ struct OnboardingView: View {
 
             if service.measurementsUseImperial {
                 HStack(spacing: 10) {
-                    measurementField("Height (ft)", text: $service.measurementHeightFeet, keyboard: .numberPad)
-                    measurementField("Height (in)", text: $service.measurementHeightInches, keyboard: .numberPad)
+                    measurementField("Height (ft)", text: $service.measurementHeightFeet, keyboard: .numberPad, field: .heightFeet)
+                    measurementField("Height (in)", text: $service.measurementHeightInches, keyboard: .numberPad, field: .heightInches)
                 }
-                measurementField("Weight (lbs)", text: $service.measurementWeightLbs, keyboard: .decimalPad)
+                measurementField("Weight (lbs)", text: $service.measurementWeightLbs, keyboard: .decimalPad, field: .weightLbs)
             } else {
                 HStack(spacing: 10) {
-                    measurementField("Height (cm)", text: $service.measurementHeightCm, keyboard: .decimalPad)
-                    measurementField("Weight (kg)", text: $service.measurementWeightKg, keyboard: .decimalPad)
+                    measurementField("Height (cm)", text: $service.measurementHeightCm, keyboard: .decimalPad, field: .heightCm)
+                    measurementField("Weight (kg)", text: $service.measurementWeightKg, keyboard: .decimalPad, field: .weightKg)
                 }
             }
 
@@ -432,9 +438,28 @@ struct OnboardingView: View {
             .disabled(service.isTyping || service.isGenerating)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            dismissKeyboard()
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    dismissKeyboard()
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(RuutineColor.accent)
+            }
+        }
     }
 
-    private func measurementField(_ placeholder: String, text: Binding<String>, keyboard: UIKeyboardType) -> some View {
+    private func measurementField(
+        _ placeholder: String,
+        text: Binding<String>,
+        keyboard: UIKeyboardType,
+        field: MeasurementField
+    ) -> some View {
         TextField(placeholder, text: text)
             .keyboardType(keyboard)
             .font(.system(size: 15))
@@ -447,6 +472,7 @@ struct OnboardingView: View {
                     .stroke(RuutineColor.border, lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .focused($focusedMeasurementField, equals: field)
     }
 
     private var programPreviewContinueBar: some View {
@@ -669,6 +695,7 @@ struct OnboardingView: View {
 
     private func dismissKeyboard() {
         isInputFocused = false
+        focusedMeasurementField = nil
     }
 
     private func sendTapped() {
@@ -742,6 +769,14 @@ struct OnboardingView: View {
             skipError = error.localizedDescription
         }
     }
+}
+
+private enum MeasurementField: Hashable {
+    case heightFeet
+    case heightInches
+    case weightLbs
+    case heightCm
+    case weightKg
 }
 
 private struct OnboardingTypingDotsView: View {
