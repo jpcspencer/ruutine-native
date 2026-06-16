@@ -17,11 +17,10 @@ struct AtlasChatView: View {
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
-        ZStack {
-            VStack(spacing: 0) {
-                header
+        VStack(spacing: 0) {
+            header
 
-                ScrollViewReader { proxy in
+            ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             Color.clear
@@ -85,18 +84,30 @@ struct AtlasChatView: View {
                 }
 
                 inputBar
-            }
-            .background(RuutineColor.background.ignoresSafeArea())
-
-            if showClearConfirmation {
-                clearChatDialog
-            }
         }
+        .background(RuutineColor.background.ignoresSafeArea())
         .task(id: authVM.session?.user.id) {
             if let userId = authVM.session?.user.id {
                 atlasService.setProfileId(userId)
                 await atlasService.loadHistory()
             }
+        }
+        .ruutineConfirm(
+            isPresented: $showClearConfirmation,
+            title: "Clear this conversation?",
+            message: "This can't be undone.",
+            confirmLabel: "Clear",
+            isDestructive: true
+        ) {
+            Task { await confirmClearChat() }
+        }
+        .alert("Couldn't Clear Chat", isPresented: Binding(
+            get: { clearErrorMessage != nil },
+            set: { if !$0 { clearErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(clearErrorMessage ?? "")
         }
         .onChange(of: clearErrorMessage) { _, error in
             if error != nil { Haptics.notify(.error) }
@@ -180,89 +191,10 @@ struct AtlasChatView: View {
         }
     }
 
-    private var clearChatDialog: some View {
-        ZStack {
-            RuutineColor.scrim
-                .ignoresSafeArea()
-                .onTapGesture {
-                    showClearConfirmation = false
-                }
-
-            VStack {
-                Spacer()
-
-                VStack(spacing: 20) {
-                    Text("Clear this conversation? This can't be undone.")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(RuutineColor.foreground)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    if let clearErrorMessage {
-                        Text(clearErrorMessage)
-                            .font(.system(size: 14))
-                            .foregroundColor(RuutineColor.destructive)
-                            .multilineTextAlignment(.center)
-                    }
-
-                    HStack(spacing: 12) {
-                        Button {
-                            showClearConfirmation = false
-                        } label: {
-                            Text("Keep")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(RuutineColor.foreground)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(RuutineColor.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(RuutineColor.border, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .buttonStyle(.plain)
-
-                        Button {
-                            Task {
-                                await confirmClearChat()
-                            }
-                        } label: {
-                            Text("Clear")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(RuutineColor.destructive)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(RuutineColor.destructive.opacity(0.2))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(RuutineColor.destructive.opacity(0.85), lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(20)
-                .background(RuutineColor.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(RuutineColor.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal, 24)
-                .padding(.bottom, 32)
-            }
-        }
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
-        .animation(.easeInOut(duration: 0.2), value: showClearConfirmation)
-    }
-
     private func confirmClearChat() async {
         clearErrorMessage = nil
         do {
             try await atlasService.clearChat()
-            showClearConfirmation = false
             isScrolledNearTop = false
             refreshScrollUpHint()
         } catch {

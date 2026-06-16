@@ -146,21 +146,25 @@ struct OnboardingView: View {
                 skipLoadingOverlay
             }
         }
-        .alert("Sign out?", isPresented: $showSignOutConfirm) {
-            Button("Sign Out", role: .destructive) {
-                Task {
-                    try? await authVM.signOut()
-                }
+        .ruutineConfirm(
+            isPresented: $showSignOutConfirm,
+            title: "Sign out?",
+            message: "You'll need to log back in to use Ruutine.",
+            confirmLabel: "Sign Out",
+            isDestructive: false
+        ) {
+            Task {
+                try? await authVM.signOut()
             }
-            Button("Cancel", role: .cancel) {}
         }
-        .alert("Set up later?", isPresented: $showLaterConfirm) {
-            Button("Later") {
-                Task { await skipTapped() }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("You can build your program with Ruu anytime.")
+        .ruutineConfirm(
+            isPresented: $showLaterConfirm,
+            title: "Set up later?",
+            message: "You can build your program with Ruu anytime.",
+            confirmLabel: "Later",
+            isDestructive: false
+        ) {
+            Task { await skipTapped() }
         }
         .alert("Couldn't Skip Onboarding", isPresented: Binding(
             get: { skipError != nil },

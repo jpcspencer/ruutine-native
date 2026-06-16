@@ -10,6 +10,7 @@ struct GlossaryView: View {
     @State private var selectedCategory: MuscleCategory = .all
     @State private var createExerciseContext: CreateExerciseSheetContext?
     @State private var exercisePendingDelete: Exercise?
+    @State private var showDeleteExerciseConfirm = false
     @State private var deleteExerciseError: String?
 
     private var filteredExercises: [Exercise] {
@@ -62,21 +63,20 @@ struct GlossaryView: View {
                 ) { _ in }
             }
         }
-        .alert("Delete Exercise?", isPresented: Binding(
-            get: { exercisePendingDelete != nil },
-            set: { if !$0 { exercisePendingDelete = nil } }
-        )) {
-            Button("Delete", role: .destructive) {
-                guard let exercise = exercisePendingDelete else { return }
+        .ruutineConfirm(
+            isPresented: $showDeleteExerciseConfirm,
+            title: "Delete Exercise?",
+            message: deleteExerciseConfirmMessage,
+            confirmLabel: "Delete",
+            isDestructive: true
+        ) {
+            guard let exercise = exercisePendingDelete else { return }
+            exercisePendingDelete = nil
+            Task { await confirmDeleteCustomExercise(exercise) }
+        }
+        .onChange(of: showDeleteExerciseConfirm) { _, isShowing in
+            if !isShowing {
                 exercisePendingDelete = nil
-                Task { await confirmDeleteCustomExercise(exercise) }
-            }
-            Button("Cancel", role: .cancel) {
-                exercisePendingDelete = nil
-            }
-        } message: {
-            if let exercise = exercisePendingDelete {
-                Text("Delete \"\(exercise.name)\"? This can't be undone.")
             }
         }
         .alert("Couldn't Delete Exercise", isPresented: Binding(
@@ -204,6 +204,7 @@ struct GlossaryView: View {
             if exercise.id.hasPrefix("custom-") {
                 Button {
                     exercisePendingDelete = exercise
+                    showDeleteExerciseConfirm = true
                 } label: {
                     Image(systemName: "trash")
                         .font(.system(size: 16, weight: .semibold))
@@ -221,6 +222,13 @@ struct GlossaryView: View {
                 .stroke(RuutineColor.border, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var deleteExerciseConfirmMessage: String {
+        if let exercise = exercisePendingDelete {
+            return "Delete \"\(exercise.name)\"? This can't be undone."
+        }
+        return "This cannot be undone."
     }
 
     private func confirmDeleteCustomExercise(_ exercise: Exercise) async {
