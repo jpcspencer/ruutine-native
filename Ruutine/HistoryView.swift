@@ -9,6 +9,7 @@ struct HistoryView: View {
     @State private var showCalendar = false
     @State private var selectedSession: HistorySessionItem?
     @State private var sessionToDelete: HistorySessionItem?
+    @State private var showDeleteConfirm = false
 
     var body: some View {
         ZStack {
@@ -110,24 +111,25 @@ struct HistoryView: View {
             )
             .environmentObject(themeManager)
         }
-        .alert("Delete Session?", isPresented: Binding(
-            get: { sessionToDelete != nil },
-            set: { if !$0 { sessionToDelete = nil } }
-        )) {
-            Button("Delete", role: .destructive) {
-                if let session = sessionToDelete {
-                    Task {
-                        try? await viewModel.deleteSession(session.id)
-                        reload()
-                    }
+        .ruutineConfirm(
+            isPresented: $showDeleteConfirm,
+            title: "Delete Session?",
+            message: "This cannot be undone.",
+            confirmLabel: "Delete",
+            isDestructive: true
+        ) {
+            if let session = sessionToDelete {
+                Task {
+                    try? await viewModel.deleteSession(session.id)
+                    reload()
                 }
+            }
+            sessionToDelete = nil
+        }
+        .onChange(of: showDeleteConfirm) { _, isShowing in
+            if !isShowing {
                 sessionToDelete = nil
             }
-            Button("Cancel", role: .cancel) {
-                sessionToDelete = nil
-            }
-        } message: {
-            Text("This cannot be undone.")
         }
     }
 
@@ -149,6 +151,7 @@ struct HistoryView: View {
 
                     Button {
                         sessionToDelete = session
+                        showDeleteConfirm = true
                     } label: {
                         Image(systemName: "trash")
                             .font(.system(size: 14))
