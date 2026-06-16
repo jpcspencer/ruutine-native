@@ -8,7 +8,7 @@ struct GlossaryView: View {
 
     @State private var searchText = ""
     @State private var selectedCategory: MuscleCategory = .all
-    @State private var showCreateExerciseSheet = false
+    @State private var createExerciseContext: CreateExerciseSheetContext?
     @State private var exercisePendingDelete: Exercise?
     @State private var deleteExerciseError: String?
 
@@ -53,11 +53,12 @@ struct GlossaryView: View {
         .task {
             await reload()
         }
-        .sheet(isPresented: $showCreateExerciseSheet) {
+        .sheet(item: $createExerciseContext) { context in
             if let profileId = authVM.session?.user.id {
                 CreateExerciseSheet(
                     exerciseService: exerciseService,
-                    profileId: profileId
+                    profileId: profileId,
+                    prefilledName: context.prefilledName
                 ) { _ in }
             }
         }
@@ -153,7 +154,7 @@ struct GlossaryView: View {
     private var addCustomButton: some View {
         Button {
             Haptics.impact(.light)
-            showCreateExerciseSheet = true
+            createExerciseContext = CreateExerciseSheetContext(prefilledName: "")
         } label: {
             Text("+ Add custom exercise")
                 .font(.system(size: 14, weight: .medium))

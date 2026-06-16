@@ -1,18 +1,36 @@
 import SwiftUI
 
+struct CreateExerciseSheetContext: Identifiable {
+    let id = UUID()
+    let prefilledName: String
+}
+
 struct CreateExerciseSheet: View {
     @ObservedObject var exerciseService: ExerciseService
     let profileId: UUID
-    var prefilledName: String = ""
+    let prefilledName: String
     let onCreated: (Exercise) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isNameFocused: Bool
 
-    @State private var name = ""
+    @State private var name: String
     @State private var selectedBodyPart: String?
     @State private var selectedCategory: ExerciseCategory?
     @State private var errorMessage: String?
+
+    init(
+        exerciseService: ExerciseService,
+        profileId: UUID,
+        prefilledName: String = "",
+        onCreated: @escaping (Exercise) -> Void
+    ) {
+        self.exerciseService = exerciseService
+        self.profileId = profileId
+        self.prefilledName = prefilledName
+        self.onCreated = onCreated
+        _name = State(initialValue: prefilledName)
+    }
 
     private var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -58,11 +76,6 @@ struct CreateExerciseSheet: View {
                         .font(.bebas(22))
                         .foregroundColor(RuutineColor.foreground)
                         .tracking(1)
-                }
-            }
-            .onAppear {
-                if name.isEmpty, !prefilledName.isEmpty {
-                    name = prefilledName
                 }
             }
         }

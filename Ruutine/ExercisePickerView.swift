@@ -8,8 +8,7 @@ struct ExercisePickerView: View {
     @StateObject private var exerciseService = ExerciseService()
     @State private var searchText = ""
     @State private var selectedExerciseIDs: [String] = []
-    @State private var showCreateExerciseSheet = false
-    @State private var createExercisePrefill = ""
+    @State private var createExerciseContext: CreateExerciseSheetContext?
     @FocusState private var isSearchFocused: Bool
 
     let onSelect: ([Exercise]) -> Void
@@ -109,12 +108,12 @@ struct ExercisePickerView: View {
             .task {
                 await exerciseService.loadExercises(profileId: authVM.session?.user.id)
             }
-            .sheet(isPresented: $showCreateExerciseSheet) {
+            .sheet(item: $createExerciseContext) { context in
                 if let profileId = authVM.session?.user.id {
                     CreateExerciseSheet(
                         exerciseService: exerciseService,
                         profileId: profileId,
-                        prefilledName: createExercisePrefill
+                        prefilledName: context.prefilledName
                     ) { exercise in
                         if !selectedExerciseIDs.contains(exercise.id) {
                             selectedExerciseIDs.append(exercise.id)
@@ -169,8 +168,7 @@ struct ExercisePickerView: View {
 
             Button {
                 Haptics.impact(.light)
-                createExercisePrefill = trimmedSearch
-                showCreateExerciseSheet = true
+                createExerciseContext = CreateExerciseSheetContext(prefilledName: trimmedSearch)
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "plus.circle.fill")
