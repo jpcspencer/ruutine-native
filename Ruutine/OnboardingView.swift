@@ -246,15 +246,17 @@ struct OnboardingView: View {
 
                 Spacer(minLength: 0)
 
-                Button("Later") {
-                    Haptics.impact(.light)
-                    showLaterConfirm = true
+                if !showsProgramPreviewContinue {
+                    Button("Later") {
+                        Haptics.impact(.light)
+                        showLaterConfirm = true
+                    }
+                    .font(.bebas(20))
+                    .foregroundColor(RuutineColor.accent)
+                    .tracking(0.5)
+                    .buttonStyle(.plain)
+                    .disabled(service.isSkipping || service.isSaving || service.isGenerating)
                 }
-                .font(.bebas(20))
-                .foregroundColor(RuutineColor.accent)
-                .tracking(0.5)
-                .buttonStyle(.plain)
-                .disabled(service.isSkipping || service.isSaving || service.isGenerating)
             }
         }
         .padding(.horizontal, 16)
@@ -269,9 +271,27 @@ struct OnboardingView: View {
 
     private var backControl: some View {
         HStack {
-            RuutineNavButton(kind: .back) {
+            Button {
+                Haptics.impact(.light)
                 service.goBack()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("Back")
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .foregroundColor(RuutineColor.muted)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(RuutineColor.surface)
+                .overlay(
+                    Capsule()
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(Capsule())
             }
+            .buttonStyle(.plain)
             Spacer()
         }
         .padding(.horizontal, 16)
@@ -512,20 +532,20 @@ struct OnboardingView: View {
 
     private var generatingIndicator: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 8) {
-                OnboardingTypingDotsView()
-                Text("Building your program...")
-                    .font(.system(size: 14))
-                    .foregroundColor(RuutineColor.muted)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(RuutineColor.surface)
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(RuutineColor.border, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            Text("Building your program...")
+                .font(.system(size: 14))
+                .foregroundColor(RuutineColor.muted)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(RuutineColor.surface)
+                .overlay {
+                    OnboardingGeneratingShimmer()
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(RuutineColor.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
             Spacer(minLength: 48)
         }
     }

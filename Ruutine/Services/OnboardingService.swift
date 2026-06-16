@@ -254,7 +254,11 @@ final class OnboardingService: ObservableObject {
 
     func seedGreetingIfNeeded() {
         guard !didSeedGreeting else { return }
+        guard flow == .onboarding, messages.isEmpty, step == .greetingName else { return }
         didSeedGreeting = true
+        messages = [
+            AtlasMessage(role: .assistant, content: OnboardingMaps.greeting),
+        ]
     }
 
     func isTrainingDaySelected(_ day: Int) -> Bool {

@@ -47,3 +47,35 @@ struct RecapAtlasShimmer: View {
         .frame(height: 12)
     }
 }
+
+/// Branded highlight sweep for the onboarding program-generation bubble.
+struct OnboardingGeneratingShimmer: View {
+    @State private var shimmerPhase: CGFloat = -1
+
+    var body: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+
+            LinearGradient(
+                colors: [
+                    RuutineColor.accent.opacity(0.0),
+                    RuutineColor.accent.opacity(0.10),
+                    RuutineColor.accent.opacity(0.20),
+                    RuutineColor.accent.opacity(0.10),
+                    RuutineColor.accent.opacity(0.0),
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .frame(width: width * 0.5)
+            .offset(x: shimmerPhase * width * 1.05)
+        }
+        .allowsHitTesting(false)
+        .onAppear {
+            shimmerPhase = -0.5
+            withAnimation(.linear(duration: 1.35).repeatForever(autoreverses: false)) {
+                shimmerPhase = 0.55
+            }
+        }
+    }
+}

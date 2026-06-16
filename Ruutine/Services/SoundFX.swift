@@ -1,6 +1,8 @@
 import AudioToolbox
 
 enum SoundFX {
+    private static let onboardingCompleteSoundID: SystemSoundID = 1322
+
     private static func play(_ id: SystemSoundID) {
         guard AppPreferences.shared.soundsEnabled else { return }
         AudioServicesPlaySystemSound(id)
@@ -12,5 +14,5 @@ enum SoundFX {
     static func add()             { play(1104) }
     static func openNewWorkout()  { play(1306) }
     static func startWorkout()    { play(1113) }
-    static func onboardingComplete() { play(1394) }
+    static func onboardingComplete() { play(onboardingCompleteSoundID) }
 }
