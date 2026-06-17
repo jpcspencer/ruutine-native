@@ -30,6 +30,7 @@ enum AuthError: LocalizedError {
 
 enum SignInError: Equatable {
     case invalidCredentials
+    case emailNotConfirmed
     case rateLimited
     case networkUnavailable
     case unknown(String)
@@ -38,6 +39,8 @@ enum SignInError: Equatable {
         switch self {
         case .invalidCredentials:
             return nil
+        case .emailNotConfirmed:
+            return "Email not confirmed"
         case .rateLimited:
             return "Too many sign-in attempts. Please wait a moment and try again."
         case .networkUnavailable:
@@ -52,8 +55,16 @@ enum SignInError: Equatable {
             return signInError
         }
 
+        if let authError = error as? Auth.AuthError,
+           authError.errorCode == .emailNotConfirmed {
+            return .emailNotConfirmed
+        }
+
         let message = error.localizedDescription.lowercased()
 
+        if message.contains("email not confirmed") {
+            return .emailNotConfirmed
+        }
         if message.contains("invalid login credentials") {
             return .invalidCredentials
         }
@@ -112,6 +123,15 @@ final class AuthViewModel: ObservableObject {
 
     func signIn(email: String, password: String) async throws {
         try await SupabaseClient.shared.auth.signIn(email: email, password: password)
+    }
+
+    func resendConfirmationEmail(email: String) async throws {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        try await SupabaseClient.shared.auth.resend(
+            email: trimmedEmail,
+            type: .signup,
+            emailRedirectTo: Self.emailConfirmationRedirect
+        )
     }
 
     func signUp(email: String, password: String) async throws -> SignUpOutcome {

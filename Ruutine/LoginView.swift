@@ -9,6 +9,7 @@ struct LoginView: View {
     @State private var showPassword = false
     @State private var isSigningIn = false
     @State private var signInError: SignInError?
+    @State private var resendConfirmationState = ResendConfirmationState.idle
     @FocusState private var focusedField: Field?
 
     var onNavigateToSignUp: () -> Void = {}
@@ -16,6 +17,13 @@ struct LoginView: View {
     private enum Field {
         case email
         case password
+    }
+
+    private enum ResendConfirmationState: Equatable {
+        case idle
+        case sending
+        case sent
+        case failed(String)
     }
 
     var body: some View {
@@ -85,6 +93,11 @@ struct LoginView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .onChange(of: signInError) { _, error in
+            if error != .emailNotConfirmed {
+                resendConfirmationState = .idle
+            }
+        }
     }
 
     private var emailField: some View {
@@ -186,6 +199,17 @@ struct LoginView: View {
                 }
                 .font(.system(size: 14))
                 .fixedSize(horizontal: false, vertical: true)
+            case .emailNotConfirmed:
+                VStack(alignment: .leading, spacing: 6) {
+                    if let message = signInError.message {
+                        Text(message)
+                            .font(.system(size: 14))
+                            .foregroundColor(RuutineColor.destructive)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    resendConfirmationView
+                }
             default:
                 if let message = signInError.message {
                     Text(message)
@@ -197,9 +221,42 @@ struct LoginView: View {
         }
     }
 
+    @ViewBuilder
+    private var resendConfirmationView: some View {
+        switch resendConfirmationState {
+        case .sent:
+            Text("Confirmation email sent — check your inbox (and spam).")
+                .font(.system(size: 14))
+                .foregroundColor(RuutineColor.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        case .sending:
+            Text("Sending...")
+                .font(.system(size: 14))
+                .foregroundColor(RuutineColor.muted)
+        case .idle, .failed:
+            VStack(alignment: .leading, spacing: 4) {
+                if case .failed(let message) = resendConfirmationState {
+                    Text(message)
+                        .font(.system(size: 14))
+                        .foregroundColor(RuutineColor.destructive)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Button("Resend confirmation email") {
+                    Haptics.impact(.light)
+                    resendConfirmation()
+                }
+                .font(.system(size: 14))
+                .foregroundColor(RuutineColor.muted)
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
     private func signIn() {
         guard !isSigningIn else { return }
         signInError = nil
+        resendConfirmationState = .idle
         isSigningIn = true
 
         Task {
@@ -209,6 +266,23 @@ struct LoginView: View {
                 signInError = SignInError.map(error)
             }
             isSigningIn = false
+        }
+    }
+
+    private func resendConfirmation() {
+        guard resendConfirmationState != .sending else { return }
+        resendConfirmationState = .sending
+
+        Task {
+            do {
+                try await authVM.resendConfirmationEmail(email: email)
+                resendConfirmationState = .sent
+            } catch {
+                let message = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                resendConfirmationState = .failed(
+                    message.isEmpty ? "Couldn't send confirmation email. Try again." : message
+                )
+            }
         }
     }
 }
