@@ -655,34 +655,25 @@ struct OnboardingView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .background(RuutineColor.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(freeTextInputBorderColor, lineWidth: freeTextInputBorderWidth)
+                    .strokeBorder(freeTextInputBorderColor, lineWidth: freeTextInputBorderWidth)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .scaleEffect(shouldPulseFreeTextInput ? (freeTextInputPulseOn ? 1.008 : 1) : 1)
+            .scaleEffect(shouldPulseFreeTextInput ? (freeTextInputPulseOn ? 1.006 : 1) : 1)
             .focused($isInputFocused)
             .onSubmit(sendTapped)
-            .task(id: shouldPulseFreeTextInput) {
-                guard shouldPulseFreeTextInput else {
-                    freeTextInputPulseOn = false
-                    return
+            .onAppear {
+                if shouldPulseFreeTextInput {
+                    startFreeTextInputPulse()
                 }
-
-                freeTextInputPulseOn = false
-                while !Task.isCancelled, shouldPulseFreeTextInput {
-                    withAnimation(.easeInOut(duration: 1.6)) {
-                        freeTextInputPulseOn = true
-                    }
-                    try? await Task.sleep(nanoseconds: 1_600_000_000)
-                    guard !Task.isCancelled, shouldPulseFreeTextInput else { break }
-
-                    withAnimation(.easeInOut(duration: 1.6)) {
-                        freeTextInputPulseOn = false
-                    }
-                    try? await Task.sleep(nanoseconds: 1_600_000_000)
+            }
+            .onChange(of: shouldPulseFreeTextInput) { _, shouldPulse in
+                if shouldPulse {
+                    startFreeTextInputPulse()
+                } else {
+                    stopFreeTextInputPulse()
                 }
-                freeTextInputPulseOn = false
             }
 
             Button(action: sendTapped) {
@@ -724,13 +715,26 @@ struct OnboardingView: View {
 
     private var freeTextInputBorderColor: Color {
         if shouldPulseFreeTextInput {
-            return RuutineColor.accent.opacity(freeTextInputPulseOn ? 0.62 : 0.18)
+            return RuutineColor.accent.opacity(freeTextInputPulseOn ? 0.9 : 0.25)
         }
         return RuutineColor.border
     }
 
     private var freeTextInputBorderWidth: CGFloat {
-        shouldPulseFreeTextInput ? (freeTextInputPulseOn ? 1.5 : 1) : 1
+        shouldPulseFreeTextInput ? (freeTextInputPulseOn ? 2 : 1) : 1
+    }
+
+    private func startFreeTextInputPulse() {
+        freeTextInputPulseOn = false
+        withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+            freeTextInputPulseOn = true
+        }
+    }
+
+    private func stopFreeTextInputPulse() {
+        withAnimation(.easeOut(duration: 0.25)) {
+            freeTextInputPulseOn = false
+        }
     }
 
     private var canSend: Bool {
