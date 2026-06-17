@@ -210,6 +210,10 @@ final class OnboardingService: ObservableObject {
         guard !isGenerating, step != .generating, step != .programPreview else { return }
         guard let last = messages.last(where: { $0.role == .assistant })?.content else { return }
         guard Self.isGeneratingHandoffMessage(last) else { return }
+        if shouldDeferGenerateForMeasurementsGate() {
+            step = nextStep(from: collected)
+            return
+        }
         step = .generating
         await triggerGenerate()
     }
@@ -465,6 +469,10 @@ final class OnboardingService: ObservableObject {
             collected = mergeExtracted(collected, extracted: extracted)
 
             if Self.isGeneratingHandoffMessage(cleaned) {
+                if shouldDeferGenerateForMeasurementsGate() {
+                    step = nextStep(from: collected)
+                    return
+                }
                 step = .generating
                 await triggerGenerate()
                 return
@@ -739,6 +747,21 @@ final class OnboardingService: ObservableObject {
     }
 
     // MARK: - Step logic (Capacitor onboarding-chat.tsx)
+
+    /// Gender answered but height/weight not yet collected, skipped, or shown via the structured step.
+    private var measurementsNotYetAddressed: Bool {
+        !collected.measurementsSkip
+            && !(collected.heightCm != nil && collected.weightKg != nil)
+            && step != .measurementsAsk
+            && step != .measurementsInput
+    }
+
+    private func shouldDeferGenerateForMeasurementsGate() -> Bool {
+        let genderPresent = collected.gender.map {
+            !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        } ?? false
+        return genderPresent && measurementsNotYetAddressed
+    }
 
     private func nextStep(from data: OnboardingChatData) -> OnboardingStep {
         if flow == .onboarding,
