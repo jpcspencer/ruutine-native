@@ -181,76 +181,97 @@ struct LoginView: View {
     @ViewBuilder
     private var signInErrorView: some View {
         if let signInError {
-            switch signInError {
-            case .invalidCredentials:
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("Incorrect email or password. Don't have an account?")
-                        .foregroundColor(RuutineColor.destructive)
-
-                    Button {
-                        Haptics.impact(.light)
-                        onNavigateToSignUp()
-                    } label: {
-                        Text("Sign up")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(RuutineColor.accent)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .font(.system(size: 14))
-                .fixedSize(horizontal: false, vertical: true)
-            case .emailNotConfirmed:
-                VStack(alignment: .leading, spacing: 6) {
-                    if let message = signInError.message {
-                        Text(message)
-                            .font(.system(size: 14))
-                            .foregroundColor(RuutineColor.destructive)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
+            VStack(spacing: 8) {
+                switch signInError {
+                case .invalidCredentials:
+                    signInErrorLine("Incorrect email or password.")
+                    signUpPromptLine
+                case .emailNotConfirmed:
+                    signInErrorLine("Email not confirmed.")
                     resendConfirmationView
-                }
-            default:
-                if let message = signInError.message {
-                    Text(message)
-                        .font(.system(size: 14))
-                        .foregroundColor(RuutineColor.destructive)
-                        .fixedSize(horizontal: false, vertical: true)
+                case .rateLimited:
+                    signInErrorLine("Too many sign-in attempts. Please wait a moment and try again.")
+                case .networkUnavailable:
+                    signInErrorLine("Couldn't reach Ruu. Check your connection and try again.")
+                case .unknown(let message):
+                    signInErrorLine(message)
                 }
             }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 4)
         }
+    }
+
+    private var signUpPromptLine: some View {
+        HStack(spacing: 0) {
+            Text("Don't have an account? ")
+                .foregroundColor(RuutineColor.muted)
+            Button {
+                Haptics.impact(.light)
+                onNavigateToSignUp()
+            } label: {
+                Text("Sign up")
+                    .foregroundColor(RuutineColor.accent)
+            }
+            .buttonStyle(.plain)
+        }
+        .font(loginMessageFont)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
     private var resendConfirmationView: some View {
         switch resendConfirmationState {
         case .sent:
-            Text("Confirmation email sent — check your inbox (and spam).")
-                .font(.system(size: 14))
-                .foregroundColor(RuutineColor.muted)
-                .fixedSize(horizontal: false, vertical: true)
+            loginMutedLine("Confirmation email sent — check your inbox (and spam).")
         case .sending:
-            Text("Sending...")
-                .font(.system(size: 14))
-                .foregroundColor(RuutineColor.muted)
-        case .idle, .failed:
-            VStack(alignment: .leading, spacing: 4) {
-                if case .failed(let message) = resendConfirmationState {
-                    Text(message)
-                        .font(.system(size: 14))
-                        .foregroundColor(RuutineColor.destructive)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Button("Resend confirmation email") {
-                    Haptics.impact(.light)
-                    resendConfirmation()
-                }
-                .font(.system(size: 14))
-                .foregroundColor(RuutineColor.muted)
-                .buttonStyle(.plain)
-            }
+            loginMutedLine("Sending...")
+        case .idle:
+            resendConfirmationLink
+        case .failed(let message):
+            signInErrorLine(message)
+            resendConfirmationLink
         }
+    }
+
+    private var resendConfirmationLink: some View {
+        Button {
+            Haptics.impact(.light)
+            resendConfirmation()
+        } label: {
+            Text("Resend confirmation email")
+                .font(loginMessageFont)
+                .foregroundColor(RuutineColor.accent)
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func signInErrorLine(_ text: String) -> some View {
+        Text(text)
+            .font(loginMessageFont)
+            .foregroundColor(softErrorColor)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity)
+    }
+
+    private func loginMutedLine(_ text: String) -> some View {
+        Text(text)
+            .font(loginMessageFont)
+            .foregroundColor(RuutineColor.muted)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity)
+    }
+
+    private var loginMessageFont: Font {
+        .system(size: 16)
+    }
+
+    private var softErrorColor: Color {
+        RuutineColor.destructive.opacity(0.78)
     }
 
     private func signIn() {
