@@ -10,6 +10,7 @@ struct LoginView: View {
     @State private var isSigningIn = false
     @State private var signInError: SignInError?
     @State private var resendConfirmationState = ResendConfirmationState.idle
+    @State private var showForgotPassword = false
     @FocusState private var focusedField: Field?
 
     var onNavigateToSignUp: () -> Void = {}
@@ -55,7 +56,7 @@ struct LoginView: View {
                         Spacer()
                         Button("Forgot Password?") {
                             Haptics.impact(.light)
-                            print("Forgot Password tapped")
+                            showForgotPassword = true
                         }
                         .font(.system(size: 14))
                         .foregroundColor(RuutineColor.muted)
@@ -97,6 +98,11 @@ struct LoginView: View {
             if error != .emailNotConfirmed {
                 resendConfirmationState = .idle
             }
+        }
+        .sheet(isPresented: $showForgotPassword) {
+            ForgotPasswordView(prefilledEmail: email)
+                .environmentObject(authVM)
+                .environmentObject(themeManager)
         }
     }
 

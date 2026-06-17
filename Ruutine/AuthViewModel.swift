@@ -97,6 +97,7 @@ final class AuthViewModel: ObservableObject {
     @Published var hasCompletedOnboarding: Bool?
 
     private static let emailConfirmationRedirect = URL(string: "https://ruutine.app/auth/callback")!
+    private static let passwordResetRedirect = URL(string: "https://ruutine.app/auth/reset-password")!
 
     private var authStateTask: Task<Void, Never>?
 
@@ -131,6 +132,14 @@ final class AuthViewModel: ObservableObject {
             email: trimmedEmail,
             type: .signup,
             emailRedirectTo: Self.emailConfirmationRedirect
+        )
+    }
+
+    func resetPassword(email: String) async throws {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        try await SupabaseClient.shared.auth.resetPasswordForEmail(
+            trimmedEmail,
+            redirectTo: Self.passwordResetRedirect
         )
     }
 
