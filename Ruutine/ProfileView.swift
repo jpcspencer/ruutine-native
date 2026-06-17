@@ -11,6 +11,7 @@ struct ProfileView: View {
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var avatarImage: Image?
     @State private var showDeleteConfirm = false
+    @State private var showSignOutConfirm = false
     @State private var showDeleteError = false
     @State private var isDeletingAccount = false
     @State private var isSigningOut = false
@@ -46,8 +47,8 @@ struct ProfileView: View {
                         weightHistorySection
                         themeSection
                         restDurationSection
-                        dangerZone
                         signOutButton
+                        dangerZone
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
@@ -96,6 +97,20 @@ struct ProfileView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView()
                 .environmentObject(themeManager)
+        }
+        .ruutineConfirm(
+            isPresented: $showSignOutConfirm,
+            title: "Sign Out?",
+            message: "You'll need to log back in to use Ruutine.",
+            confirmLabel: "Sign Out",
+            isDestructive: false
+        ) {
+            guard !isSigningOut else { return }
+            isSigningOut = true
+            Task {
+                try? await authVM.signOut()
+                isSigningOut = false
+            }
         }
     }
 
@@ -556,11 +571,7 @@ struct ProfileView: View {
         Button {
             Haptics.impact(.light)
             guard !isSigningOut else { return }
-            isSigningOut = true
-            Task {
-                try? await authVM.signOut()
-                isSigningOut = false
-            }
+            showSignOutConfirm = true
         } label: {
             Text(isSigningOut ? "Signing out..." : "Sign out")
                 .font(.system(size: 15, weight: .medium))
