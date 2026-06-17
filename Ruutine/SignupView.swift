@@ -290,10 +290,16 @@ struct SignupView: View {
 }
 
 struct EmailConfirmationView: View {
+    @EnvironmentObject private var authVM: AuthViewModel
     @EnvironmentObject private var themeManager: ThemeManager
 
     let email: String
     let onBackToSignIn: () -> Void
+
+    @State private var isResending = false
+    @State private var isResendCoolingDown = false
+    @State private var resendSuccessMessage: String?
+    @State private var resendErrorMessage: String?
 
     var body: some View {
         ZStack {
@@ -320,22 +326,74 @@ struct EmailConfirmationView: View {
 
                 Spacer()
 
-                Button(action: onBackToSignIn) {
-                    Text("Back to Sign In")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(RuutineColor.accentForeground)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(RuutineColor.accent)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                VStack(spacing: 12) {
+                    if let resendSuccessMessage {
+                        Text(resendSuccessMessage)
+                            .font(.system(size: 14))
+                            .foregroundColor(RuutineColor.muted)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    if let resendErrorMessage {
+                        Text(resendErrorMessage)
+                            .font(.system(size: 14))
+                            .foregroundColor(RuutineColor.destructive.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                    }
+
+                    Button(action: resendEmail) {
+                        Text(isResending ? "Sending..." : "RESEND EMAIL")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(RuutineColor.accentForeground)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(RuutineColor.accent)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isResending || isResendCoolingDown)
+
+                    Button(action: onBackToSignIn) {
+                        Text("Back to Sign In")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(RuutineColor.accentForeground)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(RuutineColor.accent)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
                 .padding(.horizontal, 24)
                 .padding(.bottom)
             }
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private func resendEmail() {
+        guard !isResending && !isResendCoolingDown else { return }
+
+        Haptics.impact(.light)
+        isResending = true
+        resendSuccessMessage = nil
+        resendErrorMessage = nil
+
+        Task {
+            do {
+                try await authVM.resendConfirmationEmail(email: email)
+                resendSuccessMessage = "Email sent — check your inbox (and spam)"
+                isResending = false
+                isResendCoolingDown = true
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                resendSuccessMessage = nil
+                isResendCoolingDown = false
+            } catch {
+                resendErrorMessage = "Couldn't resend email. Try again."
+                isResending = false
+            }
+        }
     }
 }
 
@@ -349,5 +407,6 @@ struct EmailConfirmationView: View {
 #Preview("Email Confirmation") {
     NavigationStack {
         EmailConfirmationView(email: "you@example.com") {}
+            .environmentObject(AuthViewModel())
     }
 }
