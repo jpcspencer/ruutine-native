@@ -14,6 +14,7 @@ struct OnboardingView: View {
     @State private var skipError: String?
     @State private var configureError: String?
     @State private var didCelebrateProgramBuilt = false
+    @State private var freeTextInputPulseOn = false
     @FocusState private var isInputFocused: Bool
     @FocusState private var focusedMeasurementField: MeasurementField?
 
@@ -217,6 +218,20 @@ struct OnboardingView: View {
             && (!onboardingAnswerChips.isEmpty || service.canGoBack || showsOnboardingSkipChip)
     }
 
+    private var showsFreeTextInputAffordance: Bool {
+        guard service.effectiveChipStep == .none else { return false }
+        if service.showsStructuredMeasurements { return false }
+        if showsProgramBuildingLoader { return false }
+        if service.step == .programPreview { return false }
+        return true
+    }
+
+    private var shouldPulseFreeTextInput: Bool {
+        showsFreeTextInputAffordance
+            && !isInputFocused
+            && inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private var hidesLaterButton: Bool {
         switch service.step {
         case .measurementsAsk, .measurementsInput, .generating, .programPreview:
@@ -337,7 +352,7 @@ struct OnboardingView: View {
             }
 
             if service.canGoBack {
-                onboardingNavChip(icon: "arrow.uturn.backward") {
+                onboardingNavChip(icon: "arrow.uturn.backward", iconColor: RuutineColor.accent) {
                     Haptics.impact(.light)
                     service.goBack()
                 }
@@ -353,11 +368,15 @@ struct OnboardingView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func onboardingNavChip(icon: String, action: @escaping () -> Void) -> some View {
+    private func onboardingNavChip(
+        icon: String,
+        iconColor: Color = RuutineColor.muted,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(RuutineColor.muted)
+                .foregroundColor(iconColor)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(RuutineColor.surface.opacity(0.55))
@@ -638,11 +657,33 @@ struct OnboardingView: View {
             .background(RuutineColor.surface)
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(RuutineColor.border, lineWidth: 1)
+                    .stroke(freeTextInputBorderColor, lineWidth: freeTextInputBorderWidth)
             )
             .clipShape(RoundedRectangle(cornerRadius: 20))
+            .scaleEffect(shouldPulseFreeTextInput ? (freeTextInputPulseOn ? 1.008 : 1) : 1)
             .focused($isInputFocused)
             .onSubmit(sendTapped)
+            .task(id: shouldPulseFreeTextInput) {
+                guard shouldPulseFreeTextInput else {
+                    freeTextInputPulseOn = false
+                    return
+                }
+
+                freeTextInputPulseOn = false
+                while !Task.isCancelled, shouldPulseFreeTextInput {
+                    withAnimation(.easeInOut(duration: 1.6)) {
+                        freeTextInputPulseOn = true
+                    }
+                    try? await Task.sleep(nanoseconds: 1_600_000_000)
+                    guard !Task.isCancelled, shouldPulseFreeTextInput else { break }
+
+                    withAnimation(.easeInOut(duration: 1.6)) {
+                        freeTextInputPulseOn = false
+                    }
+                    try? await Task.sleep(nanoseconds: 1_600_000_000)
+                }
+                freeTextInputPulseOn = false
+            }
 
             Button(action: sendTapped) {
                 Image(systemName: "arrow.up")
@@ -675,7 +716,21 @@ struct OnboardingView: View {
         if service.effectiveChipStep != .none {
             return OnboardingMaps.placeholder(for: service.effectiveChipStep)
         }
+        if showsFreeTextInputAffordance {
+            return "Type your answer…"
+        }
         return OnboardingMaps.placeholder(for: service.step)
+    }
+
+    private var freeTextInputBorderColor: Color {
+        if shouldPulseFreeTextInput {
+            return RuutineColor.accent.opacity(freeTextInputPulseOn ? 0.62 : 0.18)
+        }
+        return RuutineColor.border
+    }
+
+    private var freeTextInputBorderWidth: CGFloat {
+        shouldPulseFreeTextInput ? (freeTextInputPulseOn ? 1.5 : 1) : 1
     }
 
     private var canSend: Bool {
