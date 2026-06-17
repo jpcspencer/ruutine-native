@@ -14,7 +14,6 @@ struct OnboardingView: View {
     @State private var skipError: String?
     @State private var configureError: String?
     @State private var didCelebrateProgramBuilt = false
-    @State private var freeTextInputPulseOn = false
     @FocusState private var isInputFocused: Bool
     @FocusState private var focusedMeasurementField: MeasurementField?
 
@@ -658,29 +657,15 @@ struct OnboardingView: View {
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .strokeBorder(freeTextInputBorderColor, lineWidth: freeTextInputBorderWidth)
+                    .strokeBorder(RuutineColor.border, lineWidth: 1)
             )
-            .scaleEffect(shouldPulseFreeTextInput ? (freeTextInputPulseOn ? 1.015 : 1) : 1)
-            .animation(
-                shouldPulseFreeTextInput
-                    ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true)
-                    : .easeOut(duration: 0.25),
-                value: freeTextInputPulseOn
-            )
+            .overlay {
+                if shouldPulseFreeTextInput {
+                    FreeTextPulseBorder()
+                }
+            }
             .focused($isInputFocused)
             .onSubmit(sendTapped)
-            .onAppear {
-                if shouldPulseFreeTextInput {
-                    startFreeTextInputPulse()
-                }
-            }
-            .onChange(of: shouldPulseFreeTextInput) { _, shouldPulse in
-                if shouldPulse {
-                    startFreeTextInputPulse()
-                } else {
-                    stopFreeTextInputPulse()
-                }
-            }
 
             Button(action: sendTapped) {
                 Image(systemName: "arrow.up")
@@ -717,25 +702,6 @@ struct OnboardingView: View {
             return "Type your answer…"
         }
         return OnboardingMaps.placeholder(for: service.step)
-    }
-
-    private var freeTextInputBorderColor: Color {
-        if shouldPulseFreeTextInput {
-            return RuutineColor.accent.opacity(freeTextInputPulseOn ? 0.95 : 0.2)
-        }
-        return RuutineColor.border
-    }
-
-    private var freeTextInputBorderWidth: CGFloat {
-        shouldPulseFreeTextInput ? (freeTextInputPulseOn ? 2.5 : 1) : 1
-    }
-
-    private func startFreeTextInputPulse() {
-        freeTextInputPulseOn = true
-    }
-
-    private func stopFreeTextInputPulse() {
-        freeTextInputPulseOn = false
     }
 
     private var canSend: Bool {
@@ -831,6 +797,18 @@ private enum MeasurementField: Hashable {
     case weightLbs
     case heightCm
     case weightKg
+}
+
+private struct FreeTextPulseBorder: View {
+    @State private var on = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 20)
+            .stroke(RuutineColor.accent, lineWidth: on ? 2.5 : 1)
+            .opacity(on ? 0.95 : 0.2)
+            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: on)
+            .onAppear { on = true }
+    }
 }
 
 private struct OnboardingTypingDotsView: View {
