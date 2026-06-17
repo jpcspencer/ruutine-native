@@ -219,6 +219,7 @@ struct OnboardingView: View {
 
     private var showsFreeTextInputAffordance: Bool {
         guard service.effectiveChipStep == .none else { return false }
+        if service.isTyping { return false }
         if service.showsStructuredMeasurements { return false }
         if showsProgramBuildingLoader { return false }
         if service.step == .programPreview { return false }
