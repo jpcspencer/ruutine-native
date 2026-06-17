@@ -9,6 +9,10 @@ struct ForgotPasswordView: View {
 
     @State private var email: String
     @State private var submitState = SubmitState.idle
+    @State private var isResending = false
+    @State private var isResendCoolingDown = false
+    @State private var resendSuccessMessage: String?
+    @State private var resendErrorMessage: String?
     @FocusState private var isEmailFocused: Bool
 
     init(prefilledEmail: String = "") {
@@ -106,6 +110,37 @@ struct ForgotPasswordView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            VStack(spacing: 12) {
+                if let resendSuccessMessage {
+                    Text(resendSuccessMessage)
+                        .font(.system(size: 14))
+                        .foregroundColor(RuutineColor.muted)
+                        .multilineTextAlignment(.center)
+                }
+
+                if let resendErrorMessage {
+                    Text(resendErrorMessage)
+                        .font(.system(size: 14))
+                        .foregroundColor(RuutineColor.destructive.opacity(0.78))
+                        .multilineTextAlignment(.center)
+                }
+
+                Button {
+                    Haptics.impact(.light)
+                    resendResetLink()
+                } label: {
+                    Text(isResending ? "Sending..." : "Resend Email")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(RuutineColor.accentForeground)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(RuutineColor.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .disabled(isResending || isResendCoolingDown)
+            }
+
             Button {
                 Haptics.impact(.light)
                 dismiss()
@@ -174,6 +209,29 @@ struct ForgotPasswordView: View {
                 submitState = .sent
             } catch {
                 submitState = .failed(mapResetError(error))
+            }
+        }
+    }
+
+    private func resendResetLink() {
+        guard !isResending && !isResendCoolingDown else { return }
+
+        isResending = true
+        resendSuccessMessage = nil
+        resendErrorMessage = nil
+
+        Task {
+            do {
+                try await authVM.resetPassword(email: email)
+                resendSuccessMessage = "Email sent — check your inbox (and spam)"
+                isResending = false
+                isResendCoolingDown = true
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                resendSuccessMessage = nil
+                isResendCoolingDown = false
+            } catch {
+                resendErrorMessage = "Couldn't resend email. Try again."
+                isResending = false
             }
         }
     }

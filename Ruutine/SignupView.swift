@@ -342,7 +342,7 @@ struct EmailConfirmationView: View {
                     }
 
                     Button(action: resendEmail) {
-                        Text(isResending ? "Sending..." : "RESEND EMAIL")
+                        Text(isResending ? "Sending..." : "Resend Email")
                             .font(.system(size: 17, weight: .bold))
                             .foregroundColor(RuutineColor.accentForeground)
                             .frame(maxWidth: .infinity)
