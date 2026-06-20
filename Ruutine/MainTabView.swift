@@ -4,6 +4,7 @@ import SwiftUI
 struct MainTabView: View {
     @EnvironmentObject private var authVM: AuthViewModel
     @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var atlasService = AtlasService()
     @StateObject private var workout = ActiveWorkoutCoordinator()
     @State private var selectedTab: Tab = .home
@@ -11,6 +12,7 @@ struct MainTabView: View {
     @State private var showNewWorkout = false
     @State private var showAtlasChat = false
     @State private var pendingExercises: [WorkoutExercise]?
+    @State private var didAttemptWorkoutRestore = false
 
     private enum Tab {
         case home
@@ -91,6 +93,7 @@ struct MainTabView: View {
                 atlasService.setProfileId(userId)
                 Task { await atlasService.loadHistory() }
             }
+            restoreSavedWorkoutOnce()
         }
         .sheet(isPresented: $showAtlasChat) {
             AtlasChatView(atlasService: atlasService)
@@ -111,6 +114,11 @@ struct MainTabView: View {
         .onChange(of: workout.isExpanded) { _, isShowing in
             if isShowing { Haptics.impact(.medium) }
         }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .inactive || phase == .background {
+                workout.persistActiveWorkoutIfNeeded()
+            }
+        }
         .fullScreenCover(isPresented: $workout.isExpanded) {
             if let viewModel = workout.viewModel {
                 ActiveWorkoutView(
@@ -127,6 +135,12 @@ struct MainTabView: View {
                 .environmentObject(themeManager)
             }
         }
+    }
+
+    private func restoreSavedWorkoutOnce() {
+        guard !didAttemptWorkoutRestore else { return }
+        didAttemptWorkoutRestore = true
+        workout.restoreSavedWorkoutIfNeeded()
     }
 
     private var tabBar: some View {

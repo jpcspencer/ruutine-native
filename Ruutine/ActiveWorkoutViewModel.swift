@@ -129,6 +129,10 @@ final class ActiveWorkoutViewModel: ObservableObject {
 
     private static let storageKey = "activeWorkoutState"
 
+    static var hasSavedWorkoutState: Bool {
+        loadState() != nil
+    }
+
     var workoutDateSubtitle: String {
         Self.dateSubtitleFormatter.string(from: startedAt)
     }
@@ -419,6 +423,10 @@ final class ActiveWorkoutViewModel: ObservableObject {
         startedAt = startTime
         workoutPhotoData = photoData
         updateElapsed()
+        persist()
+    }
+
+    func persistCurrentState() {
         persist()
     }
 
