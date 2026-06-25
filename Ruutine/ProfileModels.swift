@@ -32,6 +32,27 @@ struct ProfileDetail: Codable {
     }
 }
 
+extension ProfileDetail {
+    func updatingAvatarUrl(_ avatarUrl: String) -> ProfileDetail {
+        ProfileDetail(
+            id: id,
+            name: name,
+            goal: goal,
+            experienceLevel: experienceLevel,
+            daysPerWeek: daysPerWeek,
+            trainingDays: trainingDays,
+            equipmentAccess: equipmentAccess,
+            injuriesLimitations: injuriesLimitations,
+            heightCm: heightCm,
+            weightKg: weightKg,
+            unitPreference: unitPreference,
+            theme: theme,
+            avatarUrl: avatarUrl,
+            biologicalSex: biologicalSex
+        )
+    }
+}
+
 struct WeightLog: Codable, Identifiable {
     let id: UUID
     let weightKg: Double

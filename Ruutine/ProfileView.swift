@@ -3,6 +3,7 @@ import Charts
 import PhotosUI
 import Supabase
 import SwiftUI
+import UIKit
 
 struct ProfileView: View {
     @EnvironmentObject private var authVM: AuthViewModel
@@ -10,6 +11,8 @@ struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var avatarImage: Image?
+    @State private var isUploadingAvatar = false
+    @State private var avatarErrorMessage: String?
     @State private var showEditProfile = false
     @State private var showWeightLogSheet = false
     @State private var showSettings = false
@@ -114,20 +117,19 @@ struct ProfileView: View {
                             .fill(RuutineColor.border)
                             .frame(width: 56, height: 56)
 
-                        if let avatarImage {
-                            avatarImage
-                                .resizable()
-                                .scaledToFill()
+                        avatarContent(for: profile)
+
+                        if isUploadingAvatar {
+                            Circle()
+                                .fill(RuutineColor.background.opacity(0.62))
                                 .frame(width: 56, height: 56)
-                                .clipShape(Circle())
-                        } else {
-                            Image(systemName: "person.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(RuutineColor.muted)
+                            ProgressView()
+                                .tint(RuutineColor.accent)
                         }
                     }
                 }
                 .buttonStyle(.plain)
+                .disabled(isUploadingAvatar)
 
                 VStack(alignment: .leading, spacing: 4) {
                     if let displayName = UserDisplayName.displayName(profile.name) {
@@ -159,6 +161,13 @@ struct ProfileView: View {
                         .stroke(RuutineColor.border, lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+
+            if let avatarErrorMessage {
+                Text(avatarErrorMessage)
+                    .font(.system(size: 13))
+                    .foregroundColor(RuutineColor.destructive.opacity(0.85))
+                    .multilineTextAlignment(.leading)
             }
 
             infoSection(title: "GOAL", value: ProfileLabels.goal(profile.goal))
@@ -199,6 +208,48 @@ struct ProfileView: View {
                 .font(.system(size: 15))
                 .foregroundColor(RuutineColor.foreground)
         }
+    }
+
+    @ViewBuilder
+    private func avatarContent(for profile: ProfileDetail) -> some View {
+        if let avatarUrl = profile.avatarUrl,
+           let url = URL(string: avatarUrl) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    avatarImageView(image)
+                case .failure:
+                    avatarFallbackImage
+                case .empty:
+                    if let avatarImage {
+                        avatarImageView(avatarImage)
+                    } else {
+                        ProgressView()
+                            .tint(RuutineColor.accent)
+                    }
+                @unknown default:
+                    avatarFallbackImage
+                }
+            }
+        } else if let avatarImage {
+            avatarImageView(avatarImage)
+        } else {
+            avatarFallbackImage
+        }
+    }
+
+    private func avatarImageView(_ image: Image) -> some View {
+        image
+            .resizable()
+            .scaledToFill()
+            .frame(width: 56, height: 56)
+            .clipShape(Circle())
+    }
+
+    private var avatarFallbackImage: some View {
+        Image(systemName: "person.fill")
+            .font(.system(size: 24))
+            .foregroundColor(RuutineColor.muted)
     }
 
     private func unitPill(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
@@ -434,12 +485,77 @@ struct ProfileView: View {
     }
 
     private func loadAvatar(from item: PhotosPickerItem?) async {
-        guard let item,
-              let data = try? await item.loadTransferable(type: Data.self),
-              let uiImage = UIImage(data: data)
-        else { return }
+        guard let item else { return }
+        guard let userId = authVM.session?.user.id else {
+            avatarErrorMessage = "Sign in again to update your profile picture."
+            return
+        }
 
-        avatarImage = Image(uiImage: uiImage)
+        isUploadingAvatar = true
+        avatarErrorMessage = nil
+        defer {
+            isUploadingAvatar = false
+            selectedPhoto = nil
+        }
+
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self),
+                  let uiImage = UIImage(data: data)
+            else {
+                throw AvatarUploadError.invalidImage
+            }
+
+            let jpegData = try resizedAvatarJPEGData(from: uiImage)
+            _ = try await viewModel.uploadAvatar(jpegData: jpegData, userId: userId)
+            avatarImage = Image(uiImage: UIImage(data: jpegData) ?? uiImage)
+        } catch {
+            avatarErrorMessage = avatarErrorMessage(for: error)
+            Haptics.notify(.error)
+        }
+    }
+
+    private func resizedAvatarJPEGData(from image: UIImage) throws -> Data {
+        let maxDimension: CGFloat = 512
+        let longestSide = max(image.size.width, image.size.height)
+        let scale = longestSide > maxDimension ? maxDimension / longestSide : 1
+        let targetSize = CGSize(
+            width: max(1, image.size.width * scale),
+            height: max(1, image.size.height * scale)
+        )
+
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
+        let resizedImage = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+
+        guard let data = resizedImage.jpegData(compressionQuality: 0.8) else {
+            throw AvatarUploadError.compressionFailed
+        }
+        return data
+    }
+
+    private func avatarErrorMessage(for error: Error) -> String {
+        if let error = error as? AvatarUploadError {
+            return error.localizedDescription
+        }
+        let message = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        return message.isEmpty ? "Couldn't save profile picture. Try again." : message
+    }
+
+    private enum AvatarUploadError: LocalizedError {
+        case invalidImage
+        case compressionFailed
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidImage:
+                return "Couldn't read that image. Try another photo."
+            case .compressionFailed:
+                return "Couldn't prepare that image. Try another photo."
+            }
+        }
     }
 }
 

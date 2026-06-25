@@ -111,6 +111,39 @@ private struct WeightLogInsert: Encodable {
 }
 
 extension ProfileViewModel {
+    func uploadAvatar(jpegData: Data, userId: UUID) async throws -> URL {
+        let path = "\(userId.uuidString)/avatar.jpg"
+        let bucket = SupabaseClient.shared.storage.from("avatars")
+
+        try await bucket.upload(
+            path,
+            data: jpegData,
+            options: FileOptions(
+                contentType: "image/jpeg",
+                upsert: true
+            )
+        )
+
+        let publicURL = try bucket.getPublicURL(
+            path: path,
+            cacheNonce: UUID().uuidString
+        )
+
+        try await saveAvatarURL(publicURL, userId: userId)
+        return publicURL
+    }
+
+    private func saveAvatarURL(_ avatarURL: URL, userId: UUID) async throws {
+        let avatarURLString = avatarURL.absoluteString
+        try await SupabaseClient.shared
+            .from("user_profiles")
+            .update(["avatar_url": avatarURLString])
+            .eq("id", value: userId)
+            .execute()
+
+        profile = profile?.updatingAvatarUrl(avatarURLString)
+    }
+
     var currentWeightKg: Double? {
         if let latest = weightLogs.max(by: { $0.loggedAt < $1.loggedAt }) {
             return latest.weightKg
