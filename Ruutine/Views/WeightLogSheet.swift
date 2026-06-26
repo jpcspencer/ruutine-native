@@ -98,7 +98,7 @@ struct WeightLogSheet: View {
             return
         }
 
-        let weightKg = isImperial ? value / 2.20462 : value
+        let weightKg = WeightUnits.displayToKg(value, isImperial: isImperial)
         isSaving = true
         errorMessage = nil
         defer { isSaving = false }

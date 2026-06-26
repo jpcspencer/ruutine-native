@@ -25,6 +25,7 @@ struct WorkoutRecapData: Identifiable, Equatable {
     let note: String?
     let photoData: Data?
     let biologicalSex: String?
+    let isImperial: Bool
 
     init(
         id: UUID,
@@ -36,7 +37,8 @@ struct WorkoutRecapData: Identifiable, Equatable {
         profileId: UUID,
         note: String? = nil,
         photoData: Data? = nil,
-        biologicalSex: String? = nil
+        biologicalSex: String? = nil,
+        isImperial: Bool = false
     ) {
         self.id = id
         self.sessionName = sessionName
@@ -48,6 +50,7 @@ struct WorkoutRecapData: Identifiable, Equatable {
         self.note = note
         self.photoData = photoData
         self.biologicalSex = biologicalSex
+        self.isImperial = isImperial
     }
 
     var trainedMuscles: [String] {
@@ -61,7 +64,7 @@ struct WorkoutRecapData: Identifiable, Equatable {
     }
 
     var volumeFormatted: String {
-        "\(Int(totalVolumeKg.rounded())) kg"
+        WeightUnits.formattedWeight(kg: totalVolumeKg, isImperial: isImperial, maximumFractionDigits: 0)
     }
 
     static func fromCompletion(
@@ -74,6 +77,7 @@ struct WorkoutRecapData: Identifiable, Equatable {
         note: String? = nil,
         photoData: Data? = nil,
         biologicalSex: String? = nil,
+        isImperial: Bool = false,
         sessionId: UUID = UUID()
     ) -> WorkoutRecapData {
         let recapExercises = exercises.map { exercise in
@@ -102,7 +106,8 @@ struct WorkoutRecapData: Identifiable, Equatable {
             profileId: profileId,
             note: trimmedNote?.isEmpty == false ? trimmedNote : nil,
             photoData: photoData,
-            biologicalSex: biologicalSex
+            biologicalSex: biologicalSex,
+            isImperial: isImperial
         )
     }
 }
@@ -134,18 +139,19 @@ enum WorkoutSetPersistence {
         setNumber: Int,
         inputKind: InputKind,
         weightPlaceholder: String = "",
-        repsPlaceholder: String = ""
+        repsPlaceholder: String = "",
+        isImperial: Bool = false
     ) -> CompletedSetPayload? {
         switch inputKind {
         case .weightReps, .addedWeightReps, .assistedReps:
             let weightText = set.weight.isEmpty ? weightPlaceholder : set.weight
             let repsText = set.reps.isEmpty ? repsPlaceholder : set.reps
-            guard let weight = Double(weightText.trimmingCharacters(in: .whitespaces)),
+            guard let weightKg = WeightUnits.parseDisplayWeight(weightText, isImperial: isImperial),
                   let reps = Int(repsText.trimmingCharacters(in: .whitespaces))
             else { return nil }
             return CompletedSetPayload(
                 setNumber: setNumber,
-                weightKg: weight,
+                weightKg: weightKg,
                 reps: reps,
                 durationSeconds: nil,
                 distanceM: nil
@@ -196,7 +202,7 @@ enum WorkoutSetPersistence {
         switch inputKind {
         case .weightReps, .addedWeightReps, .assistedReps:
             return ExerciseLogFields(
-                weightKg: HistoryFormatting.parseWeight(set.weight, isImperial: isImperial),
+                weightKg: WeightUnits.parseDisplayWeight(set.weight, isImperial: isImperial),
                 reps: HistoryFormatting.parseReps(set.reps),
                 durationSeconds: nil,
                 distanceM: nil

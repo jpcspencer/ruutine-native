@@ -39,7 +39,7 @@ struct ActiveWorkoutView: View {
         .task(id: authVM.session?.user.id) {
             guard let userId = authVM.session?.user.id else { return }
             await viewModel.loadPreviousSets(userId: userId)
-            await loadProfileBiologicalSex(userId: userId)
+            await loadProfilePreferences(userId: userId)
         }
         .fullScreenCover(item: $recapData) { data in
             WorkoutRecapView(data: data, saveError: recapSaveError) {
@@ -257,7 +257,7 @@ struct ActiveWorkoutView: View {
             if !exercise.sets.isEmpty {
                 WorkoutSetColumnHeader(
                     inputKind: exercise.category.inputKind,
-                    weightColumnLabel: "kg"
+                    weightColumnLabel: weightUnitLabel
                 )
             }
 
@@ -303,7 +303,7 @@ struct ActiveWorkoutView: View {
     }
 
     private var setColumnHeader: some View {
-        WorkoutSetColumnHeader(inputKind: .weightReps, weightColumnLabel: "kg")
+        WorkoutSetColumnHeader(inputKind: .weightReps, weightColumnLabel: weightUnitLabel)
     }
 
     private func exerciseDragPreview(_ exercise: WorkoutExercise) -> some View {
@@ -320,7 +320,7 @@ struct ActiveWorkoutView: View {
             if !exercise.sets.isEmpty {
                 WorkoutSetColumnHeader(
                     inputKind: exercise.category.inputKind,
-                    weightColumnLabel: "kg"
+                    weightColumnLabel: weightUnitLabel
                 )
             }
 
@@ -371,7 +371,7 @@ struct ActiveWorkoutView: View {
         let timePlaceholder = WorkoutSetFieldFormatting.timeText(seconds: durationPlaceholderSeconds)
         let distancePlaceholder = WorkoutSetFieldFormatting.distanceText(meters: distancePlaceholderMeters)
         let previousText = viewModel.previousSet(for: exercise.name, setIndex: setIndex)?
-            .displayText(inputKind: inputKind) ?? "—"
+            .displayText(inputKind: inputKind, isImperial: viewModel.isImperial) ?? "—"
         let canConfirm = WorkoutSetConfirmLogic.canConfirm(
             inputKind: inputKind,
             weight: weight,
@@ -694,7 +694,8 @@ struct ActiveWorkoutView: View {
             totalSets: payload.totalSets,
             note: workoutNote,
             photoData: workoutPhotoData,
-            biologicalSex: profileBiologicalSex
+            biologicalSex: profileBiologicalSex,
+            isImperial: viewModel.isImperial
         )
 
         recapSaveError = nil
@@ -721,16 +722,21 @@ struct ActiveWorkoutView: View {
         }
     }
 
-    private func loadProfileBiologicalSex(userId: UUID) async {
+    private var weightUnitLabel: String {
+        WeightUnits.unitLabel(isImperial: viewModel.isImperial)
+    }
+
+    private func loadProfilePreferences(userId: UUID) async {
         do {
             let profile: UserProfile = try await SupabaseClient.shared
                 .from("user_profiles")
-                .select()
+                .select("id, name, training_days, unit_preference, biological_sex")
                 .eq("id", value: userId)
                 .single()
                 .execute()
                 .value
             profileBiologicalSex = profile.biologicalSex
+            viewModel.setUnitPreference(isImperial: profile.isImperial)
         } catch {
             profileBiologicalSex = nil
         }

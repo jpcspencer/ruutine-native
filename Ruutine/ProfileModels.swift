@@ -154,11 +154,11 @@ enum ProfileLabels {
             let totalInches = heightCm / 2.54
             let feet = Int(totalInches / 12)
             let inches = Int(totalInches.rounded()) % 12
-            let pounds = weightKg * 2.20462
+            let pounds = WeightUnits.kgToDisplay(weightKg, isImperial: true)
             let weightText = pounds.truncatingRemainder(dividingBy: 1) == 0
                 ? String(format: "%.0f", pounds)
                 : String(format: "%.1f", pounds)
-            return "\(feet)'\(inches)\" · \(weightText) lb"
+            return "\(feet)'\(inches)\" · \(weightText) \(WeightUnits.unitLabel(isImperial: true))"
         }
 
         let heightText = heightCm.truncatingRemainder(dividingBy: 1) == 0
@@ -171,17 +171,7 @@ enum ProfileLabels {
     }
 
     static func weightValue(_ kg: Double, isImperial: Bool) -> String {
-        if isImperial {
-            let pounds = kg * 2.20462
-            let text = pounds.truncatingRemainder(dividingBy: 1) == 0
-                ? String(format: "%.0f", pounds)
-                : String(format: "%.1f", pounds)
-            return "\(text) lb"
-        }
-        let text = kg.truncatingRemainder(dividingBy: 1) == 0
-            ? String(format: "%.0f", kg)
-            : String(format: "%.1f", kg)
-        return "\(text) kg"
+        WeightUnits.formattedWeight(kg: kg, isImperial: isImperial)
     }
 
     static func logDate(_ date: Date) -> String {

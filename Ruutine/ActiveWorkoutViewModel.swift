@@ -109,6 +109,7 @@ struct ActiveWorkoutState: Codable {
     var defaultRestSeconds: Int?
     var workoutNote: String?
     var workoutPhotoJPEGBase64: String?
+    var isImperial: Bool?
 }
 
 @MainActor
@@ -122,6 +123,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
     @Published private(set) var sessionDefaultRestSeconds: Int = RestDurationPreferences.defaultSeconds
     @Published var previousSetsByExercise: [String: [PreviousSetRecord]] = [:]
     @Published private(set) var hasConfirmedSet = false
+    @Published private(set) var isImperial = false
 
     private(set) var startedAt: Date
     private var elapsedTimer: Timer?
@@ -159,6 +161,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
             if let base64 = saved.workoutPhotoJPEGBase64 {
                 workoutPhotoData = Data(base64Encoded: base64)
             }
+            isImperial = saved.isImperial ?? false
         } else {
             workoutName = Self.defaultWorkoutName()
             exercises = []
@@ -227,6 +230,13 @@ final class ActiveWorkoutViewModel: ObservableObject {
     func setSessionDefaultRestSeconds(_ seconds: Int) {
         applySessionDefaultRestSeconds(seconds)
         persist()
+    }
+
+    func setUnitPreference(isImperial: Bool) {
+        guard self.isImperial != isImperial else { return }
+        self.isImperial = isImperial
+        persist()
+        syncLiveActivity()
     }
 
     private func applySessionDefaultRestSeconds(_ seconds: Int) {
@@ -455,7 +465,8 @@ final class ActiveWorkoutViewModel: ObservableObject {
                     setNumber: confirmedSets.count + 1,
                     inputKind: exercise.category.inputKind,
                     weightPlaceholder: placeholderWeight(for: exercise, setIndex: setIndex),
-                    repsPlaceholder: placeholderReps(for: exercise, setIndex: setIndex)
+                    repsPlaceholder: placeholderReps(for: exercise, setIndex: setIndex),
+                    isImperial: isImperial
                 ) else { continue }
 
                 if let weightKg = payload.weightKg, let reps = payload.reps {
@@ -491,8 +502,8 @@ final class ActiveWorkoutViewModel: ObservableObject {
 
     func placeholderWeight(for exercise: WorkoutExercise, setIndex: Int) -> String {
         if let previous = previousSet(for: exercise.name, setIndex: setIndex),
-           !previous.weightPlaceholder.isEmpty {
-            return previous.weightPlaceholder
+           !previous.weightPlaceholder(isImperial: isImperial).isEmpty {
+            return previous.weightPlaceholder(isImperial: isImperial)
         }
         if setIndex > 0 {
             let previous = exercise.sets[setIndex - 1]
@@ -656,7 +667,8 @@ final class ActiveWorkoutViewModel: ObservableObject {
             restSecondsRemaining: restSecondsRemaining,
             defaultRestSeconds: sessionDefaultRestSeconds,
             workoutNote: workoutNote.isEmpty ? nil : workoutNote,
-            workoutPhotoJPEGBase64: workoutPhotoData?.base64EncodedString()
+            workoutPhotoJPEGBase64: workoutPhotoData?.base64EncodedString(),
+            isImperial: isImperial
         )
         if let data = try? JSONEncoder().encode(state) {
             UserDefaults.standard.set(data, forKey: Self.storageKey)
@@ -781,6 +793,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
             totalSets: exercise.sets.count,
             targetReps: targetReps,
             weight: weight,
+            weightUnitLabel: WeightUnits.unitLabel(isImperial: isImperial),
             isResting: isResting,
             restEndDate: isResting ? restEndDate : nil
         )

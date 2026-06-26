@@ -97,7 +97,7 @@ final class HomeViewModel: ObservableObject {
 
             volumeDisplay = Int(
                 profile.isImperial
-                    ? (volumeThisWeek * 2.20462).rounded()
+                    ? WeightUnits.kgToDisplay(volumeThisWeek, isImperial: true).rounded()
                     : volumeThisWeek.rounded()
             )
 

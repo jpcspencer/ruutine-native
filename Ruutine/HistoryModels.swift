@@ -100,8 +100,8 @@ enum HistoryFormatting {
     }
 
     static func volumeLabel(_ volume: Double, isImperial: Bool) -> String {
-        let value = isImperial ? volume * 2.20462 : volume
-        let unit = isImperial ? "lb" : "kg"
+        let value = WeightUnits.kgToDisplay(volume, isImperial: isImperial)
+        let unit = WeightUnits.unitLabel(isImperial: isImperial)
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 0
@@ -112,12 +112,8 @@ enum HistoryFormatting {
     static func bestSetLabel(_ best: BestSet?, isImperial: Bool) -> String {
         guard let best else { return "—" }
         if best.weightKg > 0 {
-            let weight = isImperial ? best.weightKg * 2.20462 : best.weightKg
-            let unit = isImperial ? "lb" : "kg"
-            let weightText = weight.truncatingRemainder(dividingBy: 1) == 0
-                ? String(format: "%.0f", weight)
-                : String(format: "%.1f", weight)
-            return "\(weightText) \(unit) × \(best.reps) reps"
+            let weightText = WeightUnits.formattedWeight(kg: best.weightKg, isImperial: isImperial)
+            return "\(weightText) × \(best.reps) reps"
         }
         return "\(best.reps) reps"
     }
@@ -126,30 +122,19 @@ enum HistoryFormatting {
         let weight = weightKg ?? 0
         let repCount = reps ?? 0
         if weight > 0 {
-            let display = isImperial ? weight * 2.20462 : weight
-            let unit = isImperial ? "lb" : "kg"
-            let weightText = display.truncatingRemainder(dividingBy: 1) == 0
-                ? String(format: "%.0f", display)
-                : String(format: "%.1f", display)
-            return "\(weightText) \(unit) × \(repCount) reps"
+            let weightText = WeightUnits.formattedWeight(kg: weight, isImperial: isImperial)
+            return "\(weightText) × \(repCount) reps"
         }
         return "\(repCount) reps"
     }
 
     static func displayWeight(kg: Double?, isImperial: Bool) -> String {
         guard let kg else { return "" }
-        let display = isImperial ? kg * 2.20462 : kg
-        if display.truncatingRemainder(dividingBy: 1) == 0 {
-            return String(format: "%.0f", display)
-        }
-        return String(format: "%.1f", display)
+        return WeightUnits.formattedWeight(kg: kg, isImperial: isImperial, includeUnit: false)
     }
 
     static func parseWeight(_ text: String, isImperial: Bool) -> Double? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, let value = Double(trimmed) else { return nil }
-        let kg = isImperial ? value / 2.20462 : value
-        return (kg * 10).rounded() / 10
+        WeightUnits.parseDisplayWeight(text, isImperial: isImperial)
     }
 
     static func parseReps(_ text: String) -> Int? {

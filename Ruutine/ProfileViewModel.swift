@@ -58,7 +58,7 @@ final class ProfileViewModel: ObservableObject {
     }
 
     func displayWeight(_ kg: Double) -> Double {
-        isImperial ? kg * 2.20462 : kg
+        WeightUnits.kgToDisplay(kg, isImperial: isImperial)
     }
 
     func saveTheme(_ theme: AppTheme, userId: UUID) async throws {

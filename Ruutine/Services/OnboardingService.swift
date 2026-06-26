@@ -1009,7 +1009,7 @@ final class OnboardingService: ObservableObject {
             guard totalInches > 0 else { return nil }
 
             let heightCm = (totalInches * 2.54 * 10).rounded() / 10
-            let weightKg = (lbs / 2.20462 * 10).rounded() / 10
+            let weightKg = WeightUnits.roundedKg(fromDisplayValue: lbs, isImperial: true)
             return (heightCm, weightKg)
         }
 

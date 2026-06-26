@@ -102,7 +102,9 @@ struct WorkoutTargetView: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: 2) {
             if let weight = state.weight {
-                Text(weight == weight.rounded() ? "\(Int(weight)) kg" : String(format: "%.1f kg", weight))
+                Text(weight == weight.rounded()
+                    ? "\(Int(weight)) \(state.weightUnitLabel)"
+                    : "\(String(format: "%.1f", weight)) \(state.weightUnitLabel)")
                     .font(.title3.bold())
             }
             if let reps = state.targetReps {

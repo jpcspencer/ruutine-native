@@ -7,7 +7,7 @@ struct PreviousSetRecord: Equatable {
     let durationSeconds: Int?
     let distanceM: Double?
 
-    func displayText(inputKind: InputKind) -> String {
+    func displayText(inputKind: InputKind, isImperial: Bool) -> String {
         switch inputKind {
         case .cardio:
             let timePart = formattedTime
@@ -29,14 +29,21 @@ struct PreviousSetRecord: Equatable {
             return "\(reps)"
         case .weightReps, .addedWeightReps, .assistedReps:
             guard let weightKg, let reps else { return "—" }
-            let weight = Self.formatWeight(weightKg)
-            return "\(weight) kg × \(reps)"
+            let weight = WeightUnits.formattedWeight(
+                kg: weightKg,
+                isImperial: isImperial
+            )
+            return "\(weight) × \(reps)"
         }
     }
 
-    var weightPlaceholder: String {
+    func weightPlaceholder(isImperial: Bool) -> String {
         guard let weightKg else { return "" }
-        return Self.formatWeight(weightKg)
+        return WeightUnits.formattedWeight(
+            kg: weightKg,
+            isImperial: isImperial,
+            includeUnit: false
+        )
     }
 
     var repsPlaceholder: String {
@@ -56,12 +63,6 @@ struct PreviousSetRecord: Equatable {
         return km.isEmpty ? nil : km
     }
 
-    private static func formatWeight(_ value: Double) -> String {
-        if value.truncatingRemainder(dividingBy: 1) == 0 {
-            return String(format: "%.0f", value)
-        }
-        return String(format: "%.2f", value)
-    }
 }
 
 enum PreviousSetsService {
