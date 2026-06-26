@@ -506,7 +506,7 @@ struct ProfileView: View {
             }
 
             let jpegData = try resizedAvatarJPEGData(from: uiImage)
-            _ = try await viewModel.uploadAvatar(jpegData: jpegData, userId: userId)
+            _ = try await viewModel.uploadAvatar(jpegData: jpegData)
             avatarImage = Image(uiImage: UIImage(data: jpegData) ?? uiImage)
         } catch {
             avatarErrorMessage = avatarErrorMessage(for: error)

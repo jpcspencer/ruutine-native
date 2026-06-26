@@ -111,8 +111,16 @@ private struct WeightLogInsert: Encodable {
 }
 
 extension ProfileViewModel {
-    func uploadAvatar(jpegData: Data, userId: UUID) async throws -> URL {
-        let path = "\(userId.uuidString)/avatar.jpg"
+    func uploadAvatar(jpegData: Data) async throws -> URL {
+        let session: Session
+        do {
+            session = try await SupabaseClient.shared.auth.session
+        } catch {
+            throw AvatarUploadAuthError.notSignedIn
+        }
+
+        let userId = session.user.id
+        let path = "\(userId.uuidString.lowercased())/avatar.jpg"
         let bucket = SupabaseClient.shared.storage.from("avatars")
 
         try await bucket.upload(
@@ -142,6 +150,17 @@ extension ProfileViewModel {
             .execute()
 
         profile = profile?.updatingAvatarUrl(avatarURLString)
+    }
+
+    private enum AvatarUploadAuthError: LocalizedError {
+        case notSignedIn
+
+        var errorDescription: String? {
+            switch self {
+            case .notSignedIn:
+                return "Not signed in — please sign in again."
+            }
+        }
     }
 
     var currentWeightKg: Double? {
