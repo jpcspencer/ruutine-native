@@ -4,7 +4,8 @@ extension Exercise {
     static let all: [Exercise] = [
         Exercise(id: "assisted-dip", name: "Assisted Dip", primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders"], difficulty: "Beginner", category: .assistedBodyweight),
         Exercise(id: "band-assisted-bench-press", name: "Band-Assisted Bench Press", primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders"], difficulty: "Beginner", category: .barbell),
-        Exercise(id: "bar-dip", name: "Bar Dip", primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders"], difficulty: "Beginner", category: .repsOnly),
+        Exercise(id: "chest-dip", name: "Chest Dip", primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders"], difficulty: "Intermediate", category: .weightedBodyweight),
+        Exercise(id: "tricep-dip", name: "Tricep Dip", primaryMuscle: "Triceps", secondaryMuscles: ["Chest", "Shoulders"], difficulty: "Intermediate", category: .weightedBodyweight),
         Exercise(id: "bench-press", name: "Bench Press", primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders"], difficulty: "Beginner", category: .barbell),
         Exercise(id: "board-press", name: "Board Press", primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders"], difficulty: "Beginner", category: .barbell),
         Exercise(id: "cable-chest-press", name: "Cable Chest Press", primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders"], difficulty: "Beginner", category: .machineOther),
