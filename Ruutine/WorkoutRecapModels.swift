@@ -5,6 +5,22 @@ struct RecapSet: Identifiable, Equatable {
     let setNumber: Int
     let weightKg: Double
     let reps: Int
+    let durationSeconds: Int?
+    let distanceM: Double?
+
+    init(
+        setNumber: Int,
+        weightKg: Double,
+        reps: Int,
+        durationSeconds: Int? = nil,
+        distanceM: Double? = nil
+    ) {
+        self.setNumber = setNumber
+        self.weightKg = weightKg
+        self.reps = reps
+        self.durationSeconds = durationSeconds
+        self.distanceM = distanceM
+    }
 }
 
 struct RecapExercise: Identifiable, Equatable {
@@ -88,7 +104,9 @@ struct WorkoutRecapData: Identifiable, Equatable {
                     RecapSet(
                         setNumber: $0.setNumber,
                         weightKg: $0.weightKg ?? 0,
-                        reps: $0.reps ?? 0
+                        reps: $0.reps ?? 0,
+                        durationSeconds: $0.durationSeconds,
+                        distanceM: $0.distanceM
                     )
                 }
             )
@@ -243,4 +261,5 @@ enum WorkoutSetPersistence {
 
 extension Notification.Name {
     static let workoutCompleted = Notification.Name("workoutCompleted")
+    static let unitPreferenceChanged = Notification.Name("unitPreferenceChanged")
 }

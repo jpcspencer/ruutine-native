@@ -138,7 +138,9 @@ enum WorkoutSessionService {
                     RecapSet(
                         setNumber: setIndex + 1,
                         weightKg: set.weightKg ?? 0,
-                        reps: set.reps ?? 0
+                        reps: set.reps ?? 0,
+                        durationSeconds: set.durationSeconds,
+                        distanceM: set.distanceM
                     )
                 )
             }

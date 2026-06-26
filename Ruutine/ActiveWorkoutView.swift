@@ -257,7 +257,8 @@ struct ActiveWorkoutView: View {
             if !exercise.sets.isEmpty {
                 WorkoutSetColumnHeader(
                     inputKind: exercise.category.inputKind,
-                    weightColumnLabel: weightUnitLabel
+                    weightColumnLabel: weightUnitLabel,
+                    distanceColumnLabel: distanceUnitLabel
                 )
             }
 
@@ -303,7 +304,11 @@ struct ActiveWorkoutView: View {
     }
 
     private var setColumnHeader: some View {
-        WorkoutSetColumnHeader(inputKind: .weightReps, weightColumnLabel: weightUnitLabel)
+        WorkoutSetColumnHeader(
+            inputKind: .weightReps,
+            weightColumnLabel: weightUnitLabel,
+            distanceColumnLabel: distanceUnitLabel
+        )
     }
 
     private func exerciseDragPreview(_ exercise: WorkoutExercise) -> some View {
@@ -320,7 +325,8 @@ struct ActiveWorkoutView: View {
             if !exercise.sets.isEmpty {
                 WorkoutSetColumnHeader(
                     inputKind: exercise.category.inputKind,
-                    weightColumnLabel: weightUnitLabel
+                    weightColumnLabel: weightUnitLabel,
+                    distanceColumnLabel: distanceUnitLabel
                 )
             }
 
@@ -367,9 +373,15 @@ struct ActiveWorkoutView: View {
         let durationPlaceholderSeconds = viewModel.placeholderDurationSeconds(for: exercise, setIndex: setIndex)
         let distancePlaceholderMeters = viewModel.placeholderDistanceMeters(for: exercise, setIndex: setIndex)
         let timeText = WorkoutSetFieldFormatting.timeDisplayText(for: set)
-        let distanceText = WorkoutSetFieldFormatting.distanceText(meters: set.distanceM)
+        let distanceText = WorkoutSetFieldFormatting.distanceText(
+            meters: set.distanceM,
+            isImperial: viewModel.isImperial
+        )
         let timePlaceholder = WorkoutSetFieldFormatting.timeText(seconds: durationPlaceholderSeconds)
-        let distancePlaceholder = WorkoutSetFieldFormatting.distanceText(meters: distancePlaceholderMeters)
+        let distancePlaceholder = WorkoutSetFieldFormatting.distanceText(
+            meters: distancePlaceholderMeters,
+            isImperial: viewModel.isImperial
+        )
         let previousText = viewModel.previousSet(for: exercise.name, setIndex: setIndex)?
             .displayText(inputKind: inputKind, isImperial: viewModel.isImperial) ?? "—"
         let canConfirm = WorkoutSetConfirmLogic.canConfirm(
@@ -462,13 +474,19 @@ struct ActiveWorkoutView: View {
                 let meters = viewModel.exercises
                     .first(where: { $0.id == exerciseID })?
                     .sets.first(where: { $0.id == setID })?.distanceM
-                return WorkoutSetFieldFormatting.distanceText(meters: meters)
+                return WorkoutSetFieldFormatting.distanceText(
+                    meters: meters,
+                    isImperial: viewModel.isImperial
+                )
             },
             set: { newValue in
                 viewModel.updateSet(
                     exerciseID: exerciseID,
                     setID: setID,
-                    distanceM: WorkoutSetFieldFormatting.parseDistanceText(newValue)
+                    distanceM: WorkoutSetFieldFormatting.parseDistanceText(
+                        newValue,
+                        isImperial: viewModel.isImperial
+                    )
                 )
             }
         )
@@ -724,6 +742,10 @@ struct ActiveWorkoutView: View {
 
     private var weightUnitLabel: String {
         WeightUnits.unitLabel(isImperial: viewModel.isImperial)
+    }
+
+    private var distanceUnitLabel: String {
+        DistanceUnits.unitLabel(isImperial: viewModel.isImperial)
     }
 
     private func loadProfilePreferences(userId: UUID) async {

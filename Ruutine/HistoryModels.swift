@@ -128,6 +128,30 @@ enum HistoryFormatting {
         return "\(repCount) reps"
     }
 
+    static func setLine(
+        weightKg: Double?,
+        reps: Int?,
+        durationSeconds: Int?,
+        distanceM: Double?,
+        isImperial: Bool
+    ) -> String {
+        let hasTime = (durationSeconds ?? 0) > 0
+        let hasDistance = (distanceM ?? 0) > 0
+
+        if hasTime || hasDistance {
+            var parts: [String] = []
+            if hasTime {
+                parts.append(WorkoutSetFieldFormatting.timeText(seconds: durationSeconds))
+            }
+            if let distanceM, distanceM > 0 {
+                parts.append(DistanceUnits.formattedDistance(meters: distanceM, isImperial: isImperial))
+            }
+            return parts.filter { !$0.isEmpty }.joined(separator: " · ")
+        }
+
+        return setLine(weightKg: weightKg, reps: reps, isImperial: isImperial)
+    }
+
     static func displayWeight(kg: Double?, isImperial: Bool) -> String {
         guard let kg else { return "" }
         return WeightUnits.formattedWeight(kg: kg, isImperial: isImperial, includeUnit: false)

@@ -11,14 +11,14 @@ struct PreviousSetRecord: Equatable {
         switch inputKind {
         case .cardio:
             let timePart = formattedTime
-            let distanceKm = formattedDistanceKm
-            switch (timePart, distanceKm) {
+            let distanceText = formattedDistance(isImperial: isImperial)
+            switch (timePart, distanceText) {
             case let (time?, distance?):
-                return "\(time) · \(distance) km"
+                return "\(time) · \(distance)"
             case let (time?, nil):
                 return time
             case let (nil, distance?):
-                return "\(distance) km"
+                return distance
             default:
                 return "—"
             }
@@ -57,10 +57,10 @@ struct PreviousSetRecord: Equatable {
         return text.isEmpty ? nil : text
     }
 
-    private var formattedDistanceKm: String? {
+    private func formattedDistance(isImperial: Bool) -> String? {
         guard let distanceM, distanceM > 0 else { return nil }
-        let km = WorkoutSetFieldFormatting.distanceText(meters: distanceM)
-        return km.isEmpty ? nil : km
+        let distance = DistanceUnits.formattedDistance(meters: distanceM, isImperial: isImperial)
+        return distance.isEmpty ? nil : distance
     }
 
 }

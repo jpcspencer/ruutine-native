@@ -70,6 +70,10 @@ struct SessionDetailView: View {
         isImperial ? "lb" : "kg"
     }
 
+    private var distanceColumnLabel: String {
+        DistanceUnits.unitLabel(isImperial: isImperial)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             topBar
@@ -304,6 +308,7 @@ struct SessionDetailView: View {
             showsDeleteColumn: true,
             inputKind: inputKind,
             weightColumnLabel: weightColumnLabel,
+            distanceColumnLabel: distanceColumnLabel,
             hasSets: !exercise.sets.isEmpty,
             onRemoveExercise: {
                 editState.removeExercise(exercise)
@@ -319,9 +324,15 @@ struct SessionDetailView: View {
                 let durationPlaceholderSeconds = editState.placeholderDurationSeconds(for: exercise, setIndex: index)
                 let distancePlaceholderMeters = editState.placeholderDistanceMeters(for: exercise, setIndex: index)
                 let timeText = WorkoutSetFieldFormatting.timeDisplayText(for: set)
-                let distanceText = WorkoutSetFieldFormatting.distanceText(meters: set.distanceM)
+                let distanceText = WorkoutSetFieldFormatting.distanceText(
+                    meters: set.distanceM,
+                    isImperial: isImperial
+                )
                 let timePlaceholder = WorkoutSetFieldFormatting.timeText(seconds: durationPlaceholderSeconds)
-                let distancePlaceholder = WorkoutSetFieldFormatting.distanceText(meters: distancePlaceholderMeters)
+                let distancePlaceholder = WorkoutSetFieldFormatting.distanceText(
+                    meters: distancePlaceholderMeters,
+                    isImperial: isImperial
+                )
                 let canConfirm = WorkoutSetConfirmLogic.canConfirm(
                     inputKind: inputKind,
                     weight: set.weight,
@@ -376,10 +387,11 @@ struct SessionDetailView: View {
             exerciseName: exercise.name,
             inputKind: exercise.category.inputKind,
             weightColumnLabel: weightColumnLabel,
+            distanceColumnLabel: distanceColumnLabel,
             hasSets: !exercise.sets.isEmpty
         ) {
             ForEach(Array(exercise.sets.prefix(3).enumerated()), id: \.element.id) { index, set in
-                Text("Set \(index + 1): \(HistoryFormatting.setLine(weightKg: HistoryFormatting.parseWeight(set.weight, isImperial: isImperial), reps: HistoryFormatting.parseReps(set.reps), isImperial: isImperial))")
+                Text("Set \(index + 1): \(editSetLine(set))")
                     .font(.system(size: 13))
                     .foregroundColor(RuutineColor.muted)
             }
@@ -405,7 +417,7 @@ struct SessionDetailView: View {
                             .scaleEffect(0.75)
                     }
 
-                    Text("Set \(set.setNumber ?? index + 1): \(HistoryFormatting.setLine(weightKg: set.weightKg, reps: set.reps, isImperial: isImperial))")
+                    Text("Set \(set.setNumber ?? index + 1): \(readOnlySetLine(set))")
                         .font(.system(size: 13))
                         .foregroundColor(RuutineColor.muted)
                 }
@@ -472,15 +484,41 @@ struct SessionDetailView: View {
                 let meters = editState.exercises
                     .first(where: { $0.id == exerciseID })?
                     .sets.first(where: { $0.id == setID })?.distanceM
-                return WorkoutSetFieldFormatting.distanceText(meters: meters)
+                return WorkoutSetFieldFormatting.distanceText(
+                    meters: meters,
+                    isImperial: isImperial
+                )
             },
             set: { newValue in
                 editState.updateSet(
                     exerciseID: exerciseID,
                     setID: setID,
-                    distanceM: WorkoutSetFieldFormatting.parseDistanceText(newValue)
+                    distanceM: WorkoutSetFieldFormatting.parseDistanceText(
+                        newValue,
+                        isImperial: isImperial
+                    )
                 )
             }
+        )
+    }
+
+    private func editSetLine(_ set: WorkoutSet) -> String {
+        HistoryFormatting.setLine(
+            weightKg: HistoryFormatting.parseWeight(set.weight, isImperial: isImperial),
+            reps: HistoryFormatting.parseReps(set.reps),
+            durationSeconds: set.durationSeconds,
+            distanceM: set.distanceM,
+            isImperial: isImperial
+        )
+    }
+
+    private func readOnlySetLine(_ set: ExerciseLogDetail) -> String {
+        HistoryFormatting.setLine(
+            weightKg: set.weightKg,
+            reps: set.reps,
+            durationSeconds: set.durationSeconds,
+            distanceM: set.distanceM,
+            isImperial: isImperial
         )
     }
 

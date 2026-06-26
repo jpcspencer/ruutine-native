@@ -45,6 +45,40 @@ enum WeightUnits {
     }
 }
 
+enum DistanceUnits {
+    static let metersPerKilometer = 1000.0
+    static let metersPerMile = 1609.344
+
+    static func unitLabel(isImperial: Bool) -> String {
+        isImperial ? "mi" : "km"
+    }
+
+    static func metersToDisplay(_ meters: Double, isImperial: Bool) -> Double {
+        meters / (isImperial ? metersPerMile : metersPerKilometer)
+    }
+
+    static func displayToMeters(_ value: Double, isImperial: Bool) -> Double {
+        value * (isImperial ? metersPerMile : metersPerKilometer)
+    }
+
+    static func parseDisplayDistance(_ text: String, isImperial: Bool) -> Double? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let value = Double(trimmed), value >= 0 else { return nil }
+        return displayToMeters(value, isImperial: isImperial)
+    }
+
+    static func formattedDistance(
+        meters: Double,
+        isImperial: Bool,
+        maximumFractionDigits: Int = 2,
+        includeUnit: Bool = true
+    ) -> String {
+        let displayValue = metersToDisplay(meters, isImperial: isImperial)
+        let text = WeightUnits.formatted(displayValue, maximumFractionDigits: maximumFractionDigits)
+        return includeUnit ? "\(text) \(unitLabel(isImperial: isImperial))" : text
+    }
+}
+
 struct WorkoutActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         var exerciseName: String     // current exercise

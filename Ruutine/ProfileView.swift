@@ -84,6 +84,12 @@ struct ProfileView: View {
                 .environmentObject(themeManager)
                 .environmentObject(authVM)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .unitPreferenceChanged)) { notification in
+            if let isImperial = notification.userInfo?["isImperial"] as? Bool {
+                viewModel.isImperial = isImperial
+            }
+            reload()
+        }
     }
 
     private var header: some View {

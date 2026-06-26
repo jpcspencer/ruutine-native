@@ -157,7 +157,7 @@ struct WorkoutRecapView: View {
                         .foregroundColor(RuutineColor.foreground)
 
                     Text(exercise.sets.map { set in
-                        "Set \(set.setNumber): \(formatWeight(set.weightKg)) × \(set.reps) reps"
+                        "Set \(set.setNumber): \(formatSetLine(set))"
                     }.joined(separator: "  "))
                     .font(.system(size: 13))
                     .foregroundColor(RuutineColor.muted)
@@ -277,6 +277,16 @@ struct WorkoutRecapView: View {
 
     private func formatWeight(_ value: Double) -> String {
         WeightUnits.formattedWeight(kg: value, isImperial: data.isImperial)
+    }
+
+    private func formatSetLine(_ set: RecapSet) -> String {
+        HistoryFormatting.setLine(
+            weightKg: set.weightKg,
+            reps: set.reps,
+            durationSeconds: set.durationSeconds,
+            distanceM: set.distanceM,
+            isImperial: data.isImperial
+        )
     }
 
     private func loadAtlasMessage() async {

@@ -82,23 +82,21 @@ enum WorkoutSetFieldFormatting {
         return ""
     }
 
-    static func distanceText(meters: Double?) -> String {
+    static func distanceText(meters: Double?, isImperial: Bool = false) -> String {
         guard let meters, meters > 0 else { return "" }
-        let km = meters / 1000
-        if km == km.rounded() {
-            return String(format: "%.0f", km)
-        }
-        var formatted = String(format: "%.2f", km)
+        var formatted = DistanceUnits.formattedDistance(
+            meters: meters,
+            isImperial: isImperial,
+            includeUnit: false
+        )
         while formatted.contains(".") && (formatted.hasSuffix("0") || formatted.hasSuffix(".")) {
             formatted.removeLast()
         }
         return formatted
     }
 
-    static func parseDistanceText(_ text: String) -> Double? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, let km = Double(trimmed), km >= 0 else { return nil }
-        return km * 1000
+    static func parseDistanceText(_ text: String, isImperial: Bool = false) -> Double? {
+        DistanceUnits.parseDisplayDistance(text, isImperial: isImperial)
     }
 }
 
@@ -195,6 +193,7 @@ extension InputKind {
 struct WorkoutSetColumnHeader: View {
     let inputKind: InputKind
     var weightColumnLabel: String = "kg"
+    var distanceColumnLabel: String = "km"
     var showsDeleteColumn = false
 
     private var primaryLabel: String? {
@@ -213,7 +212,7 @@ struct WorkoutSetColumnHeader: View {
         case .weightReps, .addedWeightReps, .assistedReps, .repsOnly:
             return "Reps"
         case .cardio:
-            return "km"
+            return distanceColumnLabel
         case .duration:
             return nil
         }
@@ -621,6 +620,7 @@ struct WorkoutExerciseEditorCard<SetRows: View>: View {
     let showsDeleteColumn: Bool
     let inputKind: InputKind
     var weightColumnLabel: String = "kg"
+    var distanceColumnLabel: String = "km"
     let hasSets: Bool
     let onRemoveExercise: () -> Void
     let onAddSet: () -> Void
@@ -658,6 +658,7 @@ struct WorkoutExerciseEditorCard<SetRows: View>: View {
                 WorkoutSetColumnHeader(
                     inputKind: inputKind,
                     weightColumnLabel: weightColumnLabel,
+                    distanceColumnLabel: distanceColumnLabel,
                     showsDeleteColumn: showsDeleteColumn
                 )
             }
@@ -693,6 +694,7 @@ struct WorkoutExerciseDragPreview<SetRows: View>: View {
     let exerciseName: String
     let inputKind: InputKind
     var weightColumnLabel: String = "kg"
+    var distanceColumnLabel: String = "km"
     let hasSets: Bool
     @ViewBuilder let setRows: () -> SetRows
 
@@ -713,7 +715,11 @@ struct WorkoutExerciseDragPreview<SetRows: View>: View {
             }
 
             if hasSets {
-                WorkoutSetColumnHeader(inputKind: inputKind, weightColumnLabel: weightColumnLabel)
+                WorkoutSetColumnHeader(
+                    inputKind: inputKind,
+                    weightColumnLabel: weightColumnLabel,
+                    distanceColumnLabel: distanceColumnLabel
+                )
             }
 
             setRows()

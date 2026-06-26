@@ -119,6 +119,10 @@ struct MainTabView: View {
                 workout.persistActiveWorkoutIfNeeded()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .unitPreferenceChanged)) { notification in
+            guard let isImperial = notification.userInfo?["isImperial"] as? Bool else { return }
+            workout.viewModel?.setUnitPreference(isImperial: isImperial)
+        }
         .fullScreenCover(isPresented: $workout.isExpanded) {
             if let viewModel = workout.viewModel {
                 ActiveWorkoutView(

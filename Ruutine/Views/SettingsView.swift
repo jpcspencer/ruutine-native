@@ -12,6 +12,8 @@ struct SettingsView: View {
     @State private var showDeleteError = false
     @State private var isDeletingAccount = false
     @State private var isSigningOut = false
+    @State private var isSavingUnits = false
+    @State private var unitsErrorMessage: String?
 
     var body: some View {
         ZStack {
@@ -34,6 +36,8 @@ struct SettingsView: View {
                                 .foregroundColor(RuutineColor.muted)
                                 .padding(.leading, 2)
                         }
+
+                        unitsSection
 
                         VStack(spacing: 10) {
                             actionRow(title: "Rate Ruutine", urlString: "https://apps.apple.com/app/id6767207604?action=write-review")
@@ -96,6 +100,85 @@ struct SettingsView: View {
                 isSigningOut = false
             }
         }
+        .task(id: authVM.session?.user.id) {
+            guard let userId = authVM.session?.user.id else { return }
+            await profileViewModel.load(userId: userId)
+        }
+    }
+
+    private var unitsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Units")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(RuutineColor.foreground)
+                        Text("Weight and distance")
+                            .font(.system(size: 12))
+                            .foregroundColor(RuutineColor.muted)
+                    }
+
+                    Spacer()
+
+                    if isSavingUnits {
+                        ProgressView()
+                            .tint(RuutineColor.accent)
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    unitButton(title: "Metric", subtitle: "kg · km", isActive: !profileViewModel.isImperial) {
+                        Task { await setUnitPreference(imperial: false) }
+                    }
+                    unitButton(title: "Imperial", subtitle: "lb · mi", isActive: profileViewModel.isImperial) {
+                        Task { await setUnitPreference(imperial: true) }
+                    }
+                }
+            }
+            .padding(14)
+            .background(RuutineColor.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(RuutineColor.border, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            if let unitsErrorMessage {
+                Text(unitsErrorMessage)
+                    .font(.system(size: 12))
+                    .foregroundColor(RuutineColor.destructive)
+                    .padding(.leading, 2)
+            }
+        }
+    }
+
+    private func unitButton(
+        title: String,
+        subtitle: String,
+        isActive: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(subtitle)
+                    .font(.system(size: 11, weight: .medium))
+                    .opacity(0.85)
+            }
+            .foregroundColor(isActive ? RuutineColor.accentForeground : RuutineColor.foreground)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(isActive ? RuutineColor.accent : RuutineColor.background)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isActive ? RuutineColor.accent : RuutineColor.border, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .disabled(isSavingUnits)
     }
 
     private var accountSection: some View {
@@ -262,6 +345,35 @@ struct SettingsView: View {
             try await authVM.signOut()
         } catch {
             showDeleteError = true
+        }
+    }
+
+    private func setUnitPreference(imperial: Bool) async {
+        guard let userId = authVM.session?.user.id else { return }
+        guard profileViewModel.isImperial != imperial else { return }
+
+        let previousValue = profileViewModel.isImperial
+        let preference = imperial ? "imperial" : "metric"
+        profileViewModel.isImperial = imperial
+        unitsErrorMessage = nil
+        isSavingUnits = true
+        defer { isSavingUnits = false }
+
+        do {
+            try await SupabaseClient.shared
+                .from("user_profiles")
+                .update(["unit_preference": preference])
+                .eq("id", value: userId)
+                .execute()
+
+            NotificationCenter.default.post(
+                name: .unitPreferenceChanged,
+                object: nil,
+                userInfo: ["isImperial": imperial]
+            )
+        } catch {
+            profileViewModel.isImperial = previousValue
+            unitsErrorMessage = "Couldn't update units. Please try again."
         }
     }
 

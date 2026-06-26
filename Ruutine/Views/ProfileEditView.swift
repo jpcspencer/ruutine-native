@@ -84,15 +84,6 @@ struct ProfileEditView: View {
                     }
 
                     fieldSection(title: "HEIGHT") {
-                        HStack(spacing: 8) {
-                            unitChip("Metric", isActive: !draft.isImperial) {
-                                draft.unitPreference = "metric"
-                            }
-                            unitChip("Imperial", isActive: draft.isImperial) {
-                                draft.unitPreference = "imperial"
-                            }
-                        }
-
                         if draft.isImperial {
                             HStack(spacing: 12) {
                                 textField("Feet", text: $draft.heightFeetText, keyboard: .numberPad)
@@ -273,25 +264,6 @@ struct ProfileEditView: View {
         .disabled(isDisabled)
     }
 
-    private func unitChip(_ title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-        Button {
-            Haptics.selection()
-            action()
-        } label: {
-            Text(title)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(isActive ? RuutineColor.accentForeground : RuutineColor.foreground)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(isActive ? RuutineColor.accent : RuutineColor.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isActive ? Color.clear : RuutineColor.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .buttonStyle(.plain)
-    }
 }
 
 /// Simple flow layout for profile edit chip rows.

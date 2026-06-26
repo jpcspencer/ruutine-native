@@ -241,6 +241,8 @@ enum SessionLogConverter {
                         id: log.id,
                         weight: HistoryFormatting.displayWeight(kg: log.weightKg, isImperial: isImperial),
                         reps: log.reps.map(String.init) ?? "",
+                        durationSeconds: log.durationSeconds,
+                        distanceM: log.distanceM,
                         isConfirmed: log.completed ?? true
                     )
                 }
