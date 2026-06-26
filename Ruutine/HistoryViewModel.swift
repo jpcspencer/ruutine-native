@@ -55,7 +55,7 @@ final class HistoryViewModel: ObservableObject {
             if !sessionIds.isEmpty {
                 let logs: [ExerciseLogDetail] = try await SupabaseClient.shared
                     .from("exercise_logs")
-                    .select("id, session_id, exercise_name, weight_kg, reps, set_number, completed")
+                    .select("id, session_id, exercise_name, weight_kg, reps, set_number, completed, duration_seconds, distance_m")
                     .in("session_id", values: sessionIds)
                     .execute()
                     .value
@@ -74,9 +74,21 @@ final class HistoryViewModel: ObservableObject {
                         exercisesBySession[sessionId, default: []].append(name)
                     }
 
-                    let candidate = BestSet(weightKg: log.weightKg ?? 0, reps: log.reps ?? 0)
+                    let candidate = BestSet(
+                        weightKg: log.weightKg ?? 0,
+                        reps: log.reps ?? 0,
+                        durationSeconds: log.durationSeconds,
+                        distanceM: log.distanceM
+                    )
                     let existing = bestSetsBySession[sessionId]?[name]
-                    if existing == nil || candidate.volume > (existing?.volume ?? 0) {
+                    let isCardioCandidate = candidate.cardioScore > 0 && candidate.volume == 0
+                    let shouldReplace: Bool
+                    if isCardioCandidate {
+                        shouldReplace = existing == nil || candidate.cardioScore > (existing?.cardioScore ?? 0)
+                    } else {
+                        shouldReplace = existing == nil || candidate.volume > (existing?.volume ?? 0)
+                    }
+                    if shouldReplace {
                         bestSetsBySession[sessionId, default: [:]][name] = candidate
                     }
                 }

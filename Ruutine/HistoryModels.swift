@@ -27,9 +27,18 @@ struct ExerciseLogDetail: Codable, Identifiable {
 struct BestSet: Equatable {
     let weightKg: Double
     let reps: Int
+    let durationSeconds: Int?
+    let distanceM: Double?
 
     var volume: Double {
         weightKg * Double(reps)
+    }
+
+    var cardioScore: Double {
+        if let distanceM, distanceM > 0 {
+            return distanceM
+        }
+        return Double(durationSeconds ?? 0)
     }
 }
 
@@ -111,11 +120,13 @@ enum HistoryFormatting {
 
     static func bestSetLabel(_ best: BestSet?, isImperial: Bool) -> String {
         guard let best else { return "—" }
-        if best.weightKg > 0 {
-            let weightText = WeightUnits.formattedWeight(kg: best.weightKg, isImperial: isImperial)
-            return "\(weightText) × \(best.reps) reps"
-        }
-        return "\(best.reps) reps"
+        return setLine(
+            weightKg: best.weightKg,
+            reps: best.reps,
+            durationSeconds: best.durationSeconds,
+            distanceM: best.distanceM,
+            isImperial: isImperial
+        )
     }
 
     static func setLine(weightKg: Double?, reps: Int?, isImperial: Bool) -> String {
@@ -138,13 +149,15 @@ enum HistoryFormatting {
         let hasTime = (durationSeconds ?? 0) > 0
         let hasDistance = (distanceM ?? 0) > 0
 
-        if hasTime || hasDistance {
+        let hasWeightOrReps = (weightKg ?? 0) > 0 || (reps ?? 0) > 0
+
+        if !hasWeightOrReps && (hasTime || hasDistance) {
             var parts: [String] = []
-            if hasTime {
-                parts.append(WorkoutSetFieldFormatting.timeText(seconds: durationSeconds))
-            }
             if let distanceM, distanceM > 0 {
                 parts.append(DistanceUnits.formattedDistance(meters: distanceM, isImperial: isImperial))
+            }
+            if hasTime {
+                parts.append(WorkoutSetFieldFormatting.timeText(seconds: durationSeconds))
             }
             return parts.filter { !$0.isEmpty }.joined(separator: " · ")
         }
