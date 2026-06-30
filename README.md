@@ -1,8 +1,8 @@
 # Ruutine — AI Workout Tracker
 
-<img width="1320" height="2868" alt="home" src="https://github.com/user-attachments/assets/5935d9e7-150d-4d83-8d19-f2cb3103cea0" />
+<img width="965" height="322" alt="image" src="https://github.com/user-attachments/assets/acd69819-1cb5-478e-a349-807ce0042d86" />
 
- 
+
 A native SwiftUI iOS app for serious lifters, live on the App Store. Track workouts, follow AI-generated training programs, and get coaching from **Ruu**, an AI coach that learns your training over time.
  
 **[Download on the App Store →](https://apps.apple.com/app/ruutine-ai-workout-tracker/id6767207604)**
